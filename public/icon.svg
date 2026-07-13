@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#2f9d5a"/>
+  <circle cx="120" cy="120" r="26" fill="#ffd447"/>
+  <circle cx="410" cy="150" r="20" fill="#ff6b81"/>
+  <circle cx="88" cy="410" r="18" fill="#4b8dff"/>
+  <circle cx="430" cy="420" r="24" fill="#f4a04a"/>
+  <text x="50%" y="58%" text-anchor="middle" font-family="Georgia, serif" font-weight="900" font-size="220" fill="#fbf7ec">B</text>
+</svg>
