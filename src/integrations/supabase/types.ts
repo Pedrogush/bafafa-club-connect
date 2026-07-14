@@ -71,6 +71,259 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_definitions: {
+        Row: {
+          auto_rule: string | null
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          rule: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          auto_rule?: string | null
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          rule?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_rule?: string | null
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          rule?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          benefit_type: string
+          created_at: string
+          description: string | null
+          discount_max_cents: number | null
+          discount_percent: number | null
+          ends_at: string | null
+          event_id: string | null
+          fixed_off_cents: number | null
+          id: string
+          instructions: string | null
+          internal_rules: string | null
+          name: string
+          per_user_limit: number
+          product_name: string | null
+          public_rules: string | null
+          required_badge_id: string | null
+          requires_checkin: boolean
+          requires_min_profile: boolean
+          reward_valid_hours: number
+          starts_at: string
+          status: string
+          total_available: number | null
+          updated_at: string
+        }
+        Insert: {
+          benefit_type: string
+          created_at?: string
+          description?: string | null
+          discount_max_cents?: number | null
+          discount_percent?: number | null
+          ends_at?: string | null
+          event_id?: string | null
+          fixed_off_cents?: number | null
+          id?: string
+          instructions?: string | null
+          internal_rules?: string | null
+          name: string
+          per_user_limit?: number
+          product_name?: string | null
+          public_rules?: string | null
+          required_badge_id?: string | null
+          requires_checkin?: boolean
+          requires_min_profile?: boolean
+          reward_valid_hours?: number
+          starts_at?: string
+          status?: string
+          total_available?: number | null
+          updated_at?: string
+        }
+        Update: {
+          benefit_type?: string
+          created_at?: string
+          description?: string | null
+          discount_max_cents?: number | null
+          discount_percent?: number | null
+          ends_at?: string | null
+          event_id?: string | null
+          fixed_off_cents?: number | null
+          id?: string
+          instructions?: string | null
+          internal_rules?: string | null
+          name?: string
+          per_user_limit?: number
+          product_name?: string | null
+          public_rules?: string | null
+          required_badge_id?: string | null
+          requires_checkin?: boolean
+          requires_min_profile?: boolean
+          reward_valid_hours?: number
+          starts_at?: string
+          status?: string
+          total_available?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkins: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          method: string
+          notes: string | null
+          staff_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          method?: string
+          notes?: string | null
+          staff_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          staff_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          attraction: string | null
+          category: string
+          checkin_closes_at: string | null
+          checkin_enabled: boolean
+          checkin_opens_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          instructions: string | null
+          name: string
+          slug: string
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attraction?: string | null
+          category: string
+          checkin_closes_at?: string | null
+          checkin_enabled?: boolean
+          checkin_opens_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          name: string
+          slug: string
+          starts_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attraction?: string | null
+          category?: string
+          checkin_closes_at?: string | null
+          checkin_enabled?: boolean
+          checkin_opens_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          name?: string
+          slug?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      otp_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          kind: string
+          phone: string
+          succeeded: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          kind: string
+          phone: string
+          succeeded?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          kind?: string
+          phone?: string
+          succeeded?: boolean
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           benefits: Json
@@ -124,6 +377,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_title_id: string | null
           avatar_url: string | null
           bio: string | null
           birth_date: string | null
@@ -131,11 +385,14 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           display_name: string
+          how_found_us: string | null
           id: string
           is_over_18: boolean
           is_public: boolean
           last_seen_at: string | null
           member_since: string
+          neighborhood: string | null
+          phone_verified_at: string | null
           show_birth_month: boolean
           show_city: boolean
           updated_at: string
@@ -143,6 +400,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          active_title_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           birth_date?: string | null
@@ -150,11 +408,14 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           display_name: string
+          how_found_us?: string | null
           id: string
           is_over_18?: boolean
           is_public?: boolean
           last_seen_at?: string | null
           member_since?: string
+          neighborhood?: string | null
+          phone_verified_at?: string | null
           show_birth_month?: boolean
           show_city?: boolean
           updated_at?: string
@@ -162,6 +423,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          active_title_id?: string | null
           avatar_url?: string | null
           bio?: string | null
           birth_date?: string | null
@@ -169,18 +431,100 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           display_name?: string
+          how_found_us?: string | null
           id?: string
           is_over_18?: boolean
           is_public?: boolean
           last_seen_at?: string | null
           member_since?: string
+          neighborhood?: string | null
+          phone_verified_at?: string | null
           show_birth_month?: boolean
           show_city?: boolean
           updated_at?: string
           username?: string | null
           whatsapp?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_title_fk"
+            columns: ["active_title_id"]
+            isOneToOne: false
+            referencedRelation: "title_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          purpose: string
+          ref_id: string | null
+          short_code: string
+          token: string
+          used_at: string | null
+          used_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          purpose: string
+          ref_id?: string | null
+          short_code: string
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          purpose?: string
+          ref_id?: string | null
+          short_code?: string
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+          user_id?: string
+        }
         Relationships: []
+      }
+      reward_redemptions: {
+        Row: {
+          id: string
+          notes: string | null
+          redeemed_at: string
+          reward_id: string
+          staff_id: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          redeemed_at?: string
+          reward_id: string
+          staff_id?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          redeemed_at?: string
+          reward_id?: string
+          staff_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: true
+            referencedRelation: "user_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -241,6 +585,94 @@ export type Database = {
           },
         ]
       }
+      title_definitions: {
+        Row: {
+          auto_rule: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          linked_badge_id: string | null
+          name: string
+          rule: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          auto_rule?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          linked_badge_id?: string | null
+          name: string
+          rule?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_rule?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          linked_badge_id?: string | null
+          name?: string
+          rule?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "title_definitions_linked_badge_id_fkey"
+            columns: ["linked_badge_id"]
+            isOneToOne: false
+            referencedRelation: "badge_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          awarded_at: string
+          awarded_by: string | null
+          badge_id: string
+          id: string
+          is_featured: boolean
+          is_hidden: boolean
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          awarded_by?: string | null
+          badge_id: string
+          id?: string
+          is_featured?: boolean
+          is_hidden?: boolean
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          awarded_by?: string | null
+          badge_id?: string
+          id?: string
+          is_featured?: boolean
+          is_hidden?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badge_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_consents: {
         Row: {
           accepted: boolean
@@ -277,7 +709,9 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
+          drink_preferences: string[]
           event_categories: string[]
+          food_preferences: string[]
           marketing_opt_in: boolean
           notify_email: boolean
           notify_in_app: boolean
@@ -288,7 +722,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          drink_preferences?: string[]
           event_categories?: string[]
+          food_preferences?: string[]
           marketing_opt_in?: boolean
           notify_email?: boolean
           notify_in_app?: boolean
@@ -299,7 +735,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          drink_preferences?: string[]
           event_categories?: string[]
+          food_preferences?: string[]
           marketing_opt_in?: boolean
           notify_email?: boolean
           notify_in_app?: boolean
@@ -309,6 +747,67 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_rewards: {
+        Row: {
+          campaign_id: string
+          checkin_id: string | null
+          created_at: string
+          event_id: string | null
+          expires_at: string | null
+          granted_at: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          checkin_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          checkin_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rewards_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: false
+            referencedRelation: "checkins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rewards_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -333,6 +832,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_titles: {
+        Row: {
+          awarded_at: string
+          id: string
+          title_id: string
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          id?: string
+          title_id: string
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          id?: string
+          title_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_titles_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "title_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -374,9 +902,17 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_profile_completeness: {
+        Args: { _user_id: string }
+        Returns: number
+      }
       current_user_roles: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      grant_badge_by_slug: {
+        Args: { _slug: string; _user_id: string }
+        Returns: undefined
       }
       has_role: {
         Args: {
@@ -385,6 +921,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_profile_completeness: { Args: never; Returns: number }
     }
     Enums: {
       app_role:
