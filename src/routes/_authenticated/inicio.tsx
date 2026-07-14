@@ -21,6 +21,7 @@ type HomeData = {
     name: string;
     starts_at: string;
     attraction: string | null;
+    image_url: string | null;
     category: string;
     checkin_enabled: boolean;
     campaigns?: Array<{
@@ -63,7 +64,7 @@ function Inicio() {
         supabase
           .from("events")
           .select(
-            "id,name,starts_at,attraction,category,checkin_enabled,campaigns(name,benefit_type,discount_percent,fixed_off_cents,product_name)",
+            "id,name,starts_at,attraction,image_url,category,checkin_enabled,campaigns(name,benefit_type,discount_percent,fixed_off_cents,product_name)",
           )
           .in("status", ["scheduled", "ongoing"])
           .gte("starts_at", new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString())
@@ -125,6 +126,16 @@ function Inicio() {
       <div className="space-y-4 px-5">
         {data.event ? (
           <section className="card-festa relative overflow-hidden bg-foreground p-5 text-background">
+            {data.event.image_url && (
+              <>
+                <img
+                  src={data.event.image_url}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover opacity-35"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/45" />
+              </>
+            )}
             <div className="absolute inset-0 bg-confete opacity-20" aria-hidden />
             <div className="relative">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-background/65">

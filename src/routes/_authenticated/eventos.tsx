@@ -21,6 +21,7 @@ type EventRow = {
   description: string | null;
   category: string;
   attraction: string | null;
+  image_url: string | null;
   starts_at: string;
   checkin_enabled: boolean;
   checkin_opens_at: string | null;
@@ -43,7 +44,7 @@ function Eventos() {
     supabase
       .from("events")
       .select(
-        "id,name,description,category,attraction,starts_at,checkin_enabled,checkin_opens_at,checkin_closes_at,status,campaigns(id,name,benefit_type,discount_percent,fixed_off_cents,product_name)",
+        "id,name,description,category,attraction,image_url,starts_at,checkin_enabled,checkin_opens_at,checkin_closes_at,status,campaigns(id,name,benefit_type,discount_percent,fixed_off_cents,product_name)",
       )
       .in("status", ["scheduled", "ongoing", "ended"])
       .order("starts_at", { ascending: true })
@@ -116,7 +117,16 @@ function EventCard({ event, featured = false }: { event: EventRow; featured?: bo
     <article
       className={`card-festa overflow-hidden ${featured ? "bg-foreground text-background" : "bg-card"}`}
     >
-      <div className={`h-2 ${featured ? "bg-samba" : "bg-primary"}`} />
+      {event.image_url ? (
+        <div className="relative aspect-[16/8] overflow-hidden">
+          <img src={event.image_url} alt="" className="h-full w-full object-cover" />
+          <div
+            className={`absolute inset-0 ${featured ? "bg-gradient-to-t from-foreground/80 via-transparent to-transparent" : ""}`}
+          />
+        </div>
+      ) : (
+        <div className={`h-2 ${featured ? "bg-samba" : "bg-primary"}`} />
+      )}
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

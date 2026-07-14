@@ -95,3 +95,7 @@ Antes de usar o painel, execute uma única vez no SQL Editor do Supabase:
 `docs/ADMIN_V2_SETUP.sql`
 
 O script concede as permissões de banco necessárias, mantém o RLS, protege o último administrador e cria auditoria automática das alterações principais.
+
+## Atualização: imagens e validade flexível
+
+A versão inclui upload direto de imagens para eventos e fotos de perfil via Supabase Storage. Campanhas aceitam validade em minutos ou horas. Antes de testar, execute `docs/UPLOADS_AND_MINUTES_SETUP.sql` no SQL Editor do Supabase.

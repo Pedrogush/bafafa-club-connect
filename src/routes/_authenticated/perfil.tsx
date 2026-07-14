@@ -6,12 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BadgeCheck, LogOut, Save, ShieldCheck, Trophy, UserRound } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { ImageUploadField } from "@/components/ui/image-upload-field";
+import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
 });
 
 type ProfileRow = {
+  avatar_url: string | null;
   display_name: string;
   username: string | null;
   city: string | null;
@@ -80,6 +83,7 @@ function Perfil() {
   const [titles, setTitles] = useState<TitleRow[]>([]);
   const [completeness, setCompleteness] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [avatarSelection, setAvatarSelection] = useState<File | null | undefined>(undefined);
 
   useEffect(() => {
     if (!user) return;
@@ -88,7 +92,7 @@ function Perfil() {
       supabase
         .from("profiles")
         .select(
-          "display_name,username,city,neighborhood,bio,how_found_us,birth_date,whatsapp,phone_verified_at,is_public,member_since,active_title_id",
+          "avatar_url,display_name,username,city,neighborhood,bio,how_found_us,birth_date,whatsapp,phone_verified_at,is_public,member_since,active_title_id",
         )
         .eq("id", user.id)
         .maybeSingle(),
@@ -131,52 +135,85 @@ function Perfil() {
   async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!user || !profile) return;
-    setSaving(true);
-    const [{ error: profileError }, { error: prefsError }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .update({
-          display_name: profile.display_name.trim(),
-          username: profile.username?.trim() || null,
-          city: profile.city?.trim() || null,
-          neighborhood: profile.neighborhood?.trim() || null,
-          bio: profile.bio?.trim() || null,
-          how_found_us: profile.how_found_us?.trim() || null,
-          is_public: profile.is_public,
-          active_title_id: profile.active_title_id,
-        })
-        .eq("id", user.id),
-      supabase.from("user_preferences").upsert({ user_id: user.id, ...prefs }),
-    ]);
-    setSaving(false);
-    if (profileError || prefsError)
-      return toast.error(
-        profileError?.message ?? prefsError?.message ?? "Não foi possível salvar.",
-      );
 
-    await supabase.from("user_consents").insert({
-      user_id: user.id,
-      kind: "marketing",
-      accepted: prefs.marketing_opt_in,
-      version: "1.0",
-    });
-    const [badgesResult, titlesResult, completenessResult] = await Promise.all([
-      supabase
-        .from("user_badges")
-        .select("id,is_featured,is_hidden,awarded_at,badge_definitions(name,description,icon)")
-        .order("awarded_at", { ascending: false }),
-      supabase
-        .from("user_titles")
-        .select("title_id,title_definitions(name,description)")
-        .order("awarded_at", { ascending: false }),
-      supabase.rpc("my_profile_completeness"),
-    ]);
-    setBadges((badgesResult.data ?? []) as unknown as BadgeRow[]);
-    setTitles((titlesResult.data ?? []) as unknown as TitleRow[]);
-    setCompleteness(
-      typeof completenessResult.data === "number" ? completenessResult.data : completeness,
-    );
-    toast.success("Perfil salvinho.");
+    setSaving(true);
+    const previousAvatarUrl = profile.avatar_url;
+    let avatarUrl = previousAvatarUrl;
+    let uploadedAvatarUrl: string | null = null;
+
+    try {
+      if (avatarSelection instanceof File) {
+        const uploaded = await uploadPublicImage({
+          bucket: "avatars",
+          folder: user.id,
+          file: avatarSelection,
+        });
+        avatarUrl = uploaded.url;
+        uploadedAvatarUrl = uploaded.url;
+      } else if (avatarSelection === null) {
+        avatarUrl = null;
+      }
+
+      const [{ error: profileError }, { error: prefsError }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .update({
+            avatar_url: avatarUrl,
+            display_name: profile.display_name.trim(),
+            username: profile.username?.trim() || null,
+            city: profile.city?.trim() || null,
+            neighborhood: profile.neighborhood?.trim() || null,
+            bio: profile.bio?.trim() || null,
+            how_found_us: profile.how_found_us?.trim() || null,
+            is_public: profile.is_public,
+            active_title_id: profile.active_title_id,
+          })
+          .eq("id", user.id),
+        supabase.from("user_preferences").upsert({ user_id: user.id, ...prefs }),
+      ]);
+
+      if (profileError || prefsError) {
+        if (uploadedAvatarUrl) await removePublicImage("avatars", uploadedAvatarUrl);
+        throw profileError ?? prefsError ?? new Error("Não foi possível salvar.");
+      }
+
+      if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
+        await removePublicImage("avatars", previousAvatarUrl);
+      }
+
+      setProfile({ ...profile, avatar_url: avatarUrl });
+      setAvatarSelection(undefined);
+
+      await supabase.from("user_consents").insert({
+        user_id: user.id,
+        kind: "marketing",
+        accepted: prefs.marketing_opt_in,
+        version: "1.0",
+      });
+
+      const [badgesResult, titlesResult, completenessResult] = await Promise.all([
+        supabase
+          .from("user_badges")
+          .select("id,is_featured,is_hidden,awarded_at,badge_definitions(name,description,icon)")
+          .order("awarded_at", { ascending: false }),
+        supabase
+          .from("user_titles")
+          .select("title_id,title_definitions(name,description)")
+          .order("awarded_at", { ascending: false }),
+        supabase.rpc("my_profile_completeness"),
+      ]);
+
+      setBadges((badgesResult.data ?? []) as unknown as BadgeRow[]);
+      setTitles((titlesResult.data ?? []) as unknown as TitleRow[]);
+      setCompleteness(
+        typeof completenessResult.data === "number" ? completenessResult.data : completeness,
+      );
+      toast.success("Perfil salvinho.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function togglePreference(
@@ -217,8 +254,16 @@ function Perfil() {
       <div className="space-y-4 px-5">
         <section className="card-festa p-5">
           <div className="flex items-center gap-4">
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-primary font-display text-2xl text-primary-foreground">
-              {initial}
+            <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-primary font-display text-2xl text-primary-foreground">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={`Foto de ${profile.display_name}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initial
+              )}
             </div>
             <div className="min-w-0">
               <p className="truncate font-display text-xl">{profile?.display_name ?? "Bafafã"}</p>
@@ -244,28 +289,28 @@ function Perfil() {
         {(canValidate || isAdmin) && (
           <div className="grid gap-3 sm:grid-cols-2">
             {canValidate && (
-            <Link
-              to="/staff/checkin"
-              className="card-festa flex items-center gap-3 bg-primary p-4 text-primary-foreground"
-            >
-              <ShieldCheck className="h-5 w-5" />
-              <div>
-                <p className="font-display text-sm">Validar códigos</p>
-                <p className="text-xs opacity-75">Check-in e mimos.</p>
-              </div>
-            </Link>
+              <Link
+                to="/staff/checkin"
+                className="card-festa flex items-center gap-3 bg-primary p-4 text-primary-foreground"
+              >
+                <ShieldCheck className="h-5 w-5" />
+                <div>
+                  <p className="font-display text-sm">Validar códigos</p>
+                  <p className="text-xs opacity-75">Check-in e mimos.</p>
+                </div>
+              </Link>
             )}
             {isAdmin && (
-            <Link
-              to="/admin"
-              className="card-festa flex items-center gap-3 bg-foreground p-4 text-background"
-            >
-              <ShieldCheck className="h-5 w-5" />
-              <div>
-                <p className="font-display text-sm">Administração</p>
-                <p className="text-xs opacity-70">Gestão do aplicativo.</p>
-              </div>
-            </Link>
+              <Link
+                to="/admin"
+                className="card-festa flex items-center gap-3 bg-foreground p-4 text-background"
+              >
+                <ShieldCheck className="h-5 w-5" />
+                <div>
+                  <p className="font-display text-sm">Administração</p>
+                  <p className="text-xs opacity-70">Gestão do aplicativo.</p>
+                </div>
+              </Link>
             )}
           </div>
         )}
@@ -303,6 +348,14 @@ function Perfil() {
             <p className="text-sm text-muted-foreground">Carregando seu perfil…</p>
           ) : (
             <>
+              <ImageUploadField
+                id="profile-avatar"
+                label="Foto do perfil"
+                currentUrl={profile.avatar_url}
+                onChange={setAvatarSelection}
+                description="Escolha uma foto do computador ou celular. Ela será cortada em formato redondo."
+                round
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 <TextField
                   label="Nome"

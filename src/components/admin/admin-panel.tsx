@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, type ComponentProps, type FormEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { Link } from "@tanstack/react-router";
 import {
   BarChart3,
@@ -35,15 +43,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { campaignBenefitLabel, formatDateTime } from "@/lib/bafafa";
+import { removePublicImage, uploadPublicImage } from "@/lib/storage";
+import { ImageUploadField } from "@/components/ui/image-upload-field";
 
 export type AdminSection =
-  | "overview"
-  | "events"
-  | "campaigns"
-  | "clients"
-  | "checkins"
-  | "team"
-  | "audit";
+  "overview" | "events" | "campaigns" | "clients" | "checkins" | "team" | "audit";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
@@ -110,8 +114,16 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         supabase.from("user_preferences").select("*"),
         supabase.from("checkins").select("*").order("created_at", { ascending: false }).limit(500),
         supabase.from("user_roles").select("*"),
-        supabase.from("user_rewards").select("*").order("created_at", { ascending: false }).limit(500),
-        supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase
+          .from("user_rewards")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("audit_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(100),
       ]);
 
     const firstError = [events, campaigns, profiles, preferences, checkins, roles, rewards, audits]
@@ -341,16 +353,19 @@ function Overview({ data }: { data: AdminData }) {
           <h2 className="mt-1 font-display text-2xl">Perfis completos</h2>
           <div className="mt-5 space-y-3">
             {[100, 60, 40].map((threshold) => {
-              const count = data.profiles.filter((profile) =>
-                profileCompleteness(
-                  profile,
-                  data.preferences.find((preference) => preference.user_id === profile.id),
-                ) >= threshold,
+              const count = data.profiles.filter(
+                (profile) =>
+                  profileCompleteness(
+                    profile,
+                    data.preferences.find((preference) => preference.user_id === profile.id),
+                  ) >= threshold,
               ).length;
               return (
                 <div key={threshold} className="rounded-2xl bg-muted p-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold">{threshold === 100 ? "100% completos" : `${threshold}% ou mais`}</span>
+                    <span className="font-bold">
+                      {threshold === 100 ? "100% completos" : `${threshold}% ou mais`}
+                    </span>
                     <span className="font-display text-xl">{count}</span>
                   </div>
                 </div>
@@ -369,17 +384,29 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
   const [search, setSearch] = useState("");
 
   const filtered = events.filter((event) =>
-    `${event.name} ${event.category} ${event.attraction ?? ""}`.toLowerCase().includes(search.toLowerCase()),
+    `${event.name} ${event.category} ${event.attraction ?? ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
   );
 
   async function remove(event: EventRow) {
     if (!window.confirm(`Remover o evento “${event.name}” da agenda?`)) return;
     const [checkins, campaigns] = await Promise.all([
-      supabase.from("checkins").select("id", { count: "exact", head: true }).eq("event_id", event.id),
-      supabase.from("campaigns").select("id", { count: "exact", head: true }).eq("event_id", event.id),
+      supabase
+        .from("checkins")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", event.id),
+      supabase
+        .from("campaigns")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", event.id),
     ]);
     if (checkins.error || campaigns.error) {
-      return toast.error(checkins.error?.message ?? campaigns.error?.message ?? "Não foi possível verificar o evento.");
+      return toast.error(
+        checkins.error?.message ??
+          campaigns.error?.message ??
+          "Não foi possível verificar o evento.",
+      );
     }
     if ((checkins.count ?? 0) > 0 || (campaigns.count ?? 0) > 0) {
       const { error } = await supabase
@@ -421,7 +448,11 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
         ) : (
           filtered.map((event) => (
             <article key={event.id} className="card-festa overflow-hidden">
-              <div className="h-2 bg-primary" />
+              {event.image_url ? (
+                <img src={event.image_url} alt="" className="aspect-[16/7] w-full object-cover" />
+              ) : (
+                <div className="h-2 bg-primary" />
+              )}
               <div className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -488,6 +519,11 @@ function EventDialog({
   onSaved: () => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [imageSelection, setImageSelection] = useState<File | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (open) setImageSelection(undefined);
+  }, [open, event]);
 
   async function submit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
@@ -497,32 +533,60 @@ function EventDialog({
     const startsAt = textValue(form, "starts_at");
     const slug = textValue(form, "slug") || slugify(name);
     const checkinEnabled = form.get("checkin_enabled") === "on";
+    const previousImageUrl = event?.image_url ?? null;
+    let imageUrl = previousImageUrl;
+    let uploadedImageUrl: string | null = null;
 
-    const payload: EventInsert = {
-      name,
-      slug,
-      category: textValue(form, "category"),
-      description: nullableText(form, "description"),
-      attraction: nullableText(form, "attraction"),
-      image_url: nullableText(form, "image_url"),
-      starts_at: toIso(startsAt),
-      ends_at: nullableIso(form, "ends_at"),
-      checkin_opens_at: nullableIso(form, "checkin_opens_at"),
-      checkin_closes_at: nullableIso(form, "checkin_closes_at"),
-      checkin_enabled: checkinEnabled,
-      status: textValue(form, "status"),
-      instructions: nullableText(form, "instructions"),
-    };
+    try {
+      if (imageSelection instanceof File) {
+        const uploaded = await uploadPublicImage({
+          bucket: "event-images",
+          folder: "events",
+          file: imageSelection,
+        });
+        imageUrl = uploaded.url;
+        uploadedImageUrl = uploaded.url;
+      } else if (imageSelection === null) {
+        imageUrl = null;
+      }
 
-    const result = event
-      ? await supabase.from("events").update(payload).eq("id", event.id)
-      : await supabase.from("events").insert(payload);
-    setSaving(false);
+      const payload: EventInsert = {
+        name,
+        slug,
+        category: textValue(form, "category"),
+        description: nullableText(form, "description"),
+        attraction: nullableText(form, "attraction"),
+        image_url: imageUrl,
+        starts_at: toIso(startsAt),
+        ends_at: nullableIso(form, "ends_at"),
+        checkin_opens_at: nullableIso(form, "checkin_opens_at"),
+        checkin_closes_at: nullableIso(form, "checkin_closes_at"),
+        checkin_enabled: checkinEnabled,
+        status: textValue(form, "status"),
+        instructions: nullableText(form, "instructions"),
+      };
 
-    if (result.error) return toast.error(result.error.message);
-    toast.success(event ? "Evento atualizado." : "Evento criado.");
-    onOpenChange(false);
-    onSaved();
+      const result = event
+        ? await supabase.from("events").update(payload).eq("id", event.id)
+        : await supabase.from("events").insert(payload);
+
+      if (result.error) {
+        if (uploadedImageUrl) await removePublicImage("event-images", uploadedImageUrl);
+        throw result.error;
+      }
+
+      if (previousImageUrl && previousImageUrl !== imageUrl) {
+        await removePublicImage("event-images", previousImageUrl);
+      }
+
+      toast.success(event ? "Evento atualizado." : "Evento criado.");
+      onOpenChange(false);
+      onSaved();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o evento.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -537,10 +601,28 @@ function EventDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-5">
+          <ImageUploadField
+            key={`${event?.id ?? "new"}-${open ? "open" : "closed"}`}
+            id="event-image"
+            label="Imagem do evento"
+            currentUrl={event?.image_url}
+            onChange={setImageSelection}
+            description="Escolha uma foto do computador ou celular. Recomendado: imagem horizontal."
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nome do evento" name="name" defaultValue={event?.name} required />
-            <Field label="Slug" name="slug" defaultValue={event?.slug} placeholder="gerado-automaticamente" />
-            <Field label="Categoria" name="category" defaultValue={event?.category ?? "Pagode"} required />
+            <Field
+              label="Slug"
+              name="slug"
+              defaultValue={event?.slug}
+              placeholder="gerado-automaticamente"
+            />
+            <Field
+              label="Categoria"
+              name="category"
+              defaultValue={event?.category ?? "Pagode"}
+              required
+            />
             <Field label="Atração" name="attraction" defaultValue={event?.attraction} />
             <Field
               label="Início"
@@ -582,14 +664,15 @@ function EventDialog({
                 <option value="cancelled">Cancelado</option>
               </select>
             </div>
-            <Field label="URL da imagem" name="image_url" defaultValue={event?.image_url} />
           </div>
           <TextField label="Descrição" name="description" defaultValue={event?.description} />
           <TextField label="Instruções" name="instructions" defaultValue={event?.instructions} />
           <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
             <div>
               <p className="font-bold">Check-in habilitado</p>
-              <p className="text-xs text-muted-foreground">Permite gerar código para este evento.</p>
+              <p className="text-xs text-muted-foreground">
+                Permite gerar código para este evento.
+              </p>
             </div>
             <Switch name="checkin_enabled" defaultChecked={event?.checkin_enabled ?? true} />
           </label>
@@ -599,7 +682,7 @@ function EventDialog({
             </Button>
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Salvar evento
+              {saving ? "Salvando…" : "Salvar evento"}
             </Button>
           </DialogFooter>
         </form>
@@ -629,7 +712,10 @@ function CampaignsManager({
       .eq("campaign_id", campaign.id);
     if (rewards.error) return toast.error(rewards.error.message);
     if ((rewards.count ?? 0) > 0) {
-      const { error } = await supabase.from("campaigns").update({ status: "ended" }).eq("id", campaign.id);
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ status: "ended" })
+        .eq("id", campaign.id);
       if (error) return toast.error(error.message);
       toast.success("Campanha encerrada para preservar os mimos já liberados.");
     } else {
@@ -692,7 +778,7 @@ function CampaignsManager({
                     {campaign.per_user_limit} por cliente
                   </span>
                   <span className="rounded-full bg-muted px-3 py-1.5">
-                    Validade: {campaign.reward_valid_hours}h
+                    Validade: {formatRewardDuration(campaign.reward_valid_hours)}
                   </span>
                   {campaign.total_available !== null && (
                     <span className="rounded-full bg-muted px-3 py-1.5">
@@ -746,9 +832,16 @@ function CampaignDialog({
 }) {
   const [saving, setSaving] = useState(false);
   const [benefitType, setBenefitType] = useState(campaign?.benefit_type ?? "percent_off");
+  const [durationUnit, setDurationUnit] = useState<"minutes" | "hours">("hours");
+  const [durationValue, setDurationValue] = useState("24");
 
   useEffect(() => {
-    if (open) setBenefitType(campaign?.benefit_type ?? "percent_off");
+    if (!open) return;
+    setBenefitType(campaign?.benefit_type ?? "percent_off");
+    const storedHours = Number(campaign?.reward_valid_hours ?? 24);
+    const useMinutes = storedHours < 1 || !Number.isInteger(storedHours);
+    setDurationUnit(useMinutes ? "minutes" : "hours");
+    setDurationValue(String(useMinutes ? Math.round(storedHours * 60) : storedHours));
   }, [open, campaign]);
 
   async function submit(formEvent: FormEvent<HTMLFormElement>) {
@@ -767,7 +860,10 @@ function CampaignDialog({
       instructions: nullableText(form, "instructions"),
       starts_at: toIso(textValue(form, "starts_at")),
       ends_at: nullableIso(form, "ends_at"),
-      reward_valid_hours: numberValue(form, "reward_valid_hours", 24),
+      reward_valid_hours:
+        durationUnit === "minutes"
+          ? Math.max(Number(durationValue) || 1, 1) / 60
+          : Math.max(Number(durationValue) || 1, 1),
       total_available: nullableNumber(form, "total_available"),
       per_user_limit: numberValue(form, "per_user_limit", 1),
       requires_checkin: form.get("requires_checkin") === "on",
@@ -818,7 +914,11 @@ function CampaignDialog({
               </select>
             </div>
             <Field label="Nome da campanha" name="name" defaultValue={campaign?.name} required />
-            <Field label="Produto participante" name="product_name" defaultValue={campaign?.product_name} />
+            <Field
+              label="Produto participante"
+              name="product_name"
+              defaultValue={campaign?.product_name}
+            />
             <div className="space-y-2">
               <Label htmlFor="benefit-type">Tipo de mimo</Label>
               <select
@@ -866,14 +966,32 @@ function CampaignDialog({
               step="0.01"
               defaultValue={centsToMoney(campaign?.discount_max_cents)}
             />
-            <Field
-              label="Validade após liberar (horas)"
-              name="reward_valid_hours"
-              type="number"
-              min="1"
-              defaultValue={campaign?.reward_valid_hours ?? 24}
-              required
-            />
+            <div className="space-y-2">
+              <Label htmlFor="reward-valid-value">Validade após liberar</Label>
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <Input
+                  id="reward-valid-value"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={durationValue}
+                  onChange={(event) => setDurationValue(event.target.value)}
+                  required
+                />
+                <select
+                  aria-label="Unidade da validade"
+                  value={durationUnit}
+                  onChange={(event) => setDurationUnit(event.target.value as "minutes" | "hours")}
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="minutes">minutos</option>
+                  <option value="hours">horas</option>
+                </select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Ex.: 30 minutos, 90 minutos ou 2 horas.
+              </p>
+            </div>
             <Field
               label="Limite total"
               name="total_available"
@@ -894,7 +1012,9 @@ function CampaignDialog({
               label="Início"
               name="starts_at"
               type="datetime-local"
-              defaultValue={toLocalInput(campaign?.starts_at) || toLocalInput(new Date().toISOString())}
+              defaultValue={
+                toLocalInput(campaign?.starts_at) || toLocalInput(new Date().toISOString())
+              }
               required
             />
             <Field
@@ -918,14 +1038,28 @@ function CampaignDialog({
             </div>
           </div>
           <TextField label="Descrição" name="description" defaultValue={campaign?.description} />
-          <TextField label="Regras para o cliente" name="public_rules" defaultValue={campaign?.public_rules} />
-          <TextField label="Instruções para a equipe" name="instructions" defaultValue={campaign?.instructions} />
-          <TextField label="Regras internas" name="internal_rules" defaultValue={campaign?.internal_rules} />
+          <TextField
+            label="Regras para o cliente"
+            name="public_rules"
+            defaultValue={campaign?.public_rules}
+          />
+          <TextField
+            label="Instruções para a equipe"
+            name="instructions"
+            defaultValue={campaign?.instructions}
+          />
+          <TextField
+            label="Regras internas"
+            name="internal_rules"
+            defaultValue={campaign?.internal_rules}
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
               <div className="pr-3">
                 <p className="font-bold">Exigir check-in</p>
-                <p className="text-xs text-muted-foreground">Libera somente com presença validada.</p>
+                <p className="text-xs text-muted-foreground">
+                  Libera somente com presença validada.
+                </p>
               </div>
               <Switch name="requires_checkin" defaultChecked={campaign?.requires_checkin ?? true} />
             </label>
@@ -961,8 +1095,14 @@ function ClientsManager({ data }: { data: AdminData }) {
     () => new Map(data.preferences.map((preference) => [preference.user_id, preference])),
     [data.preferences],
   );
-  const checkinsByUser = useMemo(() => countBy(data.checkins, (checkin) => checkin.user_id), [data.checkins]);
-  const rewardsByUser = useMemo(() => countBy(data.rewards, (reward) => reward.user_id), [data.rewards]);
+  const checkinsByUser = useMemo(
+    () => countBy(data.checkins, (checkin) => checkin.user_id),
+    [data.checkins],
+  );
+  const rewardsByUser = useMemo(
+    () => countBy(data.rewards, (reward) => reward.user_id),
+    [data.rewards],
+  );
   const rolesByUser = useMemo(() => groupRoles(data.roles), [data.roles]);
 
   const clients = data.profiles.filter((profile) =>
@@ -977,7 +1117,11 @@ function ClientsManager({ data }: { data: AdminData }) {
       title="Clientes"
       description="Dados declarados, perfil, presença e benefícios. Sem exportação nesta fase."
     >
-      <SearchField value={search} onChange={setSearch} placeholder="Buscar nome, usuário, cidade ou bairro" />
+      <SearchField
+        value={search}
+        onChange={setSearch}
+        placeholder="Buscar nome, usuário, cidade ou bairro"
+      />
       <div className="mt-4 overflow-hidden rounded-3xl border border-input bg-card">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
@@ -1012,12 +1156,19 @@ function ClientsManager({ data }: { data: AdminData }) {
                         <div className="h-full bg-primary" style={{ width: `${completeness}%` }} />
                       </div>
                     </td>
-                    <td className="px-4 py-4 font-display text-lg">{checkinsByUser.get(profile.id) ?? 0}</td>
-                    <td className="px-4 py-4 font-display text-lg">{rewardsByUser.get(profile.id) ?? 0}</td>
+                    <td className="px-4 py-4 font-display text-lg">
+                      {checkinsByUser.get(profile.id) ?? 0}
+                    </td>
+                    <td className="px-4 py-4 font-display text-lg">
+                      {rewardsByUser.get(profile.id) ?? 0}
+                    </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-1">
                         {(rolesByUser.get(profile.id) ?? ["gratuito"]).map((role) => (
-                          <span key={role} className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold">
+                          <span
+                            key={role}
+                            className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold"
+                          >
                             {role}
                           </span>
                         ))}
@@ -1039,11 +1190,19 @@ function ClientsManager({ data }: { data: AdminData }) {
 }
 
 function CheckinsManager({ data }: { data: AdminData }) {
-  const eventById = useMemo(() => new Map(data.events.map((event) => [event.id, event])), [data.events]);
-  const profileById = useMemo(() => new Map(data.profiles.map((profile) => [profile.id, profile])), [data.profiles]);
+  const eventById = useMemo(
+    () => new Map(data.events.map((event) => [event.id, event])),
+    [data.events],
+  );
+  const profileById = useMemo(
+    () => new Map(data.profiles.map((profile) => [profile.id, profile])),
+    [data.profiles],
+  );
   const [eventFilter, setEventFilter] = useState("all");
 
-  const filtered = data.checkins.filter((checkin) => eventFilter === "all" || checkin.event_id === eventFilter);
+  const filtered = data.checkins.filter(
+    (checkin) => eventFilter === "all" || checkin.event_id === eventFilter,
+  );
 
   return (
     <SectionLayout
@@ -1093,11 +1252,17 @@ function CheckinsManager({ data }: { data: AdminData }) {
                   <td className="px-4 py-4 font-bold">
                     {profileById.get(checkin.user_id)?.display_name || "Bafafã"}
                   </td>
-                  <td className="px-4 py-4">{eventById.get(checkin.event_id)?.name || "Evento removido"}</td>
-                  <td className="px-4 py-4 text-muted-foreground">{formatDateTime(checkin.created_at)}</td>
+                  <td className="px-4 py-4">
+                    {eventById.get(checkin.event_id)?.name || "Evento removido"}
+                  </td>
+                  <td className="px-4 py-4 text-muted-foreground">
+                    {formatDateTime(checkin.created_at)}
+                  </td>
                   <td className="px-4 py-4">{checkin.method}</td>
                   <td className="px-4 py-4 text-muted-foreground">
-                    {checkin.staff_id ? profileById.get(checkin.staff_id)?.display_name || "Equipe" : "Sistema"}
+                    {checkin.staff_id
+                      ? profileById.get(checkin.staff_id)?.display_name || "Equipe"
+                      : "Sistema"}
                   </td>
                 </tr>
               ))}
@@ -1126,7 +1291,9 @@ function TeamManager({
   const rolesByUser = useMemo(() => groupRoles(roles), [roles]);
 
   const filtered = profiles.filter((profile) =>
-    `${profile.display_name} ${profile.username ?? ""}`.toLowerCase().includes(search.toLowerCase()),
+    `${profile.display_name} ${profile.username ?? ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
   );
 
   async function toggleRole(userId: string, role: "equipe" | "admin") {
@@ -1156,7 +1323,10 @@ function TeamManager({
           const userRoles = rolesByUser.get(profile.id) ?? [];
           const isSelf = profile.id === currentUserId;
           return (
-            <div key={profile.id} className="card-festa flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              key={profile.id}
+              className="card-festa flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div>
                 <p className="font-bold">{profile.display_name}</p>
                 <p className="text-xs text-muted-foreground">
@@ -1190,7 +1360,10 @@ function TeamManager({
 }
 
 function AuditManager({ data }: { data: AdminData }) {
-  const profileById = useMemo(() => new Map(data.profiles.map((profile) => [profile.id, profile])), [data.profiles]);
+  const profileById = useMemo(
+    () => new Map(data.profiles.map((profile) => [profile.id, profile])),
+    [data.profiles],
+  );
   return (
     <SectionLayout
       eyebrow="Histórico de segurança"
@@ -1212,9 +1385,13 @@ function AuditManager({ data }: { data: AdminData }) {
             <tbody className="divide-y divide-border">
               {data.audits.map((audit) => (
                 <tr key={audit.id}>
-                  <td className="px-4 py-4 text-muted-foreground">{formatDateTime(audit.created_at)}</td>
+                  <td className="px-4 py-4 text-muted-foreground">
+                    {formatDateTime(audit.created_at)}
+                  </td>
                   <td className="px-4 py-4 font-bold">
-                    {audit.actor_id ? profileById.get(audit.actor_id)?.display_name || "Equipe" : "Sistema"}
+                    {audit.actor_id
+                      ? profileById.get(audit.actor_id)?.display_name || "Equipe"
+                      : "Sistema"}
                   </td>
                   <td className="px-4 py-4">{audit.action}</td>
                   <td className="px-4 py-4 text-muted-foreground">{audit.entity || "—"}</td>
@@ -1226,7 +1403,9 @@ function AuditManager({ data }: { data: AdminData }) {
             </tbody>
           </table>
         </div>
-        {data.audits.length === 0 && <EmptyMessage>A auditoria começa após a primeira alteração.</EmptyMessage>}
+        {data.audits.length === 0 && (
+          <EmptyMessage>A auditoria começa após a primeira alteração.</EmptyMessage>
+        )}
       </div>
     </SectionLayout>
   );
@@ -1249,7 +1428,9 @@ function SectionLayout({
     <section>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            {eyebrow}
+          </p>
           <h1 className="mt-1 font-display text-3xl sm:text-4xl">{title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{description}</p>
         </div>
@@ -1260,13 +1441,30 @@ function SectionLayout({
   );
 }
 
-function SearchField({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
+function SearchField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
   return (
     <div className="relative max-w-lg">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <Input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="pl-9" />
+      <Input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="pl-9"
+      />
       {value && (
-        <button type="button" onClick={() => onChange("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        >
           <X className="h-4 w-4" />
         </button>
       )}
@@ -1274,7 +1472,15 @@ function SearchField({ value, onChange, placeholder }: { value: string; onChange
   );
 }
 
-function Field({ label, name, defaultValue, ...props }: { label: string; name: string; defaultValue?: string | number | null } & Omit<ComponentProps<typeof Input>, "name" | "defaultValue">) {
+function Field({
+  label,
+  name,
+  defaultValue,
+  ...props
+}: { label: string; name: string; defaultValue?: string | number | null } & Omit<
+  ComponentProps<typeof Input>,
+  "name" | "defaultValue"
+>) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
@@ -1283,7 +1489,15 @@ function Field({ label, name, defaultValue, ...props }: { label: string; name: s
   );
 }
 
-function TextField({ label, name, defaultValue }: { label: string; name: string; defaultValue?: string | null }) {
+function TextField({
+  label,
+  name,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string | null;
+}) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
@@ -1310,13 +1524,41 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function EmptyMessage({ children }: { children: ReactNode }) {
-  return <div className="rounded-2xl border border-dashed border-input p-8 text-center text-sm text-muted-foreground">{children}</div>;
+  return (
+    <div className="rounded-2xl border border-dashed border-input p-8 text-center text-sm text-muted-foreground">
+      {children}
+    </div>
+  );
 }
 
-function RoleButton({ active, loading, disabled, children, onClick }: { active: boolean; loading: boolean; disabled?: boolean; children: ReactNode; onClick: () => void }) {
+function RoleButton({
+  active,
+  loading,
+  disabled,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  loading: boolean;
+  disabled?: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}) {
   return (
-    <Button type="button" variant={active ? "default" : "outline"} size="sm" disabled={loading || disabled} onClick={onClick}>
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : active ? <CheckCircle2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+    <Button
+      type="button"
+      variant={active ? "default" : "outline"}
+      size="sm"
+      disabled={loading || disabled}
+      onClick={onClick}
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : active ? (
+        <CheckCircle2 className="h-4 w-4" />
+      ) : (
+        <Plus className="h-4 w-4" />
+      )}
       {children}
     </Button>
   );
@@ -1377,9 +1619,23 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function formatRewardDuration(hours: number) {
+  const totalMinutes = Math.max(1, Math.round(Number(hours) * 60));
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  if (totalMinutes % 60 === 0) {
+    const wholeHours = totalMinutes / 60;
+    return `${wholeHours} ${wholeHours === 1 ? "hora" : "horas"}`;
+  }
+  const wholeHours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${wholeHours}h ${minutes}min`;
+}
+
 function groupRoles(roles: RoleRow[]) {
   const grouped = new Map<string, string[]>();
-  roles.forEach((role) => grouped.set(role.user_id, [...(grouped.get(role.user_id) ?? []), role.role]));
+  roles.forEach((role) =>
+    grouped.set(role.user_id, [...(grouped.get(role.user_id) ?? []), role.role]),
+  );
   return grouped;
 }
 
