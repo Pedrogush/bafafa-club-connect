@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { Sparkles, PartyPopper, Ticket, Wallet } from "lucide-react";
+import { BadgeCheck, CalendarCheck, Gift, UserRound } from "lucide-react";
 import { Wordmark } from "@/components/brand/wordmark";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,8 +23,8 @@ function LandingPage() {
             Chega mais, <span className="text-mango">Bafafã</span>.
           </h1>
           <p className="mt-4 max-w-sm text-base text-primary-foreground/90">
-            O clube oficial do Bafafá Bar, em Natal. Fofoquinhas em primeira mão, reserva de mesa, benefícios
-            e sua carteirinha digital pra fazer parte do rolê.
+            Cadastre-se, faça check-in nos eventos e desbloqueie mimos. Quanto mais você completa o
+            perfil e volta ao Bafafá, mais selos e títulos aparecem na sua conta.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -51,27 +51,27 @@ function LandingPage() {
         </p>
         {[
           {
-            icon: PartyPopper,
-            title: "Fofoquinhas em primeira mão",
-            copy: "A gente tentou guardar segredo. Tentou. Novidades, bastidores e enquetes chegam aqui antes.",
+            icon: CalendarCheck,
+            title: "Faça check-in no evento",
+            copy: "Chegou no Bafafá? Gere seu código e confirme sua presença com a equipe.",
+            tone: "bg-primary text-primary-foreground",
+          },
+          {
+            icon: Gift,
+            title: "Desbloqueie mimos",
+            copy: "Eventos e campanhas podem liberar descontos e benefícios de uso único.",
             tone: "bg-samba text-samba-foreground",
           },
           {
-            icon: Ticket,
-            title: "Reserva sua mesa direto no app",
-            copy: "Escolhe o evento, garante a mesa e recebe o QR pra entrar sem enrolação.",
-            tone: "bg-secondary text-secondary-foreground",
-          },
-          {
-            icon: Wallet,
-            title: "Carteirinha com benefícios",
-            copy: "Couvert, mimos, prioridade e vantagens de aniversário na palma da mão.",
+            icon: UserRound,
+            title: "Complete seu perfil aos poucos",
+            copy: "Nada de formulário gigante. Conte suas preferências no seu ritmo.",
             tone: "bg-lagoa text-lagoa-foreground",
           },
           {
-            icon: Sparkles,
-            title: "Histórias que ficam",
-            copy: "Cada check-in vira ponto e conquista. Bafafã não é só quem chega — é quem volta.",
+            icon: BadgeCheck,
+            title: "Ganhe selos e títulos",
+            copy: "Primeiro check-in, perfil completo e frequência viram conquistas no clube.",
             tone: "bg-mango text-mango-foreground",
           },
         ].map(({ icon: Icon, title, copy, tone }) => (
@@ -90,10 +90,11 @@ function LandingPage() {
       <section className="px-5 pb-16">
         <div className="card-festa bg-foreground p-6 text-background">
           <p className="font-display text-2xl leading-tight">
-            Seu passaporte oficial pro Bafafá Bar.
+            Chegue. Faça check-in. Desbloqueie seu mimo.
           </p>
           <p className="mt-2 text-sm opacity-80">
-            Só maiores de 18 anos. Nenhuma pegadinha, nenhuma taxa escondida — só a resenha.
+            Cadastro gratuito para maiores de 18 anos. Promoções têm regras e validade informadas no
+            aplicativo.
           </p>
           <Link
             to="/auth"

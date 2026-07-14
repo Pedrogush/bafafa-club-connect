@@ -13,7 +13,11 @@ interface WordmarkProps {
  */
 export function Wordmark({ className, variant = "full", tone = "primary" }: WordmarkProps) {
   const toneClass =
-    tone === "primary" ? "text-primary" : tone === "white" ? "text-primary-foreground" : "text-foreground";
+    tone === "primary"
+      ? "text-primary"
+      : tone === "white"
+        ? "text-primary-foreground"
+        : "text-foreground";
   return (
     <div className={cn("inline-flex flex-col items-start leading-none", className)}>
       <span className={cn("wordmark text-[2.4em]", toneClass)}>

@@ -1,7 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth, hasRole } from "@/hooks/use-auth";
 import { Wordmark } from "@/components/brand/wordmark";
-import { ShieldAlert } from "lucide-react";
+import {
+  BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  Gift,
+  Medal,
+  Settings,
+  ShieldAlert,
+  Users,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminHome,
@@ -9,9 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminHome() {
   const { loading, roles } = useAuth();
-  if (loading) {
-    return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
-  }
+  if (loading) return <div className="p-8 text-sm text-muted-foreground">Carregando…</div>;
 
   const allowed = hasRole(roles, "admin", "moderador", "equipe");
   if (!allowed) {
@@ -21,7 +28,7 @@ function AdminHome() {
           <ShieldAlert className="mx-auto h-10 w-10 text-destructive" />
           <h1 className="mt-3 font-display text-2xl">Área restrita</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Só administradores, moderadores e equipe do Bafafá entram por aqui.
+            Só administradores e equipe autorizada entram por aqui.
           </p>
           <Link
             to="/inicio"
@@ -35,9 +42,24 @@ function AdminHome() {
   }
 
   const isAdmin = roles.includes("admin");
+  const modules = [
+    { title: "Visão geral", copy: "Cadastros, perfil, check-ins e mimos.", icon: BarChart3 },
+    { title: "Eventos", copy: "Agenda e janelas de check-in.", icon: CalendarDays },
+    { title: "Campanhas", copy: "Promoções e regras de liberação.", icon: Gift },
+    { title: "Clientes", copy: "Perfis e dados declarados.", icon: Users },
+    {
+      title: "Check-ins",
+      copy: "Presenças por evento.",
+      icon: CheckCircle2,
+      to: "/staff/checkin" as const,
+    },
+    { title: "Selos e títulos", copy: "Regras de gamificação.", icon: Medal },
+    { title: "Configurações", copy: "Recursos ativos e equipe.", icon: Settings },
+  ];
+
   return (
     <div className="mx-auto min-h-screen max-w-5xl bg-background px-6 py-8">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-3">
         <Wordmark variant="short" />
         <Link
           to="/inicio"
@@ -46,46 +68,42 @@ function AdminHome() {
           Sair do painel
         </Link>
       </header>
-      <h1 className="mt-8 font-display text-3xl">Painel administrativo</h1>
+      <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+        MVP simplificado
+      </p>
+      <h1 className="mt-1 font-display text-3xl">Administração</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Papéis ativos: {roles.join(", ") || "nenhum"}.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          "Visão geral",
-          "Clientes",
-          "CRM",
-          "Fofoquinhas",
-          "Moderação",
-          "Eventos",
-          "Reservas",
-          "Mesas e áreas",
-          "Check-ins",
-          "Planos",
-          "Assinaturas",
-          "Benefícios",
-          "Pontos",
-          "Conquistas",
-          "Notificações",
-          "Relatórios",
-          "Equipe",
-          "Configurações",
-          "Auditoria",
-        ].map((title) => (
-          <div key={title} className="card-festa p-4">
-            <p className="font-display text-lg leading-tight">{title}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Módulo previsto para a Etapa 3.
-            </p>
-          </div>
-        ))}
+        {modules.map(({ title, copy, icon: Icon, to }) => {
+          const card = (
+            <div className="card-festa h-full p-5">
+              <Icon className="h-6 w-6 text-primary" />
+              <p className="mt-4 font-display text-lg leading-tight">{title}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
+              {!to && (
+                <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  CRUD entra no próximo pacote
+                </p>
+              )}
+            </div>
+          );
+          return to ? (
+            <Link key={title} to={to}>
+              {card}
+            </Link>
+          ) : (
+            <div key={title}>{card}</div>
+          );
+        })}
       </div>
 
       {!isAdmin && (
         <p className="mt-8 rounded-2xl bg-muted p-4 text-xs text-muted-foreground">
-          Você tem acesso operacional (equipe/moderação). Notas confidenciais do CRM só ficam visíveis para
-          administradores.
+          Seu acesso é operacional. Exportação, papéis e dados completos permanecem restritos ao
+          administrador.
         </p>
       )}
     </div>

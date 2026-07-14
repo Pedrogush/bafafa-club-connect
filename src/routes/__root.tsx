@@ -52,7 +52,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-festa hover:opacity-90"
           >
             Tentar de novo
@@ -78,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Clube oficial do Bafafá Bar em Natal/RN. Fofoquinhas, reservas, benefícios e sua carteirinha digital.",
+          "Clube oficial do Bafafá Bar em Natal/RN. Check-in em eventos, mimos, selos e títulos.",
       },
       { name: "theme-color", content: "#2f9d5a" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -87,15 +90,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "BAFAFÁ — Clube dos Bafafãs" },
       {
         property: "og:description",
-        content: "Clube oficial do Bafafá Bar em Natal/RN. Fofoquinhas, reservas, benefícios e sua carteirinha digital.",
+        content:
+          "Clube oficial do Bafafá Bar em Natal/RN. Check-in em eventos, mimos, selos e títulos.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "BAFAFÁ — Clube dos Bafafãs" },
-      { name: "twitter:description", content: "Clube oficial do Bafafá Bar em Natal/RN. Fofoquinhas, reservas, benefícios e sua carteirinha digital." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Clube oficial do Bafafá Bar em Natal/RN. Check-in em eventos, mimos, selos e títulos.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

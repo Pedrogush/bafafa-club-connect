@@ -25,28 +25,21 @@ export const Route = createFileRoute("/auth")({
 const signupSchema = z
   .object({
     display_name: z.string().trim().min(2, "Diz teu nome, Bafafã.").max(80),
-    username: z
-      .string()
-      .trim()
-      .min(3, "Mínimo 3 caracteres.")
-      .max(24, "Máximo 24 caracteres.")
-      .regex(/^[a-z0-9_.]+$/i, "Só letras, números, ponto e underline."),
     email: z.string().trim().email("E-mail inválido.").max(255),
     password: z.string().min(8, "Mínimo 8 caracteres."),
-    whatsapp: z.string().trim().min(10, "WhatsApp com DDD.").max(20),
     birth_date: z.string().min(10, "Data de nascimento obrigatória."),
-    city: z.string().trim().max(80).optional().default(""),
     accept_terms: z.literal(true, { errorMap: () => ({ message: "Precisa aceitar os termos." }) }),
-    accept_privacy: z.literal(true, { errorMap: () => ({ message: "Precisa aceitar a política de privacidade." }) }),
-    accept_community: z.literal(true, { errorMap: () => ({ message: "Precisa aceitar a política da comunidade." }) }),
+    accept_privacy: z.literal(true, {
+      errorMap: () => ({ message: "Precisa aceitar a política de privacidade." }),
+    }),
     is_over_18: z.literal(true, { errorMap: () => ({ message: "Só maiores de 18 anos." }) }),
     marketing_opt_in: z.boolean().optional().default(false),
   })
   .refine(
-    (v) => {
-      const d = new Date(v.birth_date);
-      if (Number.isNaN(d.getTime())) return false;
-      const age = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    (value) => {
+      const date = new Date(value.birth_date);
+      if (Number.isNaN(date.getTime())) return false;
+      const age = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
       return age >= 18;
     },
     { message: "Cadastro só para 18+.", path: ["birth_date"] },
@@ -119,39 +112,32 @@ function SignupForm({ onDone }: { onDone: () => void }) {
     const fd = new FormData(e.currentTarget);
     const raw = {
       display_name: fd.get("display_name") as string,
-      username: fd.get("username") as string,
       email: fd.get("email") as string,
       password: fd.get("password") as string,
-      whatsapp: fd.get("whatsapp") as string,
       birth_date: fd.get("birth_date") as string,
-      city: (fd.get("city") as string) || "",
       accept_terms: fd.get("accept_terms") === "on",
       accept_privacy: fd.get("accept_privacy") === "on",
-      accept_community: fd.get("accept_community") === "on",
       is_over_18: fd.get("is_over_18") === "on",
       marketing_opt_in: fd.get("marketing_opt_in") === "on",
     };
     const parsed = signupSchema.safeParse(raw);
     if (!parsed.success) {
-      const errs: Record<string, string> = {};
-      for (const iss of parsed.error.issues) errs[iss.path[0] as string] = iss.message;
-      setErrors(errs);
+      const nextErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) nextErrors[issue.path[0] as string] = issue.message;
+      setErrors(nextErrors);
       return;
     }
+
     const data = parsed.data;
     setLoading(true);
-    const redirectUrl = `${window.location.origin}/inicio`;
     const { data: signUp, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
-        emailRedirectTo: redirectUrl,
+        emailRedirectTo: `${window.location.origin}/inicio`,
         data: {
           display_name: data.display_name,
-          username: data.username,
-          whatsapp: data.whatsapp,
           birth_date: data.birth_date,
-          city: data.city,
           is_over_18: true,
         },
       },
@@ -161,7 +147,7 @@ function SignupForm({ onDone }: { onDone: () => void }) {
       toast.error(error.message.includes("already") ? "E-mail já cadastrado." : error.message);
       return;
     }
-    // Register consents (best-effort — RLS lets the user insert their own)
+
     if (signUp.user) {
       const consents = [
         { kind: "termos", accepted: true },
@@ -169,46 +155,54 @@ function SignupForm({ onDone }: { onDone: () => void }) {
         { kind: "comunidade", accepted: true },
         { kind: "maioridade", accepted: true },
         { kind: "marketing", accepted: data.marketing_opt_in },
-      ].map((c) => ({ ...c, user_id: signUp.user!.id }));
+      ].map((consent) => ({ ...consent, user_id: signUp.user!.id }));
       await supabase.from("user_consents").insert(consents);
-      if (data.marketing_opt_in) {
-        await supabase
-          .from("user_preferences")
-          .upsert({ user_id: signUp.user.id, marketing_opt_in: true });
-      }
+      await supabase.from("user_preferences").upsert({
+        user_id: signUp.user.id,
+        marketing_opt_in: data.marketing_opt_in,
+      });
     }
+
     toast.success("Cadastro criado! Se pedir confirmação por e-mail, dá uma olhadinha lá.");
     onDone();
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <div className="rounded-2xl bg-mango/40 p-4 text-sm">
+        <p className="font-bold">Versão de desenvolvimento</p>
+        <p className="mt-1 text-muted-foreground">
+          Por enquanto usamos e-mail e senha para testar sem custo de SMS. O acesso por telefone
+          entra antes do piloto com clientes reais.
+        </p>
+      </div>
       <p className="text-sm text-muted-foreground">
-        Vem pro clube. É rapidinho — só o essencial pra você entrar na roda.
+        Só o essencial agora. Usuário, cidade e preferências você completa depois e ganha progresso
+        no perfil.
       </p>
       <Field label="Como te chamamos?" error={errors.display_name}>
-        <input name="display_name" required className={inputCls} placeholder="Seu nome ou apelido" />
-      </Field>
-      <Field label="Nome de usuário" hint="Usado no seu perfil público." error={errors.username}>
-        <input name="username" required className={inputCls} placeholder="@bafafalover" />
+        <input
+          name="display_name"
+          required
+          className={inputCls}
+          placeholder="Seu nome ou apelido"
+        />
       </Field>
       <Field label="E-mail" error={errors.email}>
-        <input name="email" type="email" required className={inputCls} placeholder="voce@email.com" />
+        <input
+          name="email"
+          type="email"
+          required
+          className={inputCls}
+          placeholder="voce@email.com"
+        />
       </Field>
       <Field label="Senha" hint="Pelo menos 8 caracteres." error={errors.password}>
         <input name="password" type="password" required className={inputCls} />
       </Field>
-      <Field label="WhatsApp (com DDD)" error={errors.whatsapp}>
-        <input name="whatsapp" required className={inputCls} placeholder="(84) 90000-0000" />
+      <Field label="Nascimento" error={errors.birth_date}>
+        <input name="birth_date" type="date" required className={inputCls} />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Nascimento" error={errors.birth_date}>
-          <input name="birth_date" type="date" required className={inputCls} />
-        </Field>
-        <Field label="Cidade">
-          <input name="city" className={inputCls} placeholder="Natal" defaultValue="Natal" />
-        </Field>
-      </div>
 
       <div className="space-y-2 rounded-2xl bg-muted p-4 text-sm">
         <Consent
@@ -216,20 +210,19 @@ function SignupForm({ onDone }: { onDone: () => void }) {
           error={errors.is_over_18}
           label="Confirmo que tenho 18 anos ou mais."
         />
-        <Consent name="accept_terms" error={errors.accept_terms} label="Li e aceito os Termos de Uso." />
+        <Consent
+          name="accept_terms"
+          error={errors.accept_terms}
+          label="Li e aceito os Termos de Uso e a Política da Comunidade."
+        />
         <Consent
           name="accept_privacy"
           error={errors.accept_privacy}
           label="Li e aceito a Política de Privacidade."
         />
         <Consent
-          name="accept_community"
-          error={errors.accept_community}
-          label="Concordo com a Política da Comunidade do Bafafá."
-        />
-        <Consent
           name="marketing_opt_in"
-          label="(Opcional) Quero receber comunicações do clube por e-mail e WhatsApp."
+          label="(Opcional) Quero receber promoções e novidades do Bafafá."
         />
       </div>
 

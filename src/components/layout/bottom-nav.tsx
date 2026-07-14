@@ -1,12 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, MessageCircleMore, CalendarCheck, Wallet, User, QrCode } from "lucide-react";
+import { CalendarDays, Gift, Home, QrCode, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/inicio", label: "Início", icon: Home, isCenter: false },
-  { to: "/fofoquinhas", label: "Fofoquinhas", icon: MessageCircleMore, isCenter: false },
-  { to: "/reservas", label: "Reservas", icon: CalendarCheck, isCenter: true },
-  { to: "/carteira", label: "Carteira", icon: Wallet, isCenter: false },
+  { to: "/eventos", label: "Eventos", icon: CalendarDays, isCenter: false },
+  { to: "/checkin", label: "Check-in", icon: QrCode, isCenter: true },
+  { to: "/mimos", label: "Mimos", icon: Gift, isCenter: false },
   { to: "/perfil", label: "Perfil", icon: User, isCenter: false },
 ] as const;
 
@@ -23,17 +23,28 @@ export function BottomNav() {
           const active = pathname === to || pathname.startsWith(`${to}/`);
           if (isCenter) {
             return (
-              <li key={to} className="relative flex justify-center">
+              <li key={to} className="relative flex min-h-14 justify-center">
                 <Link
                   to={to}
                   aria-label={label}
-                  className={cn(
-                    "-mt-8 grid h-16 w-16 place-items-center rounded-full border-4 border-background shadow-festa transition",
-                    "bg-primary text-primary-foreground hover:scale-[1.03]",
-                    active && "bg-samba"
-                  )}
+                  className="group absolute -top-8 flex flex-col items-center"
                 >
-                  <Icon className="h-7 w-7" strokeWidth={2.3} />
+                  <span
+                    className={cn(
+                      "grid h-16 w-16 place-items-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-festa transition group-hover:scale-[1.03]",
+                      active && "bg-samba",
+                    )}
+                  >
+                    <Icon className="h-7 w-7" strokeWidth={2.3} />
+                  </span>
+                  <span
+                    className={cn(
+                      "mt-1 text-[11px] font-bold",
+                      active ? "text-primary" : "text-muted-foreground",
+                    )}
+                  >
+                    {label}
+                  </span>
                 </Link>
               </li>
             );
@@ -43,11 +54,14 @@ export function BottomNav() {
               <Link
                 to={to}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-[11px] font-semibold transition",
-                  active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  "flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-semibold transition",
+                  active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className={cn("h-5 w-5", active && "fill-primary/10")} strokeWidth={active ? 2.5 : 2} />
+                <Icon
+                  className={cn("h-5 w-5", active && "fill-primary/10")}
+                  strokeWidth={active ? 2.5 : 2}
+                />
                 <span>{label}</span>
               </Link>
             </li>
@@ -55,18 +69,5 @@ export function BottomNav() {
         })}
       </ul>
     </nav>
-  );
-}
-
-export function QrFloatingHint() {
-  return (
-    <Link
-      to="/perfil"
-      hash="qr"
-      className="fixed bottom-24 right-4 z-30 grid h-12 w-12 place-items-center rounded-full bg-foreground text-background shadow-festa transition hover:scale-105 pb-safe"
-      aria-label="Meu QR Code"
-    >
-      <QrCode className="h-5 w-5" />
-    </Link>
   );
 }

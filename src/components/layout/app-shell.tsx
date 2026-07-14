@@ -23,7 +23,9 @@ export function ScreenHeader({
     <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 px-5 pb-4 pt-8">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            {eyebrow}
+          </p>
         )}
         <h1 className="mt-1 truncate font-display text-3xl">{title}</h1>
       </div>

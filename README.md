@@ -1,0 +1,79 @@
+# BAFAFÁ — Clube dos Bafafãs
+
+MVP mobile-first para aquisição e relacionamento de clientes do Bafafá Bar — Natal/RN.
+
+## Foco desta versão
+
+O produto foi reduzido para um ciclo simples:
+
+**cadastro → perfil progressivo → evento → check-in → mimo → selo/título**
+
+A navegação principal agora contém:
+
+- **Início** — próximo evento, progresso do perfil, mimos e check-ins;
+- **Eventos** — agenda e campanhas relacionadas;
+- **Check-in** — código temporário de seis dígitos;
+- **Mimos** — disponíveis, utilizados e expirados;
+- **Perfil** — preferências, progresso, selos e título ativo.
+
+Os módulos Fofoquinhas, Reservas, Assinaturas e rede social continuam fora da navegação e podem ser retomados no futuro.
+
+## Autenticação
+
+Durante o desenvolvimento, o aplicativo continua com **e-mail e senha**, evitando custo de SMS. O cadastro inicial foi reduzido ao essencial.
+
+Antes do piloto com clientes reais, a autenticação deverá ser migrada para telefone + OTP. A função `handle_new_user` já foi adaptada para aceitar usuários criados por telefone no Supabase Auth.
+
+## Configuração local
+
+1. Copie `.env.example` para `.env.local`.
+2. Preencha somente as chaves públicas do Supabase.
+3. Instale as dependências com o gerenciador do projeto.
+4. Aplique as migrations em `supabase/migrations` no projeto Supabase correto.
+5. Inicie o projeto com `npm run dev` ou o comando equivalente do seu ambiente.
+
+Nunca coloque uma chave `service_role` no frontend ou em arquivos versionados.
+
+## Migration principal desta entrega
+
+`supabase/migrations/20260714140000_mvp_secure_checkin.sql`
+
+Ela adiciona:
+
+- correção de permissão da função `has_role` usada pelas políticas RLS;
+- criação de códigos temporários de check-in e resgate;
+- validação de check-in apenas por equipe/admin;
+- liberação automática de campanhas após check-in;
+- resgate de mimo apenas por equipe/admin;
+- proteção do título ativo;
+- títulos e selos sincronizados com check-ins e progresso do perfil;
+- compatibilidade do gatilho de cadastro com telefone/OTP futuro.
+
+## Papéis
+
+- `gratuito`: cliente comum;
+- `equipe`: valida check-ins e mimos;
+- `moderador`: reservado para a fase social;
+- `admin`: administração completa.
+
+A rota operacional é `/staff/checkin`. Somente `equipe` e `admin` podem validar códigos.
+
+## O que ainda falta
+
+- autenticação real por telefone/OTP e provedor de SMS;
+- leitura de QR pela câmera — esta versão usa código numérico seguro como alternativa funcional;
+- CRUD visual de eventos e campanhas no painel administrativo;
+- upload de foto de perfil;
+- testes automatizados e pipeline de CI;
+- política final de retenção e exportação de dados;
+- promoção real definida pelo Bafafá.
+
+## Teste rápido
+
+O arquivo `docs/TESTE_MVP.sql` contém comandos opcionais para:
+
+- promover a primeira conta a administrador;
+- promover uma conta a equipe;
+- criar um evento e uma campanha de demonstração.
+
+Revise os e-mails e o produto antes de executar. O script não deve ser usado sem adaptação em produção.
