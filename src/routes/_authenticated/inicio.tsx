@@ -11,7 +11,6 @@ import {
   UserRound,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
-import { Wordmark } from "@/components/brand/wordmark";
 import { BadgeSticker, type BafafaBadgeDefinition } from "@/components/profile/bafafa-badge";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,20 +117,39 @@ function Inicio() {
 
   return (
     <AppShell>
-      <header className="relative overflow-hidden px-5 pb-5 pt-5">
-        <div className="absolute -right-14 -top-20 h-44 w-44 rounded-full bg-mango/70 blur-2xl" />
-        <div className="absolute -left-16 top-8 h-32 w-32 rounded-full bg-samba/20 blur-2xl" />
-        <div className="relative flex items-start justify-between gap-4">
-          <Wordmark variant="full" />
-          <span className="cut-label bg-lagoa text-foreground">clube oficial</span>
+      <header className="home-hero relative overflow-hidden px-5 pb-7 pt-5">
+        <div className="absolute -right-16 -top-20 h-48 w-48 rounded-full bg-mango/70 blur-3xl" />
+        <div className="absolute -left-20 top-16 h-40 w-40 rounded-full bg-samba/20 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-16 opacity-30">
+          <div className="plaza-line absolute inset-x-0 bottom-1 text-electric" />
         </div>
-        <div className="relative mt-5">
+
+        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+          <div className="min-w-0">
+            <div className="bafafa-sign" aria-label="Bafafá Bar">
+              <span className="bafafa-sign__nail bafafa-sign__nail--left" aria-hidden="true" />
+              <span className="bafafa-sign__nail bafafa-sign__nail--right" aria-hidden="true" />
+              <img
+                src="/brand/logo-bafafa.png"
+                alt="Bafafá Bar"
+                className="relative z-10 h-auto w-full object-contain"
+              />
+            </div>
+            <p className="home-hero__institutional">Clube dos Bafafãs · Natal/RN</p>
+          </div>
+
+          <span className="home-hero__official-badge">clube oficial</span>
+        </div>
+
+        <div className="home-hero__copy relative mt-8">
           <p className="section-kicker text-muted-foreground">Chegue mais, Bafafã</p>
-          <h1 className="poster-title mt-1">
-            Ô, {firstName}!<span className="text-samba">*</span>
+          <h1 className="home-hero__greeting mt-2">
+            Ô, {firstName}!
+            <span className="home-hero__asterisk" aria-hidden="true">*</span>
           </h1>
-          <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 text-brick" /> Praça Dr. Amaro de Souza · Lagoa Nova
+          <p className="home-hero__location mt-4">
+            <MapPin className="h-4 w-4 shrink-0 text-brick" />
+            <span>Praça Dr. Amaro de Souza · Lagoa Nova</span>
           </p>
         </div>
       </header>
