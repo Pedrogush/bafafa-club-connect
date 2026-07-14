@@ -27,6 +27,7 @@ import {
   Search,
   ShieldCheck,
   TimerOff,
+  Target,
   Trash2,
   UserCog,
   Users,
@@ -52,9 +53,18 @@ import type { Database } from "@/integrations/supabase/types";
 import { campaignBenefitLabel, formatDateTime } from "@/lib/bafafa";
 import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
+import { ManagementDashboard } from "@/components/admin/management-dashboard";
 
 export type AdminSection =
-  "overview" | "events" | "campaigns" | "clients" | "checkins" | "chat" | "team" | "audit";
+  | "overview"
+  | "management"
+  | "events"
+  | "campaigns"
+  | "clients"
+  | "checkins"
+  | "chat"
+  | "team"
+  | "audit";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
@@ -110,6 +120,7 @@ const EMPTY_DATA: AdminData = {
 
 const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart3 }> = [
   { key: "overview", label: "Visão geral", icon: BarChart3 },
+  { key: "management", label: "Gestão e piloto", icon: Target },
   { key: "events", label: "Eventos", icon: CalendarDays },
   { key: "campaigns", label: "Campanhas", icon: Gift },
   { key: "clients", label: "Clientes", icon: Users },
@@ -153,7 +164,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         ascending: false,
       }),
       supabase.from("user_preferences").select("*"),
-      supabase.from("checkins").select("*").order("created_at", { ascending: false }).limit(500),
+      supabase.from("checkins").select("*").order("created_at", { ascending: false }).limit(1000),
       supabase.from("user_roles").select("*"),
       supabase
         .from("user_rewards")
@@ -164,7 +175,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         .from("reward_redemptions")
         .select("*")
         .order("redeemed_at", { ascending: false })
-        .limit(500),
+        .limit(1000),
       supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
       supabase.from("badge_definitions").select("*").order("sort_order"),
       supabase.from("user_badges").select("*"),
@@ -173,12 +184,12 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         .from("event_chat_reports")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(200),
+        .limit(500),
       supabase
         .from("event_chat_messages")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(300),
+        .limit(1000),
     ]);
 
     const firstError = [
@@ -298,6 +309,9 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         ) : (
           <>
             {section === "overview" && <Overview data={data} />}
+            {section === "management" && (
+              <ManagementDashboard data={data} currentUserId={currentUserId} />
+            )}
             {section === "events" && (
               <EventsManager events={data.events} onChanged={() => void loadData(true)} />
             )}

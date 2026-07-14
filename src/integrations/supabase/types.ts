@@ -490,6 +490,87 @@ export type Database = {
         };
         Relationships: [];
       };
+      pilot_runs: {
+        Row: {
+          campaign_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          customer_instructions: string | null;
+          ended_at: string | null;
+          event_id: string;
+          expected_attendance: number;
+          id: string;
+          internal_notes: string | null;
+          minimum_profile_percent: number;
+          name: string;
+          staff_ids: string[];
+          started_at: string | null;
+          status: string;
+          target_checkins: number;
+          target_redemptions: number;
+          target_registrations: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          campaign_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_instructions?: string | null;
+          ended_at?: string | null;
+          event_id: string;
+          expected_attendance?: number;
+          id?: string;
+          internal_notes?: string | null;
+          minimum_profile_percent?: number;
+          name: string;
+          staff_ids?: string[];
+          started_at?: string | null;
+          status?: string;
+          target_checkins?: number;
+          target_redemptions?: number;
+          target_registrations?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          campaign_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_instructions?: string | null;
+          ended_at?: string | null;
+          event_id?: string;
+          expected_attendance?: number;
+          id?: string;
+          internal_notes?: string | null;
+          minimum_profile_percent?: number;
+          name?: string;
+          staff_ids?: string[];
+          started_at?: string | null;
+          status?: string;
+          target_checkins?: number;
+          target_redemptions?: number;
+          target_registrations?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "pilot_runs_campaign_id_fkey";
+            columns: ["campaign_id"];
+            isOneToOne: false;
+            referencedRelation: "campaigns";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pilot_runs_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: true;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           active_title_id: string | null;
@@ -1028,6 +1109,15 @@ export type Database = {
       admin_set_manual_badge: {
         Args: { _badge_slug: string; _enabled: boolean; _user_id: string };
         Returns: undefined;
+      };
+      admin_export_data: {
+        Args: {
+          _event_id?: string | null;
+          _from?: string | null;
+          _kind: string;
+          _to?: string | null;
+        };
+        Returns: Json;
       };
       calculate_profile_completeness: {
         Args: { _user_id: string };
