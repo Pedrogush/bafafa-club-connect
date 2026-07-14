@@ -87,11 +87,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "BAFAFÁ — Clube dos Bafafãs" },
       {
         property: "og:description",
-        content: "Seu passaporte oficial pras Fofoquinhas, reservas e experiências do Bafafá.",
+        content: "Clube oficial do Bafafá Bar em Natal/RN. Fofoquinhas, reservas, benefícios e sua carteirinha digital.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "BAFAFÁ — Clube dos Bafafãs" },
+      { name: "twitter:description", content: "Clube oficial do Bafafá Bar em Natal/RN. Fofoquinhas, reservas, benefícios e sua carteirinha digital." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
