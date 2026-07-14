@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Gift,
   MapPin,
+  MessageCircleMore,
   Sparkles,
   UserRound,
 } from "lucide-react";
@@ -15,10 +16,15 @@ import { BadgeSticker, type BafafaBadgeDefinition } from "@/components/profile/b
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { campaignBenefitLabel, formatEventDate, formatEventTime } from "@/lib/bafafa";
+import {
+  nextProfileTask,
+  parseProfileCompletion,
+  type ProfileCompletionDetails,
+} from "@/lib/profile-completion";
 
 type HomeData = {
   displayName: string;
-  completeness: number;
+  completion: ProfileCompletionDetails;
   event: {
     id: string;
     name: string;
@@ -38,6 +44,11 @@ type HomeData = {
   availableRewards: number;
   checkins: number;
   latestBadge: BafafaBadgeDefinition | null;
+  chatRoom: {
+    event_id: string;
+    event_name: string;
+    message_count: number;
+  } | null;
 };
 
 export const Route = createFileRoute("/_authenticated/inicio")({
@@ -48,11 +59,12 @@ function Inicio() {
   const { user } = useAuth();
   const [data, setData] = useState<HomeData>({
     displayName: "Bafafã",
-    completeness: 0,
+    completion: { percentage: 0, items: [], next_key: null },
     event: null,
     availableRewards: 0,
     checkins: 0,
     latestBadge: null,
+    chatRoom: null,
   });
 
   useEffect(() => {
@@ -61,9 +73,9 @@ function Inicio() {
 
     async function load() {
       const now = new Date().toISOString();
-      const [profile, completeness, event, rewards, checkins, badges] = await Promise.all([
+      const [profile, completion, event, rewards, checkins, badges, chatRooms] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("id", user!.id).maybeSingle(),
-        supabase.rpc("my_profile_completeness"),
+        supabase.rpc("my_profile_completion_details"),
         supabase
           .from("events")
           .select(
@@ -87,6 +99,7 @@ function Inicio() {
           .order("awarded_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase.rpc("my_event_chat_rooms"),
       ]);
 
       if (!mounted) return;
@@ -98,11 +111,18 @@ function Inicio() {
           profile.data?.display_name ??
           (user?.user_metadata?.display_name as string | undefined) ??
           "Bafafã",
-        completeness: typeof completeness.data === "number" ? completeness.data : 0,
+        completion: parseProfileCompletion(completion.data),
         event: (event.data as unknown as HomeData["event"]) ?? null,
         availableRewards: rewards.count ?? 0,
         checkins: checkins.count ?? 0,
         latestBadge: badgeData?.badge_definitions ?? null,
+        chatRoom: chatRooms.data?.[0]
+          ? {
+              event_id: chatRooms.data[0].event_id,
+              event_name: chatRooms.data[0].event_name,
+              message_count: Number(chatRooms.data[0].message_count ?? 0),
+            }
+          : null,
       });
     }
 
@@ -114,6 +134,7 @@ function Inicio() {
 
   const firstName = data.displayName.split(" ")[0] || "Bafafã";
   const campaign = data.event?.campaigns?.[0];
+  const nextTask = nextProfileTask(data.completion);
 
   return (
     <AppShell>
@@ -145,7 +166,9 @@ function Inicio() {
           <p className="section-kicker text-muted-foreground">Chegue mais, Bafafã</p>
           <h1 className="home-hero__greeting mt-2">
             Ô, {firstName}!
-            <span className="home-hero__asterisk" aria-hidden="true">*</span>
+            <span className="home-hero__asterisk" aria-hidden="true">
+              *
+            </span>
           </h1>
           <p className="home-hero__location mt-4">
             <MapPin className="h-4 w-4 shrink-0 text-brick" />
@@ -180,7 +203,8 @@ function Inicio() {
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-background/90">
                   <p className="flex items-center gap-1.5">
                     <CalendarDays className="h-4 w-4 text-mango" />
-                    {formatEventDate(data.event.starts_at)} · {formatEventTime(data.event.starts_at)}
+                    {formatEventDate(data.event.starts_at)} ·{" "}
+                    {formatEventTime(data.event.starts_at)}
                   </p>
                   {data.event.attraction && <p>Som: {data.event.attraction}</p>}
                 </div>
@@ -219,7 +243,9 @@ function Inicio() {
         ) : (
           <section className="poster-card brick-texture p-6 text-white">
             <span className="cut-label bg-mango text-foreground">agenda</span>
-            <h2 className="mt-5 font-display text-4xl leading-none">A fofoca do próximo rolê ainda não vazou.</h2>
+            <h2 className="mt-5 font-display text-4xl leading-none">
+              A fofoca do próximo rolê ainda não vazou.
+            </h2>
             <p className="mt-3 max-w-sm text-sm font-semibold text-white/90">
               Assim que o evento for publicado, ele aparece bem aqui.
             </p>
@@ -234,7 +260,7 @@ function Inicio() {
               </div>
               <div>
                 <p className="section-kicker text-muted-foreground">Sua carteirinha</p>
-                <p className="font-poster text-lg">Perfil {data.completeness}% completo</p>
+                <p className="font-poster text-lg">Perfil {data.completion.percentage}% completo</p>
               </div>
             </div>
             <ChevronRight className="h-5 w-5" />
@@ -242,15 +268,38 @@ function Inicio() {
           <div className="mt-3 h-3 overflow-hidden rounded-full border-2 border-foreground bg-muted">
             <div
               className="h-full bg-primary transition-all"
-              style={{ width: `${data.completeness}%` }}
+              style={{ width: `${data.completion.percentage}%` }}
             />
           </div>
           <p className="mt-2 text-xs font-semibold text-muted-foreground">
-            {data.completeness >= 100
+            {data.completion.percentage >= 100
               ? "Perfil no grau. Agora é só acumular história e selo."
-              : "Conta mais uma fofoca e desbloqueie novos selos."}
+              : nextTask
+                ? `Próxima etapa: ${nextTask.label} (+${nextTask.weight}%).`
+                : "Conta mais uma fofoca e desbloqueie novos selos."}
           </p>
         </Link>
+
+        {data.chatRoom && (
+          <Link
+            to="/resenha"
+            search={{ event: data.chatRoom.event_id }}
+            className="poster-card grid-texture flex items-center justify-between gap-4 bg-samba p-5 text-white"
+          >
+            <div className="min-w-0">
+              <p className="section-kicker text-white/70">Resenha liberada</p>
+              <p className="mt-1 truncate font-display text-3xl leading-none">
+                {data.chatRoom.event_name}
+              </p>
+              <p className="mt-2 text-xs font-black uppercase text-white/75">
+                {data.chatRoom.message_count} mensagens na roda
+              </p>
+            </div>
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-[3px] border-foreground bg-mango text-foreground shadow-[3px_4px_0_var(--foreground)]">
+              <MessageCircleMore className="h-7 w-7" />
+            </span>
+          </Link>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <Link to="/mimos" className="sticker-card checker-texture p-4 text-foreground">
@@ -271,7 +320,9 @@ function Inicio() {
             <div className="-ml-3 min-w-0">
               <p className="section-kicker opacity-70">Selo novo na coleção</p>
               <p className="mt-1 font-poster text-xl leading-tight">{data.latestBadge.name}</p>
-              <p className="mt-1 text-xs font-semibold opacity-75">{data.latestBadge.description}</p>
+              <p className="mt-1 text-xs font-semibold opacity-75">
+                {data.latestBadge.description}
+              </p>
             </div>
           </section>
         )}

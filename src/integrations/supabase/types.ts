@@ -231,10 +231,125 @@ export type Database = {
           },
         ];
       };
+      event_chat_blocks: {
+        Row: {
+          blocked_user_id: string;
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          blocked_user_id: string;
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          blocked_user_id?: string;
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      event_chat_messages: {
+        Row: {
+          body: string;
+          created_at: string;
+          deleted_at: string | null;
+          event_id: string;
+          id: string;
+          moderated_by: string | null;
+          moderation_reason: string | null;
+          reply_to: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          event_id: string;
+          id?: string;
+          moderated_by?: string | null;
+          moderation_reason?: string | null;
+          reply_to?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          event_id?: string;
+          id?: string;
+          moderated_by?: string | null;
+          moderation_reason?: string | null;
+          reply_to?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_chat_messages_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      event_chat_reports: {
+        Row: {
+          created_at: string;
+          details: string | null;
+          id: string;
+          message_id: string;
+          reason: string;
+          reporter_id: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          status: string;
+        };
+        Insert: {
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          message_id: string;
+          reason: string;
+          reporter_id: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: string;
+        };
+        Update: {
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          message_id?: string;
+          reason?: string;
+          reporter_id?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_chat_reports_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "event_chat_messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       events: {
         Row: {
           attraction: string | null;
           category: string;
+          chat_closes_at: string | null;
+          chat_enabled: boolean;
+          chat_opens_at: string | null;
           checkin_closes_at: string | null;
           checkin_enabled: boolean;
           checkin_opens_at: string | null;
@@ -254,6 +369,9 @@ export type Database = {
         Insert: {
           attraction?: string | null;
           category: string;
+          chat_closes_at?: string | null;
+          chat_enabled?: boolean;
+          chat_opens_at?: string | null;
           checkin_closes_at?: string | null;
           checkin_enabled?: boolean;
           checkin_opens_at?: string | null;
@@ -273,6 +391,9 @@ export type Database = {
         Update: {
           attraction?: string | null;
           category?: string;
+          chat_closes_at?: string | null;
+          chat_enabled?: boolean;
+          chat_opens_at?: string | null;
           checkin_closes_at?: string | null;
           checkin_enabled?: boolean;
           checkin_opens_at?: string | null;
@@ -896,6 +1017,14 @@ export type Database = {
       };
     };
     Functions: {
+      admin_profile_completion_overview: {
+        Args: never;
+        Returns: {
+          details: Json;
+          percentage: number;
+          user_id: string;
+        }[];
+      };
       admin_set_manual_badge: {
         Args: { _badge_slug: string; _enabled: boolean; _user_id: string };
         Returns: undefined;
@@ -903,6 +1032,10 @@ export type Database = {
       calculate_profile_completeness: {
         Args: { _user_id: string };
         Returns: number;
+      };
+      can_access_event_chat: {
+        Args: { _event_id: string; _user_id: string };
+        Returns: boolean;
       };
       create_my_qr_token: {
         Args: { _purpose: string; _ref_id?: string | null };
@@ -916,6 +1049,24 @@ export type Database = {
         Args: never;
         Returns: Database["public"]["Enums"]["app_role"][];
       };
+      delete_event_chat_message: { Args: { _message_id: string }; Returns: undefined };
+      get_event_chat_feed: {
+        Args: { _event_id: string; _limit?: number };
+        Returns: {
+          author_avatar_url: string | null;
+          author_badges: Json;
+          author_id: string;
+          author_name: string;
+          author_title: string | null;
+          author_username: string | null;
+          body: string;
+          created_at: string;
+          event_id: string;
+          is_mine: boolean;
+          message_id: string;
+          reply_to: string | null;
+        }[];
+      };
       get_public_profile: { Args: { _username: string }; Returns: Json };
       grant_badge_by_slug: {
         Args: { _slug: string; _user_id: string };
@@ -928,7 +1079,43 @@ export type Database = {
         };
         Returns: boolean;
       };
+      is_event_chat_blocked: {
+        Args: { _author: string; _viewer: string };
+        Returns: boolean;
+      };
+      moderate_event_chat_message: {
+        Args: { _message_id: string; _reason?: string | null; _restore?: boolean };
+        Returns: undefined;
+      };
+      my_event_chat_rooms: {
+        Args: never;
+        Returns: {
+          category: string;
+          chat_closes_at: string;
+          ends_at: string | null;
+          event_id: string;
+          event_name: string;
+          image_url: string | null;
+          last_message_at: string | null;
+          message_count: number;
+          starts_at: string;
+        }[];
+      };
+      my_profile_completion_details: { Args: never; Returns: Json };
       my_profile_completeness: { Args: never; Returns: number };
+      profile_completion_details: { Args: { _user_id: string }; Returns: Json };
+      report_event_chat_message: {
+        Args: { _details?: string | null; _message_id: string; _reason: string };
+        Returns: undefined;
+      };
+      send_event_chat_message: {
+        Args: { _body: string; _event_id: string; _reply_to?: string | null };
+        Returns: string;
+      };
+      set_event_chat_block: {
+        Args: { _blocked: boolean; _blocked_user_id: string };
+        Returns: undefined;
+      };
       redeem_reward_qr: { Args: { _token: string }; Returns: Json };
       validate_checkin_qr: {
         Args: { _event_id: string; _token: string };

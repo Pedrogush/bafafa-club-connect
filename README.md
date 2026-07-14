@@ -122,3 +122,10 @@ Antes de testar esta versão, execute uma única vez no SQL Editor do Supabase:
 `docs/BRAND_V4_SETUP.sql`
 
 Depois reinicie o servidor local. O roteiro completo está em `docs/TESTE_IDENTIDADE_V4.md`.
+
+## V6 — Perfil 100% e Resenha do Evento
+
+A versão v6 centraliza o cálculo de completude do perfil no Supabase e adiciona uma sala pública por evento, acessível a clientes com check-in válido. A sala inclui mensagens em tempo real, respostas, denúncia, bloqueio, exclusão pelo autor e moderação no painel administrativo.
+
+Configuração: `docs/PERFIL_E_RESENHA_V6_SETUP.sql`  
+Roteiro de teste: `docs/TESTE_PERFIL_E_RESENHA_V6.md`

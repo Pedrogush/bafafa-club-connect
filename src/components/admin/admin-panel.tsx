@@ -17,6 +17,7 @@ import {
   Edit3,
   Gift,
   Loader2,
+  MessageCircleMore,
   Plus,
   RefreshCw,
   Search,
@@ -48,7 +49,7 @@ import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 
 export type AdminSection =
-  "overview" | "events" | "campaigns" | "clients" | "checkins" | "team" | "audit";
+  "overview" | "events" | "campaigns" | "clients" | "checkins" | "chat" | "team" | "audit";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
@@ -62,6 +63,9 @@ type RewardRow = Database["public"]["Tables"]["user_rewards"]["Row"];
 type AuditRow = Database["public"]["Tables"]["audit_logs"]["Row"];
 type BadgeDefinitionRow = Database["public"]["Tables"]["badge_definitions"]["Row"];
 type UserBadgeRow = Database["public"]["Tables"]["user_badges"]["Row"];
+type ChatReportRow = Database["public"]["Tables"]["event_chat_reports"]["Row"];
+type ChatMessageRow = Database["public"]["Tables"]["event_chat_messages"]["Row"];
+type ProfileCompletionRow = { user_id: string; percentage: number; details: unknown };
 
 type AdminData = {
   events: EventRow[];
@@ -74,6 +78,9 @@ type AdminData = {
   audits: AuditRow[];
   badgeDefinitions: BadgeDefinitionRow[];
   userBadges: UserBadgeRow[];
+  profileCompletions: ProfileCompletionRow[];
+  chatReports: ChatReportRow[];
+  chatMessages: ChatMessageRow[];
 };
 
 const EMPTY_DATA: AdminData = {
@@ -87,6 +94,9 @@ const EMPTY_DATA: AdminData = {
   audits: [],
   badgeDefinitions: [],
   userBadges: [],
+  profileCompletions: [],
+  chatReports: [],
+  chatMessages: [],
 };
 
 const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart3 }> = [
@@ -95,6 +105,7 @@ const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart
   { key: "campaigns", label: "Campanhas", icon: Gift },
   { key: "clients", label: "Clientes", icon: Users },
   { key: "checkins", label: "Check-ins", icon: CheckCircle2 },
+  { key: "chat", label: "Resenha", icon: MessageCircleMore },
   { key: "team", label: "Equipe", icon: UserCog },
   { key: "audit", label: "Auditoria", icon: ClipboardList },
 ];
@@ -122,28 +133,38 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       audits,
       badgeDefinitions,
       userBadges,
+      profileCompletions,
+      chatReports,
+      chatMessages,
     ] = await Promise.all([
-        supabase.from("events").select("*").order("starts_at", { ascending: false }),
-        supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
-        supabase.from("profiles").select("*").is("deleted_at", null).order("created_at", {
-          ascending: false,
-        }),
-        supabase.from("user_preferences").select("*"),
-        supabase.from("checkins").select("*").order("created_at", { ascending: false }).limit(500),
-        supabase.from("user_roles").select("*"),
-        supabase
-          .from("user_rewards")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(500),
-        supabase
-          .from("audit_logs")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(100),
-        supabase.from("badge_definitions").select("*").order("sort_order"),
-        supabase.from("user_badges").select("*"),
-      ]);
+      supabase.from("events").select("*").order("starts_at", { ascending: false }),
+      supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("*").is("deleted_at", null).order("created_at", {
+        ascending: false,
+      }),
+      supabase.from("user_preferences").select("*"),
+      supabase.from("checkins").select("*").order("created_at", { ascending: false }).limit(500),
+      supabase.from("user_roles").select("*"),
+      supabase
+        .from("user_rewards")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("badge_definitions").select("*").order("sort_order"),
+      supabase.from("user_badges").select("*"),
+      supabase.rpc("admin_profile_completion_overview"),
+      supabase
+        .from("event_chat_reports")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase
+        .from("event_chat_messages")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(300),
+    ]);
 
     const firstError = [
       events,
@@ -156,6 +177,9 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       audits,
       badgeDefinitions,
       userBadges,
+      profileCompletions,
+      chatReports,
+      chatMessages,
     ]
       .map((result) => result.error)
       .find(Boolean);
@@ -175,6 +199,9 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         audits: audits.data ?? [],
         badgeDefinitions: badgeDefinitions.data ?? [],
         userBadges: userBadges.data ?? [],
+        profileCompletions: (profileCompletions.data ?? []) as ProfileCompletionRow[],
+        chatReports: chatReports.data ?? [],
+        chatMessages: chatMessages.data ?? [],
       });
     }
 
@@ -268,6 +295,9 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
               <ClientsManager data={data} onChanged={() => void loadData(true)} />
             )}
             {section === "checkins" && <CheckinsManager data={data} />}
+            {section === "chat" && (
+              <ChatModerationManager data={data} onChanged={() => void loadData(true)} />
+            )}
             {section === "team" && (
               <TeamManager
                 profiles={data.profiles}
@@ -312,6 +342,10 @@ function Overview({ data }: { data: AdminData }) {
       icon: Gift,
     },
   ];
+
+  const profileCompletionByUser = new Map(
+    data.profileCompletions.map((row) => [row.user_id, Number(row.percentage ?? 0)]),
+  );
 
   const latestEvents = [...data.events]
     .filter((event) => new Date(event.starts_at).getTime() >= now - 86400000)
@@ -386,11 +420,7 @@ function Overview({ data }: { data: AdminData }) {
           <div className="mt-5 space-y-3">
             {[100, 60, 40].map((threshold) => {
               const count = data.profiles.filter(
-                (profile) =>
-                  profileCompleteness(
-                    profile,
-                    data.preferences.find((preference) => preference.user_id === profile.id),
-                  ) >= threshold,
+                (profile) => (profileCompletionByUser.get(profile.id) ?? 0) >= threshold,
               ).length;
               return (
                 <div key={threshold} className="rounded-2xl bg-muted p-4">
@@ -503,6 +533,11 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
                   <span className="rounded-full bg-muted px-3 py-1.5">
                     Check-in {event.checkin_enabled ? "ativo" : "desativado"}
                   </span>
+                  <span
+                    className={`rounded-full px-3 py-1.5 ${event.chat_enabled ? "bg-samba text-white" : "bg-muted"}`}
+                  >
+                    Resenha {event.chat_enabled ? "aberta" : "desativada"}
+                  </span>
                   {event.checkin_opens_at && (
                     <span className="rounded-full bg-muted px-3 py-1.5">
                       Abre {formatDateTime(event.checkin_opens_at)}
@@ -565,6 +600,7 @@ function EventDialog({
     const startsAt = textValue(form, "starts_at");
     const slug = textValue(form, "slug") || slugify(name);
     const checkinEnabled = form.get("checkin_enabled") === "on";
+    const chatEnabled = form.get("chat_enabled") === "on";
     const previousImageUrl = event?.image_url ?? null;
     let imageUrl = previousImageUrl;
     let uploadedImageUrl: string | null = null;
@@ -594,6 +630,9 @@ function EventDialog({
         checkin_opens_at: nullableIso(form, "checkin_opens_at"),
         checkin_closes_at: nullableIso(form, "checkin_closes_at"),
         checkin_enabled: checkinEnabled,
+        chat_opens_at: nullableIso(form, "chat_opens_at"),
+        chat_closes_at: nullableIso(form, "chat_closes_at"),
+        chat_enabled: chatEnabled,
         status: textValue(form, "status"),
         instructions: nullableText(form, "instructions"),
       };
@@ -681,6 +720,18 @@ function EventDialog({
               type="datetime-local"
               defaultValue={toLocalInput(event?.checkin_closes_at)}
             />
+            <Field
+              label="Abertura da Resenha"
+              name="chat_opens_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(event?.chat_opens_at)}
+            />
+            <Field
+              label="Encerramento da Resenha"
+              name="chat_closes_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(event?.chat_closes_at)}
+            />
             <div className="space-y-2">
               <Label htmlFor="event-status">Status</Label>
               <select
@@ -707,6 +758,18 @@ function EventDialog({
               </p>
             </div>
             <Switch name="checkin_enabled" defaultChecked={event?.checkin_enabled ?? true} />
+          </label>
+          <label className="flex items-center justify-between rounded-2xl border-2 border-samba/25 bg-samba/10 p-4">
+            <div className="pr-4">
+              <p className="flex items-center gap-2 font-bold">
+                <MessageCircleMore className="h-4 w-4 text-samba" /> Resenha do evento
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Só participa quem fez check-in. Se os horários ficarem vazios, abre 1h antes e fecha
+                até 4h após o fim.
+              </p>
+            </div>
+            <Switch name="chat_enabled" defaultChecked={event?.chat_enabled ?? false} />
           </label>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -1128,6 +1191,10 @@ function ClientsManager({ data, onChanged }: { data: AdminData; onChanged: () =>
     () => new Map(data.preferences.map((preference) => [preference.user_id, preference])),
     [data.preferences],
   );
+  const profileCompletionByUser = useMemo(
+    () => new Map(data.profileCompletions.map((row) => [row.user_id, Number(row.percentage ?? 0)])),
+    [data.profileCompletions],
+  );
   const checkinsByUser = useMemo(
     () => countBy(data.checkins, (checkin) => checkin.user_id),
     [data.checkins],
@@ -1179,7 +1246,8 @@ function ClientsManager({ data, onChanged }: { data: AdminData; onChanged: () =>
           <Crown className="h-5 w-5" /> Sócio Fundador
         </p>
         <p className="mt-1 opacity-75">
-          É um selo manual e especial. Os outros selos continuam sendo concedidos automaticamente pelas regras do app.
+          É um selo manual e especial. Os outros selos continuam sendo concedidos automaticamente
+          pelas regras do app.
         </p>
       </div>
       <SearchField
@@ -1204,7 +1272,7 @@ function ClientsManager({ data, onChanged }: { data: AdminData; onChanged: () =>
             </thead>
             <tbody className="divide-y divide-border">
               {clients.map((profile) => {
-                const completeness = profileCompleteness(profile, preferenceByUser.get(profile.id));
+                const completeness = profileCompletionByUser.get(profile.id) ?? 0;
                 const isFounder = founderUserIds.has(profile.id);
                 return (
                   <tr key={profile.id} className="hover:bg-muted/40">
@@ -1212,16 +1280,23 @@ function ClientsManager({ data, onChanged }: { data: AdminData; onChanged: () =>
                       <div className="flex items-center gap-3">
                         <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-foreground bg-primary font-display text-lg text-white">
                           {profile.avatar_url ? (
-                            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                            <img
+                              src={profile.avatar_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
                           ) : (
-                            profile.display_name[0]?.toUpperCase() ?? "B"
+                            (profile.display_name[0]?.toUpperCase() ?? "B")
                           )}
                         </div>
                         <div>
                           <p className="flex items-center gap-1.5 font-bold">
                             {profile.display_name}
                             {isFounder && (
-                              <span title="Sócio Fundador" className="grid h-6 w-6 place-items-center rounded-full border-2 border-foreground bg-mango shadow-[1px_2px_0_var(--foreground)]">
+                              <span
+                                title="Sócio Fundador"
+                                className="grid h-6 w-6 place-items-center rounded-full border-2 border-foreground bg-mango shadow-[1px_2px_0_var(--foreground)]"
+                              >
                                 <Crown className="h-3.5 w-3.5" />
                               </span>
                             )}
@@ -1253,7 +1328,9 @@ function ClientsManager({ data, onChanged }: { data: AdminData; onChanged: () =>
                         disabled={busyFounder === profile.id || !founderBadge}
                         onClick={() => void toggleFounder(profile.id)}
                         className={`inline-flex items-center gap-1.5 rounded-xl border-2 border-foreground px-3 py-2 text-xs font-black shadow-[2px_3px_0_var(--foreground)] disabled:opacity-50 ${
-                          isFounder ? "bg-mango text-foreground" : "bg-background text-muted-foreground"
+                          isFounder
+                            ? "bg-mango text-foreground"
+                            : "bg-background text-muted-foreground"
                         }`}
                       >
                         {busyFounder === profile.id ? (
@@ -1372,6 +1449,148 @@ function CheckinsManager({ data }: { data: AdminData }) {
           </table>
         </div>
         {filtered.length === 0 && <EmptyMessage>Nenhum check-in registrado.</EmptyMessage>}
+      </div>
+    </SectionLayout>
+  );
+}
+
+function ChatModerationManager({ data, onChanged }: { data: AdminData; onChanged: () => void }) {
+  const profileById = useMemo(
+    () => new Map(data.profiles.map((profile) => [profile.id, profile])),
+    [data.profiles],
+  );
+  const eventById = useMemo(
+    () => new Map(data.events.map((event) => [event.id, event])),
+    [data.events],
+  );
+  const messageById = useMemo(
+    () => new Map(data.chatMessages.map((message) => [message.id, message])),
+    [data.chatMessages],
+  );
+  const openReports = data.chatReports.filter((report) => report.status === "open");
+
+  async function moderate(messageId: string, restore: boolean, reason?: string) {
+    const { error } = await supabase.rpc("moderate_event_chat_message", {
+      _message_id: messageId,
+      _restore: restore,
+      _reason: reason ?? null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(restore ? "Mensagem restaurada." : "Mensagem ocultada da Resenha.");
+    onChanged();
+  }
+
+  return (
+    <SectionLayout
+      eyebrow="Conversa durante o evento"
+      title="Resenha"
+      description="Acompanhe denúncias e modere mensagens. O chat só abre para pessoas com check-in válido."
+    >
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
+        <section className="card-festa p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="section-kicker text-muted-foreground">Fila de moderação</p>
+              <h3 className="mt-1 font-display text-2xl">Denúncias abertas</h3>
+            </div>
+            <span className="cut-label bg-secondary">{openReports.length}</span>
+          </div>
+          <div className="mt-5 space-y-3">
+            {openReports.length === 0 ? (
+              <EmptyMessage>Nenhuma denúncia aguardando análise.</EmptyMessage>
+            ) : (
+              openReports.map((report) => {
+                const message = messageById.get(report.message_id);
+                const author = message ? profileById.get(message.user_id) : null;
+                const reporter = profileById.get(report.reporter_id);
+                const event = message ? eventById.get(message.event_id) : null;
+                return (
+                  <article
+                    key={report.id}
+                    className="rounded-2xl border-2 border-foreground/15 bg-background p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black">{event?.name ?? "Evento"}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Autor: {author?.display_name ?? "Usuário"} · denúncia de{" "}
+                          {reporter?.display_name ?? "Bafafã"}
+                        </p>
+                      </div>
+                      <StatusPill status={report.reason} />
+                    </div>
+                    <blockquote className="mt-3 rounded-xl bg-muted p-3 text-sm font-semibold">
+                      {message?.body ?? "Mensagem não disponível."}
+                    </blockquote>
+                    {report.details && (
+                      <p className="mt-2 text-xs text-muted-foreground">{report.details}</p>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => void moderate(report.message_id, false, report.reason)}
+                      >
+                        Ocultar mensagem
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void moderate(report.message_id, true)}
+                      >
+                        Manter e encerrar
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        <section className="card-festa p-5">
+          <p className="section-kicker text-muted-foreground">Últimas mensagens</p>
+          <h3 className="mt-1 font-display text-2xl">Visão rápida</h3>
+          <div className="mt-5 space-y-3">
+            {data.chatMessages.slice(0, 30).map((message) => (
+              <article key={message.id} className="rounded-2xl border border-input p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-black">
+                      {profileById.get(message.user_id)?.display_name ?? "Bafafã"} ·{" "}
+                      {eventById.get(message.event_id)?.name ?? "Evento"}
+                    </p>
+                    <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
+                      {message.body}
+                    </p>
+                  </div>
+                  <StatusPill status={message.status} />
+                </div>
+                <div className="mt-3 flex gap-2">
+                  {message.status === "visible" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void moderate(message.id, false, "Ação administrativa")}
+                    >
+                      Ocultar
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void moderate(message.id, true)}
+                    >
+                      Restaurar
+                    </Button>
+                  )}
+                </div>
+              </article>
+            ))}
+            {data.chatMessages.length === 0 && (
+              <EmptyMessage>A Resenha ainda não recebeu mensagens.</EmptyMessage>
+            )}
+          </div>
+        </section>
       </div>
     </SectionLayout>
   );
@@ -1743,16 +1962,4 @@ function countBy<T>(items: T[], key: (item: T) => string) {
   const counts = new Map<string, number>();
   items.forEach((item) => counts.set(key(item), (counts.get(key(item)) ?? 0) + 1));
   return counts;
-}
-
-function profileCompleteness(profile: ProfileRow, preferences?: PreferenceRow) {
-  let total = 0;
-  if (profile.phone_verified_at) total += 20;
-  if (profile.display_name && profile.birth_date) total += 20;
-  if (profile.city && profile.neighborhood) total += 15;
-  if (preferences?.event_categories?.length) total += 15;
-  if (preferences?.drink_preferences?.length || preferences?.food_preferences?.length) total += 15;
-  if (profile.how_found_us) total += 10;
-  if (profile.avatar_url || profile.bio) total += 5;
-  return Math.min(total, 100);
 }

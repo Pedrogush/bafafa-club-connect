@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck,
   Clock3,
   KeyRound,
   MapPin,
+  MessageCircleMore,
   RefreshCw,
   ShieldCheck,
   Sparkles,
@@ -14,6 +15,7 @@ import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { supabase } from "@/integrations/supabase/client";
 import { formatEventDate, formatEventTime } from "@/lib/bafafa";
+import { useAuth } from "@/hooks/use-auth";
 
 type EventRow = {
   id: string;
@@ -22,6 +24,7 @@ type EventRow = {
   checkin_opens_at: string | null;
   checkin_closes_at: string | null;
   status: string;
+  chat_enabled: boolean;
 };
 
 type TokenResult = {
@@ -35,6 +38,7 @@ export const Route = createFileRoute("/_authenticated/checkin")({
 });
 
 function Checkin() {
+  const { user } = useAuth();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [token, setToken] = useState<TokenResult | null>(null);
@@ -42,6 +46,7 @@ function Checkin() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -52,7 +57,7 @@ function Checkin() {
     let mounted = true;
     supabase
       .from("events")
-      .select("id,name,starts_at,checkin_opens_at,checkin_closes_at,status")
+      .select("id,name,starts_at,checkin_opens_at,checkin_closes_at,status,chat_enabled")
       .eq("checkin_enabled", true)
       .in("status", ["scheduled", "ongoing"])
       .order("starts_at", { ascending: true })
@@ -71,6 +76,29 @@ function Checkin() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!user || !selectedId) {
+      setConfirmed(false);
+      return;
+    }
+    let mounted = true;
+    async function checkConfirmation() {
+      const { data } = await supabase
+        .from("checkins")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("event_id", selectedId)
+        .maybeSingle();
+      if (mounted) setConfirmed(Boolean(data));
+    }
+    void checkConfirmation();
+    const timer = window.setInterval(() => void checkConfirmation(), 5000);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [selectedId, user]);
 
   const selected = events.find((event) => event.id === selectedId) ?? null;
   const windowOpen = selected ? isWindowOpen(selected, now) : false;
@@ -116,7 +144,9 @@ function Checkin() {
             <section className="poster-card checker-texture p-6 text-foreground">
               <span className="cut-label bg-white">check-in</span>
               <CalendarCheck className="mt-5 h-8 w-8" />
-              <h2 className="mt-3 font-display text-4xl leading-none">Ainda não abriu a catraca da fofoca.</h2>
+              <h2 className="mt-3 font-display text-4xl leading-none">
+                Ainda não abriu a catraca da fofoca.
+              </h2>
               <p className="mt-3 text-sm font-semibold opacity-75">
                 Assim que um evento for liberado pela equipe, seu código aparece aqui.
               </p>
@@ -124,12 +154,15 @@ function Checkin() {
           ) : (
             <>
               <section className="sticker-card bg-card p-5">
-                <label className="section-kicker text-muted-foreground">Em qual rolê você está?</label>
+                <label className="section-kicker text-muted-foreground">
+                  Em qual rolê você está?
+                </label>
                 <select
                   value={selectedId}
                   onChange={(event) => {
                     setSelectedId(event.target.value);
                     setToken(null);
+                    setConfirmed(false);
                   }}
                   className="mt-3 w-full rounded-xl border-2 border-foreground bg-surface px-4 py-3 font-black outline-none focus:ring-4 focus:ring-lagoa/25"
                 >
@@ -142,7 +175,8 @@ function Checkin() {
                 {selected && (
                   <div className="mt-4 grid gap-2 text-sm font-semibold text-muted-foreground">
                     <p className="flex items-center gap-2">
-                      <CalendarCheck className="h-4 w-4 text-primary" /> {formatEventDate(selected.starts_at)} · {formatEventTime(selected.starts_at)}
+                      <CalendarCheck className="h-4 w-4 text-primary" />{" "}
+                      {formatEventDate(selected.starts_at)} · {formatEventTime(selected.starts_at)}
                     </p>
                     <p className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-brick" /> Praça Dr. Amaro de Souza
@@ -151,16 +185,40 @@ function Checkin() {
                 )}
               </section>
 
-              {!windowOpen ? (
+              {confirmed ? (
+                <section className="poster-card grid-texture bg-samba p-6 text-white">
+                  <span className="cut-label bg-mango text-foreground">presença confirmada</span>
+                  <ShieldCheck className="mt-6 h-10 w-10" />
+                  <h2 className="mt-3 font-display text-4xl leading-none">
+                    Você está oficialmente no Bafafá.
+                  </h2>
+                  <p className="mt-3 text-sm font-semibold text-white/85">
+                    Seu check-in foi validado pela equipe. Selos e mimos elegíveis já estão sendo
+                    liberados.
+                  </p>
+                  {selected?.chat_enabled && (
+                    <Link
+                      to="/resenha"
+                      search={{ event: selected.id }}
+                      className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-mango px-5 py-3 text-sm font-black text-foreground shadow-[4px_5px_0_var(--foreground)]"
+                    >
+                      Entrar na Resenha <MessageCircleMore className="h-4 w-4" />
+                    </Link>
+                  )}
+                </section>
+              ) : !windowOpen ? (
                 <section className="ticket-card checker-texture p-5 text-foreground">
                   <span className="cut-label bg-white">calma, emocionado</span>
-                  <p className="mt-4 font-display text-3xl leading-none">Ainda não abriu, Bafafã.</p>
+                  <p className="mt-4 font-display text-3xl leading-none">
+                    Ainda não abriu, Bafafã.
+                  </p>
                   <p className="mt-2 text-sm font-semibold opacity-75">
                     O botão será liberado dentro da janela definida pela equipe para este evento.
                   </p>
                   {selected?.checkin_opens_at && (
                     <p className="mt-3 flex items-center gap-2 text-sm font-black">
-                      <Clock3 className="h-4 w-4" /> Abre às {formatEventTime(selected.checkin_opens_at)}.
+                      <Clock3 className="h-4 w-4" /> Abre às{" "}
+                      {formatEventTime(selected.checkin_opens_at)}.
                     </p>
                   )}
                 </section>
@@ -175,7 +233,8 @@ function Checkin() {
                       {codeGroups}
                     </p>
                     <p className="mt-4 text-sm font-semibold text-background/75">
-                      Expira em <strong className="text-background">{secondsLeft}s</strong> e só vale uma vez.
+                      Expira em <strong className="text-background">{secondsLeft}s</strong> e só
+                      vale uma vez.
                     </p>
                     <button
                       type="button"
@@ -183,7 +242,8 @@ function Checkin() {
                       disabled={generating}
                       className="mt-5 inline-flex items-center gap-2 rounded-xl border-2 border-background bg-background px-5 py-2.5 text-sm font-black text-foreground shadow-[3px_4px_0_var(--mango)] disabled:opacity-50"
                     >
-                      <RefreshCw className={`h-4 w-4 ${generating ? "animate-spin" : ""}`} /> Gerar outro
+                      <RefreshCw className={`h-4 w-4 ${generating ? "animate-spin" : ""}`} /> Gerar
+                      outro
                     </button>
                   </div>
                 </section>
@@ -191,7 +251,9 @@ function Checkin() {
                 <section className="poster-card grid-texture bg-primary p-6 text-primary-foreground">
                   <span className="cut-label bg-mango text-foreground">chegou no bafas?</span>
                   <ShieldCheck className="mt-6 h-9 w-9" />
-                  <h2 className="mt-3 font-display text-4xl leading-none">Sua presença vale mimo.</h2>
+                  <h2 className="mt-3 font-display text-4xl leading-none">
+                    Sua presença vale mimo.
+                  </h2>
                   <p className="mt-3 text-sm font-semibold opacity-90">
                     Gere o código, mostre para a equipe e deixe o sistema fazer o resto da fofoca.
                   </p>
@@ -201,14 +263,19 @@ function Checkin() {
                     disabled={generating}
                     className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-mango px-5 py-3 text-sm font-black text-foreground shadow-[4px_5px_0_var(--foreground)] disabled:opacity-60"
                   >
-                    {generating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {generating ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
                     Gerar meu código
                   </button>
                 </section>
               )}
 
               <p className="px-3 text-center text-[11px] font-semibold text-muted-foreground">
-                A equipe valida o código numérico. Ele não carrega telefone, aniversário nem outros dados pessoais.
+                A equipe valida o código numérico. Ele não carrega telefone, aniversário nem outros
+                dados pessoais.
               </p>
             </>
           )}

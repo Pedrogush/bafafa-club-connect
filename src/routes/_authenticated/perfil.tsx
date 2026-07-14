@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type HTMLInputTypeAttribute } from "react";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import {
   BadgeCheck,
   CalendarCheck2,
+  CheckCircle2,
+  Circle,
   Eye,
   LockKeyhole,
   LogOut,
@@ -25,6 +27,12 @@ import {
   NameWithBadges,
   type BafafaBadgeDefinition,
 } from "@/components/profile/bafafa-badge";
+import {
+  EMPTY_PROFILE_COMPLETION,
+  nextProfileTask,
+  parseProfileCompletion,
+  type ProfileCompletionDetails,
+} from "@/lib/profile-completion";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
@@ -98,7 +106,8 @@ function Perfil() {
   const [prefs, setPrefs] = useState<PreferencesRow>(emptyPrefs);
   const [badges, setBadges] = useState<BadgeRow[]>([]);
   const [titles, setTitles] = useState<TitleRow[]>([]);
-  const [completeness, setCompleteness] = useState(0);
+  const [completionDetails, setCompletionDetails] =
+    useState<ProfileCompletionDetails>(EMPTY_PROFILE_COMPLETION);
   const [checkins, setCheckins] = useState(0);
   const [saving, setSaving] = useState(false);
   const [avatarSelection, setAvatarSelection] = useState<File | null | undefined>(undefined);
@@ -129,16 +138,23 @@ function Perfil() {
         .from("user_titles")
         .select("title_id,title_definitions(name,description)")
         .order("awarded_at", { ascending: false }),
-      supabase.rpc("my_profile_completeness"),
+      supabase.rpc("my_profile_completion_details"),
       supabase.from("checkins").select("id", { count: "exact", head: true }),
     ]).then(
-      ([profileResult, prefsResult, badgesResult, titlesResult, completenessResult, checkinsResult]) => {
+      ([
+        profileResult,
+        prefsResult,
+        badgesResult,
+        titlesResult,
+        completenessResult,
+        checkinsResult,
+      ]) => {
         if (!mounted) return;
         setProfile(profileResult.data as ProfileRow | null);
         setPrefs((prefsResult.data as PreferencesRow | null) ?? emptyPrefs);
         setBadges((badgesResult.data ?? []) as unknown as BadgeRow[]);
         setTitles((titlesResult.data ?? []) as unknown as TitleRow[]);
-        setCompleteness(typeof completenessResult.data === "number" ? completenessResult.data : 0);
+        setCompletionDetails(parseProfileCompletion(completenessResult.data));
         setCheckins(checkinsResult.count ?? 0);
       },
     );
@@ -187,6 +203,7 @@ function Perfil() {
             neighborhood: profile.neighborhood?.trim() || null,
             bio: profile.bio?.trim() || null,
             how_found_us: profile.how_found_us?.trim() || null,
+            birth_date: profile.birth_date || null,
             is_public: profile.is_public,
             active_title_id: profile.active_title_id,
           })
@@ -216,20 +233,20 @@ function Perfil() {
       const [badgesResult, titlesResult, completenessResult] = await Promise.all([
         supabase
           .from("user_badges")
-          .select("id,is_featured,is_hidden,awarded_at,badge_definitions(slug,name,description,icon)")
+          .select(
+            "id,is_featured,is_hidden,awarded_at,badge_definitions(slug,name,description,icon)",
+          )
           .order("awarded_at", { ascending: false }),
         supabase
           .from("user_titles")
           .select("title_id,title_definitions(name,description)")
           .order("awarded_at", { ascending: false }),
-        supabase.rpc("my_profile_completeness"),
+        supabase.rpc("my_profile_completion_details"),
       ]);
 
       setBadges((badgesResult.data ?? []) as unknown as BadgeRow[]);
       setTitles((titlesResult.data ?? []) as unknown as TitleRow[]);
-      setCompleteness(
-        typeof completenessResult.data === "number" ? completenessResult.data : completeness,
-      );
+      setCompletionDetails(parseProfileCompletion(completenessResult.data));
       toast.success("Perfil salvinho.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
@@ -251,6 +268,8 @@ function Perfil() {
     });
   }
 
+  const completeness = completionDetails.percentage;
+  const nextTask = nextProfileTask(completionDetails);
   const canValidate = roles.some((role) => role === "admin" || role === "equipe");
   const isAdmin = roles.includes("admin");
   const initial = (profile?.display_name?.[0] ?? "B").toUpperCase();
@@ -321,7 +340,9 @@ function Perfil() {
               {activeTitle && (
                 <span className="cut-label mt-3 bg-foreground text-background">{activeTitle}</span>
               )}
-              {profile?.bio && <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>}
+              {profile?.bio && (
+                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>
+              )}
             </div>
 
             <div className="mt-5 grid grid-cols-3 gap-2 border-t-2 border-dashed border-foreground/25 pt-4 text-center">
@@ -355,8 +376,25 @@ function Perfil() {
           <p className="mt-2 text-xs font-semibold opacity-70">
             {completeness === 100
               ? "Perfil no grau. O selo já sabe seu nome."
-              : "Preencha aos poucos e desbloqueie selos e títulos."}
+              : nextTask
+                ? `Próxima fofoca: ${nextTask.label} (+${nextTask.weight}%).`
+                : "Preencha aos poucos e desbloqueie selos e títulos."}
           </p>
+          {completionDetails.items.length > 0 && (
+            <div className="mt-4 grid gap-2 rounded-2xl border-2 border-foreground/15 bg-white/80 p-3 sm:grid-cols-2">
+              {completionDetails.items.map((item) => (
+                <div key={item.key} className="flex items-center gap-2 text-xs font-black">
+                  {item.complete ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                  ) : (
+                    <Circle className="h-4 w-4 shrink-0 opacity-35" />
+                  )}
+                  <span className={item.complete ? "" : "opacity-60"}>{item.label}</span>
+                  <span className="ml-auto opacity-50">{item.weight}%</span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {(canValidate || isAdmin) && (
@@ -444,6 +482,12 @@ function Perfil() {
                   value={profile.username ?? ""}
                   onChange={(value) => setProfile({ ...profile, username: value })}
                   placeholder="seuusuario"
+                />
+                <TextField
+                  label="Data de nascimento"
+                  value={profile.birth_date ?? ""}
+                  onChange={(value) => setProfile({ ...profile, birth_date: value || null })}
+                  type="date"
                 />
                 <TextField
                   label="Cidade"
@@ -547,13 +591,15 @@ function Perfil() {
             <LockKeyhole className="h-4 w-4" /> Dados privados
           </p>
           <p className="mt-2">
-            Telefone, nascimento, preferências, check-ins e histórico de mimos não aparecem no perfil público.
+            Telefone, nascimento, preferências, check-ins e histórico de mimos não aparecem no
+            perfil público.
           </p>
           <p className="mt-2 flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5" /> Cidade só aparece quando você autoriza no perfil.
           </p>
           <p className="mt-2 flex items-center gap-1.5">
-            <CalendarCheck2 className="h-3.5 w-3.5" /> Telefone verificado: {profile?.phone_verified_at ? "sim" : "será ativado no lançamento com OTP"}.
+            <CalendarCheck2 className="h-3.5 w-3.5" /> Telefone verificado:{" "}
+            {profile?.phone_verified_at ? "sim" : "será ativado no lançamento com OTP"}.
           </p>
         </section>
       </div>
@@ -570,17 +616,20 @@ function TextField({
   onChange,
   required,
   placeholder,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
   placeholder?: string;
+  type?: HTMLInputTypeAttribute;
 }) {
   return (
     <label className="block">
       <span className="mb-1 block text-sm font-black">{label}</span>
       <input
+        type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required={required}
@@ -608,7 +657,13 @@ function PreferenceGroup({
       <div className="mt-2 flex flex-wrap gap-2">
         {options.map((option, index) => {
           const active = selected.includes(option);
-          const colors = ["bg-mango", "bg-lagoa", "bg-samba text-white", "bg-secondary", "bg-primary text-white"];
+          const colors = [
+            "bg-mango",
+            "bg-lagoa",
+            "bg-samba text-white",
+            "bg-secondary",
+            "bg-primary text-white",
+          ];
           return (
             <button
               key={option}
