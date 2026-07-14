@@ -336,7 +336,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          birth_month: number | null
+          city: string | null
+          display_name: string | null
+          id: string | null
+          is_public: boolean | null
+          member_since: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_month?: never
+          city?: never
+          display_name?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          member_since?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          birth_month?: never
+          city?: never
+          display_name?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          member_since?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       current_user_roles: {
