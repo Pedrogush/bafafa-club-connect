@@ -896,6 +896,10 @@ export type Database = {
       };
     };
     Functions: {
+      admin_set_manual_badge: {
+        Args: { _badge_slug: string; _enabled: boolean; _user_id: string };
+        Returns: undefined;
+      };
       calculate_profile_completeness: {
         Args: { _user_id: string };
         Returns: number;
@@ -912,6 +916,7 @@ export type Database = {
         Args: never;
         Returns: Database["public"]["Enums"]["app_role"][];
       };
+      get_public_profile: { Args: { _username: string }; Returns: Json };
       grant_badge_by_slug: {
         Args: { _slug: string; _user_id: string };
         Returns: undefined;

@@ -4,10 +4,27 @@ import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BadgeCheck, LogOut, Save, ShieldCheck, Trophy, UserRound } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarCheck2,
+  Eye,
+  LockKeyhole,
+  LogOut,
+  MapPin,
+  Save,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  UserRound,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { removePublicImage, uploadPublicImage } from "@/lib/storage";
+import {
+  BadgeSticker,
+  NameWithBadges,
+  type BafafaBadgeDefinition,
+} from "@/components/profile/bafafa-badge";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   component: Perfil,
@@ -44,7 +61,7 @@ type BadgeRow = {
   is_featured: boolean;
   is_hidden: boolean;
   awarded_at: string;
-  badge_definitions: { name: string; description: string; icon: string } | null;
+  badge_definitions: BafafaBadgeDefinition | null;
 };
 
 type TitleRow = {
@@ -82,6 +99,7 @@ function Perfil() {
   const [badges, setBadges] = useState<BadgeRow[]>([]);
   const [titles, setTitles] = useState<TitleRow[]>([]);
   const [completeness, setCompleteness] = useState(0);
+  const [checkins, setCheckins] = useState(0);
   const [saving, setSaving] = useState(false);
   const [avatarSelection, setAvatarSelection] = useState<File | null | undefined>(undefined);
 
@@ -105,21 +123,25 @@ function Perfil() {
         .maybeSingle(),
       supabase
         .from("user_badges")
-        .select("id,is_featured,is_hidden,awarded_at,badge_definitions(name,description,icon)")
+        .select("id,is_featured,is_hidden,awarded_at,badge_definitions(slug,name,description,icon)")
         .order("awarded_at", { ascending: false }),
       supabase
         .from("user_titles")
         .select("title_id,title_definitions(name,description)")
         .order("awarded_at", { ascending: false }),
       supabase.rpc("my_profile_completeness"),
-    ]).then(([profileResult, prefsResult, badgesResult, titlesResult, completenessResult]) => {
-      if (!mounted) return;
-      setProfile(profileResult.data as ProfileRow | null);
-      setPrefs((prefsResult.data as PreferencesRow | null) ?? emptyPrefs);
-      setBadges((badgesResult.data ?? []) as unknown as BadgeRow[]);
-      setTitles((titlesResult.data ?? []) as unknown as TitleRow[]);
-      setCompleteness(typeof completenessResult.data === "number" ? completenessResult.data : 0);
-    });
+      supabase.from("checkins").select("id", { count: "exact", head: true }),
+    ]).then(
+      ([profileResult, prefsResult, badgesResult, titlesResult, completenessResult, checkinsResult]) => {
+        if (!mounted) return;
+        setProfile(profileResult.data as ProfileRow | null);
+        setPrefs((prefsResult.data as PreferencesRow | null) ?? emptyPrefs);
+        setBadges((badgesResult.data ?? []) as unknown as BadgeRow[]);
+        setTitles((titlesResult.data ?? []) as unknown as TitleRow[]);
+        setCompleteness(typeof completenessResult.data === "number" ? completenessResult.data : 0);
+        setCheckins(checkinsResult.count ?? 0);
+      },
+    );
     return () => {
       mounted = false;
     };
@@ -194,7 +216,7 @@ function Perfil() {
       const [badgesResult, titlesResult, completenessResult] = await Promise.all([
         supabase
           .from("user_badges")
-          .select("id,is_featured,is_hidden,awarded_at,badge_definitions(name,description,icon)")
+          .select("id,is_featured,is_hidden,awarded_at,badge_definitions(slug,name,description,icon)")
           .order("awarded_at", { ascending: false }),
         supabase
           .from("user_titles")
@@ -234,56 +256,107 @@ function Perfil() {
   const initial = (profile?.display_name?.[0] ?? "B").toUpperCase();
   const activeTitle = titles.find((title) => title.title_id === profile?.active_title_id)
     ?.title_definitions?.name;
+  const visibleBadgeDefinitions = badges
+    .filter((badge) => !badge.is_hidden && badge.badge_definitions)
+    .map((badge) => badge.badge_definitions as BafafaBadgeDefinition);
+  const memberSince = profile?.member_since
+    ? new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(
+        new Date(profile.member_since),
+      )
+    : "agora";
 
   return (
     <AppShell>
       <ScreenHeader
-        eyebrow="Seu clube"
+        eyebrow="Sua carteirinha"
         title="Perfil"
+        tone="brick"
         action={
           <button
             onClick={handleSignOut}
             aria-label="Sair"
-            className="grid h-10 w-10 place-items-center rounded-full border border-input text-muted-foreground hover:bg-muted"
+            className="grid h-10 w-10 place-items-center rounded-full border-2 border-foreground bg-background text-foreground shadow-[2px_3px_0_var(--foreground)]"
           >
             <LogOut className="h-4 w-4" />
           </button>
         }
       />
 
-      <div className="space-y-4 px-5">
-        <section className="card-festa p-5">
-          <div className="flex items-center gap-4">
-            <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-primary font-display text-2xl text-primary-foreground">
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={`Foto de ${profile.display_name}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                initial
+      <div className="space-y-5 px-5 pt-2">
+        <section className="poster-card overflow-hidden bg-card">
+          <div className="brick-texture h-24 border-b-[3px] border-foreground" />
+          <div className="relative px-5 pb-5">
+            <div className="-mt-12 flex items-end justify-between gap-4">
+              <div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-full border-[4px] border-foreground bg-primary font-display text-4xl text-primary-foreground shadow-[4px_5px_0_var(--foreground)]">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={`Foto de ${profile.display_name}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initial
+                )}
+              </div>
+              {profile?.username && profile.is_public && (
+                <Link
+                  to="/u/$username"
+                  params={{ username: profile.username }}
+                  className="mb-1 inline-flex items-center gap-1.5 rounded-xl border-2 border-foreground bg-mango px-3 py-2 text-xs font-black shadow-[2px_3px_0_var(--foreground)]"
+                >
+                  <Eye className="h-4 w-4" /> Perfil público
+                </Link>
               )}
             </div>
-            <div className="min-w-0">
-              <p className="truncate font-display text-xl">{profile?.display_name ?? "Bafafã"}</p>
-              <p className="truncate text-sm text-muted-foreground">
+
+            <div className="mt-4">
+              <NameWithBadges
+                name={profile?.display_name ?? "Bafafã"}
+                badges={visibleBadgeDefinitions}
+                className="font-poster text-2xl"
+              />
+              <p className="mt-0.5 text-sm font-bold text-muted-foreground">
                 {profile?.username ? `@${profile.username}` : "Escolha seu @ no perfil"}
               </p>
               {activeTitle && (
-                <span className="mt-1 inline-flex rounded-full bg-mango px-2.5 py-1 text-[10px] font-bold uppercase text-mango-foreground">
-                  {activeTitle}
-                </span>
+                <span className="cut-label mt-3 bg-foreground text-background">{activeTitle}</span>
               )}
+              {profile?.bio && <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>}
+            </div>
+
+            <div className="mt-5 grid grid-cols-3 gap-2 border-t-2 border-dashed border-foreground/25 pt-4 text-center">
+              <div>
+                <p className="font-display text-3xl leading-none">{checkins}</p>
+                <p className="text-[10px] font-black uppercase text-muted-foreground">check-ins</p>
+              </div>
+              <div>
+                <p className="font-display text-3xl leading-none">{badges.length}</p>
+                <p className="text-[10px] font-black uppercase text-muted-foreground">selos</p>
+              </div>
+              <div>
+                <p className="font-display text-xl leading-none">{memberSince}</p>
+                <p className="text-[10px] font-black uppercase text-muted-foreground">no clube</p>
+              </div>
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="font-bold">Perfil {completeness}% completo</span>
-            <span className="text-muted-foreground">{badges.length} selo(s)</span>
+        </section>
+
+        <section className="sticker-card checker-texture p-4 text-foreground">
+          <div className="flex items-center justify-between text-sm">
+            <div>
+              <p className="section-kicker">Aquisição de fofoca</p>
+              <p className="mt-1 font-poster text-lg">Perfil {completeness}% completo</p>
+            </div>
+            <Sparkles className="h-6 w-6" />
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${completeness}%` }} />
+          <div className="mt-3 h-3 overflow-hidden rounded-full border-2 border-foreground bg-white">
+            <div className="h-full bg-primary" style={{ width: `${completeness}%` }} />
           </div>
+          <p className="mt-2 text-xs font-semibold opacity-70">
+            {completeness === 100
+              ? "Perfil no grau. O selo já sabe seu nome."
+              : "Preencha aos poucos e desbloqueie selos e títulos."}
+          </p>
         </section>
 
         {(canValidate || isAdmin) && (
@@ -291,11 +364,11 @@ function Perfil() {
             {canValidate && (
               <Link
                 to="/staff/checkin"
-                className="card-festa flex items-center gap-3 bg-primary p-4 text-primary-foreground"
+                className="sticker-card flex items-center gap-3 bg-primary p-4 text-primary-foreground"
               >
                 <ShieldCheck className="h-5 w-5" />
                 <div>
-                  <p className="font-display text-sm">Validar códigos</p>
+                  <p className="font-poster text-sm">Validar códigos</p>
                   <p className="text-xs opacity-75">Check-in e mimos.</p>
                 </div>
               </Link>
@@ -303,11 +376,11 @@ function Perfil() {
             {isAdmin && (
               <Link
                 to="/admin"
-                className="card-festa flex items-center gap-3 bg-foreground p-4 text-background"
+                className="sticker-card flex items-center gap-3 bg-foreground p-4 text-background"
               >
                 <ShieldCheck className="h-5 w-5" />
                 <div>
-                  <p className="font-display text-sm">Administração</p>
+                  <p className="font-poster text-sm">Administração</p>
                   <p className="text-xs opacity-70">Gestão do aplicativo.</p>
                 </div>
               </Link>
@@ -315,33 +388,36 @@ function Perfil() {
           </div>
         )}
 
-        <section className="card-festa p-4">
-          <div className="flex items-center gap-2">
-            <BadgeCheck className="h-5 w-5 text-samba" />
-            <h2 className="font-display text-lg">Meus selos</h2>
+        <section className="sticker-card bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="h-5 w-5 text-samba" />
+              <h2 className="font-display text-2xl">Meus selos</h2>
+            </div>
+            <span className="cut-label bg-lagoa">{badges.length} na coleção</span>
           </div>
           {badges.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm font-semibold text-muted-foreground">
               Seu primeiro check-in libera o primeiro selo de presença.
             </p>
           ) : (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {badges.map((badge) => (
-                <div key={badge.id} className="rounded-2xl bg-muted p-3">
-                  <p className="text-sm font-bold">{badge.badge_definitions?.name ?? "Selo"}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {badge.badge_definitions?.description}
-                  </p>
-                </div>
-              ))}
+            <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3">
+              {badges.map((badge) =>
+                badge.badge_definitions ? (
+                  <BadgeSticker key={badge.id} badge={badge.badge_definitions} />
+                ) : null,
+              )}
             </div>
           )}
         </section>
 
-        <form onSubmit={saveProfile} className="card-festa space-y-5 p-4">
+        <form onSubmit={saveProfile} className="sticker-card space-y-5 bg-card p-5">
           <div className="flex items-center gap-2">
             <UserRound className="h-5 w-5 text-primary" />
-            <h2 className="font-display text-lg">Completar perfil</h2>
+            <div>
+              <p className="section-kicker text-muted-foreground">Conta mais um pouco</p>
+              <h2 className="font-display text-2xl">Completar perfil</h2>
+            </div>
           </div>
 
           {!profile ? (
@@ -387,7 +463,7 @@ function Perfil() {
                 placeholder="Amigos, Instagram, passando na praça…"
               />
               <label className="block">
-                <span className="mb-1 block text-sm font-semibold">Bio curta</span>
+                <span className="mb-1 block text-sm font-black">Bio curta</span>
                 <textarea
                   value={profile.bio ?? ""}
                   onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
@@ -417,7 +493,7 @@ function Perfil() {
 
               {titles.length > 0 && (
                 <label className="block">
-                  <span className="mb-1 flex items-center gap-2 text-sm font-semibold">
+                  <span className="mb-1 flex items-center gap-2 text-sm font-black">
                     <Trophy className="h-4 w-4" /> Título em destaque
                   </span>
                   <select
@@ -437,7 +513,7 @@ function Perfil() {
                 </label>
               )}
 
-              <div className="space-y-3 rounded-2xl bg-muted p-4 text-sm">
+              <div className="space-y-3 rounded-2xl border-2 border-foreground/15 bg-muted p-4 text-sm">
                 <Toggle
                   label="Perfil visível para outros Bafafãs"
                   checked={profile.is_public}
@@ -458,7 +534,7 @@ function Perfil() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground shadow-festa disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
               >
                 <Save className="h-4 w-4" /> {saving ? "Salvando…" : "Salvar perfil"}
               </button>
@@ -467,14 +543,17 @@ function Perfil() {
         </form>
 
         <section className="card-festa p-4 text-sm text-muted-foreground">
-          <p className="font-bold text-foreground">Dados privados</p>
-          <p className="mt-1">
-            Telefone, nascimento, preferências, check-ins e histórico de mimos não aparecem para
-            outros usuários.
+          <p className="flex items-center gap-2 font-black text-foreground">
+            <LockKeyhole className="h-4 w-4" /> Dados privados
           </p>
           <p className="mt-2">
-            Telefone verificado:{" "}
-            {profile?.phone_verified_at ? "sim" : "será ativado no lançamento com OTP"}.
+            Telefone, nascimento, preferências, check-ins e histórico de mimos não aparecem no perfil público.
+          </p>
+          <p className="mt-2 flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5" /> Cidade só aparece quando você autoriza no perfil.
+          </p>
+          <p className="mt-2 flex items-center gap-1.5">
+            <CalendarCheck2 className="h-3.5 w-3.5" /> Telefone verificado: {profile?.phone_verified_at ? "sim" : "será ativado no lançamento com OTP"}.
           </p>
         </section>
       </div>
@@ -483,7 +562,7 @@ function Perfil() {
 }
 
 const inputCls =
-  "w-full rounded-2xl border border-input bg-surface px-4 py-2.5 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15";
+  "w-full rounded-xl border-2 border-foreground/20 bg-surface px-4 py-2.5 font-semibold outline-none focus:border-electric focus:ring-4 focus:ring-lagoa/20";
 
 function TextField({
   label,
@@ -500,7 +579,7 @@ function TextField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-semibold">{label}</span>
+      <span className="mb-1 block text-sm font-black">{label}</span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -525,16 +604,21 @@ function PreferenceGroup({
 }) {
   return (
     <fieldset>
-      <legend className="text-sm font-semibold">{title}</legend>
+      <legend className="text-sm font-black">{title}</legend>
       <div className="mt-2 flex flex-wrap gap-2">
-        {options.map((option) => {
+        {options.map((option, index) => {
           const active = selected.includes(option);
+          const colors = ["bg-mango", "bg-lagoa", "bg-samba text-white", "bg-secondary", "bg-primary text-white"];
           return (
             <button
               key={option}
               type="button"
               onClick={() => onToggle(option)}
-              className={`rounded-full border px-3 py-2 text-xs font-bold transition ${active ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background text-muted-foreground"}`}
+              className={`rounded-full border-2 px-3 py-2 text-xs font-black transition ${
+                active
+                  ? `${colors[index % colors.length]} border-foreground shadow-[2px_2px_0_var(--foreground)]`
+                  : "border-foreground/15 bg-background text-muted-foreground"
+              }`}
             >
               {option}
             </button>
@@ -555,7 +639,7 @@ function Toggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-start gap-3">
+    <label className="flex items-start gap-3 font-semibold">
       <input
         type="checkbox"
         checked={checked}

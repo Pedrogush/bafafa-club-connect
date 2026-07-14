@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UUsernameRouteImport } from './routes/u/$username'
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated/reservas'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedMimosRouteImport } from './routes/_authenticated/mimos'
@@ -41,6 +42,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedReservasRoute = AuthenticatedReservasRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/mimos': typeof AuthenticatedMimosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
 export interface FileRoutesByTo {
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/mimos': typeof AuthenticatedMimosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
 export interface FileRoutesById {
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/_authenticated/mimos': typeof AuthenticatedMimosRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
+  '/u/$username': typeof UUsernameRoute
   '/_authenticated/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
 export interface FileRouteTypes {
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/mimos'
     | '/perfil'
     | '/reservas'
+    | '/u/$username'
     | '/staff/checkin'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/mimos'
     | '/perfil'
     | '/reservas'
+    | '/u/$username'
     | '/staff/checkin'
   id:
     | '__root__'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mimos'
     | '/_authenticated/perfil'
     | '/_authenticated/reservas'
+    | '/u/$username'
     | '/_authenticated/staff/checkin'
   fileRoutesById: FileRoutesById
 }
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  UUsernameRoute: typeof UUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -227,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/reservas': {
@@ -336,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

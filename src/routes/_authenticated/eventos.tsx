@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CalendarDays, Clock3, Gift, Music2 } from "lucide-react";
+import { CalendarDays, Clock3, Gift, MapPin, Music2, Sparkles } from "lucide-react";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,26 +69,27 @@ function Eventos() {
 
   return (
     <AppShell>
-      <ScreenHeader eyebrow="Agenda do Bafafá" title="Eventos" />
+      <ScreenHeader eyebrow="Agenda semanal" title="Eventos" tone="brick" />
       {loading && <LoadingCard label="Organizando a agenda…" />}
       {error && <ErrorCard message={error} />}
 
       {!loading && !error && (
-        <div className="space-y-6 px-5">
+        <div className="space-y-7 px-5 pt-2">
           {upcoming.length === 0 ? (
-            <div className="card-festa bg-primary p-6 text-primary-foreground">
-              <CalendarDays className="h-7 w-7" />
-              <h2 className="mt-3 font-display text-2xl">A agenda está quase saindo.</h2>
-              <p className="mt-2 text-sm opacity-90">
-                Quando o próximo evento for publicado, ele aparece aqui com horário, atração e mimo
-                disponível.
+            <div className="poster-card checker-texture p-6 text-foreground">
+              <span className="cut-label bg-white">agenda do bafafá</span>
+              <CalendarDays className="mt-5 h-8 w-8" />
+              <h2 className="mt-3 font-display text-4xl leading-none">A próxima fofoca ainda não saiu.</h2>
+              <p className="mt-3 text-sm font-semibold opacity-75">
+                Assim que o próximo rolê for publicado, ele aparece com horário, atração e mimo.
               </p>
             </div>
           ) : (
-            <section className="space-y-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                Próximos
-              </p>
+            <section className="space-y-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="section-kicker text-muted-foreground">Próximos rolês</p>
+                <span className="cut-label bg-lagoa">{upcoming.length} na agenda</span>
+              </div>
               {upcoming.map((event, index) => (
                 <EventCard key={event.id} event={event} featured={index === 0} />
               ))}
@@ -96,12 +97,10 @@ function Eventos() {
           )}
 
           {past.length > 0 && (
-            <section className="space-y-3 pb-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                Já rolou
-              </p>
+            <section className="space-y-4 pb-4">
+              <p className="section-kicker text-muted-foreground">Já rolou e deixou história</p>
               {past.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard key={event.id} event={event} past />
               ))}
             </section>
           )}
@@ -111,81 +110,89 @@ function Eventos() {
   );
 }
 
-function EventCard({ event, featured = false }: { event: EventRow; featured?: boolean }) {
+function EventCard({
+  event,
+  featured = false,
+  past = false,
+}: {
+  event: EventRow;
+  featured?: boolean;
+  past?: boolean;
+}) {
   const campaign = event.campaigns?.[0];
+  const date = new Date(event.starts_at);
+  const day = new Intl.DateTimeFormat("pt-BR", { day: "2-digit" }).format(date);
+  const month = new Intl.DateTimeFormat("pt-BR", { month: "short" })
+    .format(date)
+    .replace(".", "");
+
   return (
     <article
-      className={`card-festa overflow-hidden ${featured ? "bg-foreground text-background" : "bg-card"}`}
+      className={`${featured ? "poster-card" : "sticker-card"} overflow-hidden ${past ? "opacity-75 grayscale-[.2]" : ""} bg-card`}
     >
-      {event.image_url ? (
-        <div className="relative aspect-[16/8] overflow-hidden">
-          <img src={event.image_url} alt="" className="h-full w-full object-cover" />
-          <div
-            className={`absolute inset-0 ${featured ? "bg-gradient-to-t from-foreground/80 via-transparent to-transparent" : ""}`}
-          />
-        </div>
-      ) : (
-        <div className={`h-2 ${featured ? "bg-samba" : "bg-primary"}`} />
-      )}
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p
-              className={`text-[11px] font-bold uppercase tracking-[0.18em] ${featured ? "text-background/65" : "text-muted-foreground"}`}
-            >
-              {event.category}
-            </p>
-            <h2 className="mt-1 font-display text-2xl leading-tight">{event.name}</h2>
-          </div>
+      <div className={`relative ${featured ? "aspect-[4/3]" : "aspect-[16/8]"} overflow-hidden`}>
+        {event.image_url ? (
+          <img src={event.image_url} alt={`Imagem de ${event.name}`} className="h-full w-full object-cover" />
+        ) : (
+          <div className={`h-full w-full ${featured ? "brick-texture" : "grid-texture bg-electric"}`} />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/15 to-transparent" />
+        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <span className="cut-label bg-mango text-foreground">{event.category}</span>
           {event.status === "ongoing" && (
-            <span className="shrink-0 rounded-full bg-samba px-3 py-1 text-[10px] font-bold uppercase text-samba-foreground">
-              Rolando agora
+            <span className="cut-label rotate-[2deg] bg-samba text-white">
+              <Sparkles className="h-3.5 w-3.5" /> rolando agora
             </span>
           )}
         </div>
-
-        <div
-          className={`mt-4 grid gap-2 text-sm ${featured ? "text-background/80" : "text-muted-foreground"}`}
-        >
-          <p className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" /> {formatEventDate(event.starts_at)}
-          </p>
-          <p className="flex items-center gap-2">
-            <Clock3 className="h-4 w-4" /> A partir das {formatEventTime(event.starts_at)}
-          </p>
+        <div className="absolute right-4 top-4 grid h-18 w-18 rotate-3 place-items-center rounded-full border-[3px] border-foreground bg-background text-center text-foreground shadow-[3px_4px_0_var(--foreground)]">
+          <div>
+            <p className="font-display text-3xl leading-none">{day}</p>
+            <p className="text-[10px] font-black uppercase">{month}</p>
+          </div>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+          <h2 className={`${featured ? "text-5xl" : "text-4xl"} font-display leading-[0.88]`}>
+            {event.name}
+          </h2>
           {event.attraction && (
-            <p className="flex items-center gap-2">
-              <Music2 className="h-4 w-4" /> {event.attraction}
+            <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-white/90">
+              <Music2 className="h-4 w-4 text-mango" /> {event.attraction}
             </p>
           )}
         </div>
+      </div>
 
-        {event.description && (
-          <p
-            className={`mt-4 text-sm ${featured ? "text-background/85" : "text-muted-foreground"}`}
-          >
-            {event.description}
+      <div className="p-5">
+        <div className="grid gap-2 text-sm font-semibold text-muted-foreground">
+          <p className="flex items-center gap-2">
+            <Clock3 className="h-4 w-4 text-secondary" /> {formatEventDate(event.starts_at)} · a partir das {formatEventTime(event.starts_at)}
           </p>
-        )}
+          <p className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-brick" /> Praça Dr. Amaro de Souza · Lagoa Nova
+          </p>
+        </div>
+
+        {event.description && <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{event.description}</p>}
 
         {campaign && (
-          <div
-            className={`mt-4 flex items-start gap-3 rounded-2xl p-3 ${featured ? "bg-background/10" : "bg-mango/55"}`}
-          >
-            <Gift className="mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em]">Mimo do evento</p>
-              <p className="mt-0.5 text-sm font-semibold">{campaignBenefitLabel(campaign)}</p>
+          <div className="ticket-card checker-texture mt-5 p-4 text-foreground">
+            <div className="flex items-start gap-3">
+              <Gift className="mt-0.5 h-6 w-6 shrink-0" />
+              <div>
+                <p className="section-kicker">Mimo do evento</p>
+                <p className="mt-1 font-poster text-base leading-tight">{campaignBenefitLabel(campaign)}</p>
+              </div>
             </div>
           </div>
         )}
 
-        {event.checkin_enabled && (
+        {event.checkin_enabled && !past && (
           <Link
             to="/checkin"
-            className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-bold ${featured ? "bg-mango text-mango-foreground" : "bg-primary text-primary-foreground"}`}
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] transition active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
-            Abrir meu check-in
+            Abrir meu check-in <Sparkles className="h-4 w-4" />
           </Link>
         )}
       </div>

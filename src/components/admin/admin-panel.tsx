@@ -13,6 +13,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Crown,
   Edit3,
   Gift,
   Loader2,
@@ -59,6 +60,8 @@ type CheckinRow = Database["public"]["Tables"]["checkins"]["Row"];
 type RoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 type RewardRow = Database["public"]["Tables"]["user_rewards"]["Row"];
 type AuditRow = Database["public"]["Tables"]["audit_logs"]["Row"];
+type BadgeDefinitionRow = Database["public"]["Tables"]["badge_definitions"]["Row"];
+type UserBadgeRow = Database["public"]["Tables"]["user_badges"]["Row"];
 
 type AdminData = {
   events: EventRow[];
@@ -69,6 +72,8 @@ type AdminData = {
   roles: RoleRow[];
   rewards: RewardRow[];
   audits: AuditRow[];
+  badgeDefinitions: BadgeDefinitionRow[];
+  userBadges: UserBadgeRow[];
 };
 
 const EMPTY_DATA: AdminData = {
@@ -80,6 +85,8 @@ const EMPTY_DATA: AdminData = {
   roles: [],
   rewards: [],
   audits: [],
+  badgeDefinitions: [],
+  userBadges: [],
 };
 
 const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart3 }> = [
@@ -104,8 +111,18 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
     else setLoading(true);
     setError(null);
 
-    const [events, campaigns, profiles, preferences, checkins, roles, rewards, audits] =
-      await Promise.all([
+    const [
+      events,
+      campaigns,
+      profiles,
+      preferences,
+      checkins,
+      roles,
+      rewards,
+      audits,
+      badgeDefinitions,
+      userBadges,
+    ] = await Promise.all([
         supabase.from("events").select("*").order("starts_at", { ascending: false }),
         supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
         supabase.from("profiles").select("*").is("deleted_at", null).order("created_at", {
@@ -124,9 +141,22 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
           .select("*")
           .order("created_at", { ascending: false })
           .limit(100),
+        supabase.from("badge_definitions").select("*").order("sort_order"),
+        supabase.from("user_badges").select("*"),
       ]);
 
-    const firstError = [events, campaigns, profiles, preferences, checkins, roles, rewards, audits]
+    const firstError = [
+      events,
+      campaigns,
+      profiles,
+      preferences,
+      checkins,
+      roles,
+      rewards,
+      audits,
+      badgeDefinitions,
+      userBadges,
+    ]
       .map((result) => result.error)
       .find(Boolean);
 
@@ -143,6 +173,8 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         roles: roles.data ?? [],
         rewards: rewards.data ?? [],
         audits: audits.data ?? [],
+        badgeDefinitions: badgeDefinitions.data ?? [],
+        userBadges: userBadges.data ?? [],
       });
     }
 
@@ -155,16 +187,14 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
   }, [loadData]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/95 backdrop-blur">
+    <div className="app-canvas min-h-screen bg-background">
+      <header className="sticky top-0 z-30 border-b-2 border-foreground bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-4">
             <Wordmark variant="short" />
             <div className="hidden min-w-0 sm:block">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Painel administrativo
-              </p>
-              <p className="truncate font-display text-lg">Clube dos Bafafãs</p>
+              <p className="section-kicker text-muted-foreground">Painel administrativo</p>
+              <p className="truncate font-display text-2xl leading-none">Clube dos Bafafãs</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -194,10 +224,10 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
               key={key}
               type="button"
               onClick={() => setSection(key)}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition ${
+              className={`inline-flex shrink-0 items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-black transition ${
                 section === key
-                  ? "bg-foreground text-background shadow-festa"
-                  : "border border-input bg-card text-muted-foreground hover:bg-muted"
+                  ? "border-foreground bg-mango text-foreground shadow-[2px_3px_0_var(--foreground)]"
+                  : "border-foreground/15 bg-card text-muted-foreground hover:bg-muted"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -234,7 +264,9 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
                 onChanged={() => void loadData(true)}
               />
             )}
-            {section === "clients" && <ClientsManager data={data} />}
+            {section === "clients" && (
+              <ClientsManager data={data} onChanged={() => void loadData(true)} />
+            )}
             {section === "checkins" && <CheckinsManager data={data} />}
             {section === "team" && (
               <TeamManager
@@ -297,7 +329,7 @@ function Overview({ data }: { data: AdminData }) {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(({ label, value, copy, icon: Icon }, index) => (
-          <div key={label} className="card-festa p-5">
+          <div key={label} className="sticker-card bg-card p-5">
             <div
               className={`grid h-11 w-11 place-items-center rounded-full ${
                 ["bg-primary text-primary-foreground", "bg-mango", "bg-samba", "bg-sky text-white"][
@@ -1089,8 +1121,9 @@ function CampaignDialog({
   );
 }
 
-function ClientsManager({ data }: { data: AdminData }) {
+function ClientsManager({ data, onChanged }: { data: AdminData; onChanged: () => void }) {
   const [search, setSearch] = useState("");
+  const [busyFounder, setBusyFounder] = useState<string | null>(null);
   const preferenceByUser = useMemo(
     () => new Map(data.preferences.map((preference) => [preference.user_id, preference])),
     [data.preferences],
@@ -1104,6 +1137,16 @@ function ClientsManager({ data }: { data: AdminData }) {
     [data.rewards],
   );
   const rolesByUser = useMemo(() => groupRoles(data.roles), [data.roles]);
+  const founderBadge = data.badgeDefinitions.find((badge) => badge.slug === "bafafa-fundador");
+  const founderUserIds = useMemo(
+    () =>
+      new Set(
+        data.userBadges
+          .filter((badge) => badge.badge_id === founderBadge?.id)
+          .map((badge) => badge.user_id),
+      ),
+    [data.userBadges, founderBadge?.id],
+  );
 
   const clients = data.profiles.filter((profile) =>
     `${profile.display_name} ${profile.username ?? ""} ${profile.city ?? ""} ${profile.neighborhood ?? ""}`
@@ -1111,27 +1154,50 @@ function ClientsManager({ data }: { data: AdminData }) {
       .includes(search.toLowerCase()),
   );
 
+  async function toggleFounder(userId: string) {
+    const enabled = !founderUserIds.has(userId);
+    setBusyFounder(userId);
+    const { error } = await supabase.rpc("admin_set_manual_badge", {
+      _user_id: userId,
+      _badge_slug: "bafafa-fundador",
+      _enabled: enabled,
+    });
+    setBusyFounder(null);
+    if (error) return toast.error(error.message);
+    toast.success(enabled ? "Selo Sócio Fundador concedido." : "Selo Sócio Fundador removido.");
+    onChanged();
+  }
+
   return (
     <SectionLayout
       eyebrow="CRM inicial"
       title="Clientes"
-      description="Dados declarados, perfil, presença e benefícios. Sem exportação nesta fase."
+      description="Dados declarados, perfil, presença, benefícios e o selo especial atribuído somente pela administração."
     >
+      <div className="mb-4 sticker-card checker-texture p-4 text-sm font-semibold text-foreground">
+        <p className="flex items-center gap-2 font-poster text-lg">
+          <Crown className="h-5 w-5" /> Sócio Fundador
+        </p>
+        <p className="mt-1 opacity-75">
+          É um selo manual e especial. Os outros selos continuam sendo concedidos automaticamente pelas regras do app.
+        </p>
+      </div>
       <SearchField
         value={search}
         onChange={setSearch}
         placeholder="Buscar nome, usuário, cidade ou bairro"
       />
-      <div className="mt-4 overflow-hidden rounded-3xl border border-input bg-card">
+      <div className="mt-4 overflow-hidden rounded-3xl border-2 border-foreground/15 bg-card shadow-card">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="bg-muted text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <table className="w-full min-w-[980px] text-left text-sm">
+            <thead className="bg-foreground text-[10px] uppercase tracking-[0.14em] text-background">
               <tr>
                 <th className="px-4 py-3">Cliente</th>
                 <th className="px-4 py-3">Localização</th>
                 <th className="px-4 py-3">Perfil</th>
                 <th className="px-4 py-3">Check-ins</th>
                 <th className="px-4 py-3">Mimos</th>
+                <th className="px-4 py-3">Sócio Fundador</th>
                 <th className="px-4 py-3">Papel</th>
                 <th className="px-4 py-3">Cadastro</th>
               </tr>
@@ -1139,28 +1205,64 @@ function ClientsManager({ data }: { data: AdminData }) {
             <tbody className="divide-y divide-border">
               {clients.map((profile) => {
                 const completeness = profileCompleteness(profile, preferenceByUser.get(profile.id));
+                const isFounder = founderUserIds.has(profile.id);
                 return (
                   <tr key={profile.id} className="hover:bg-muted/40">
                     <td className="px-4 py-4">
-                      <p className="font-bold">{profile.display_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {profile.username ? `@${profile.username}` : "Sem usuário"}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-foreground bg-primary font-display text-lg text-white">
+                          {profile.avatar_url ? (
+                            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            profile.display_name[0]?.toUpperCase() ?? "B"
+                          )}
+                        </div>
+                        <div>
+                          <p className="flex items-center gap-1.5 font-bold">
+                            {profile.display_name}
+                            {isFounder && (
+                              <span title="Sócio Fundador" className="grid h-6 w-6 place-items-center rounded-full border-2 border-foreground bg-mango shadow-[1px_2px_0_var(--foreground)]">
+                                <Crown className="h-3.5 w-3.5" />
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {profile.username ? `@${profile.username}` : "Sem usuário"}
+                          </p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-muted-foreground">
                       {[profile.city, profile.neighborhood].filter(Boolean).join(" · ") || "—"}
                     </td>
                     <td className="px-4 py-4">
                       <span className="font-bold">{completeness}%</span>
-                      <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+                      <div className="mt-1 h-2 w-24 overflow-hidden rounded-full border border-foreground/20 bg-muted">
                         <div className="h-full bg-primary" style={{ width: `${completeness}%` }} />
                       </div>
                     </td>
-                    <td className="px-4 py-4 font-display text-lg">
+                    <td className="px-4 py-4 font-display text-2xl">
                       {checkinsByUser.get(profile.id) ?? 0}
                     </td>
-                    <td className="px-4 py-4 font-display text-lg">
+                    <td className="px-4 py-4 font-display text-2xl">
                       {rewardsByUser.get(profile.id) ?? 0}
+                    </td>
+                    <td className="px-4 py-4">
+                      <button
+                        type="button"
+                        disabled={busyFounder === profile.id || !founderBadge}
+                        onClick={() => void toggleFounder(profile.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-xl border-2 border-foreground px-3 py-2 text-xs font-black shadow-[2px_3px_0_var(--foreground)] disabled:opacity-50 ${
+                          isFounder ? "bg-mango text-foreground" : "bg-background text-muted-foreground"
+                        }`}
+                      >
+                        {busyFounder === profile.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Crown className="h-4 w-4" />
+                        )}
+                        {isFounder ? "Concedido" : "Conceder"}
+                      </button>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-1">
@@ -1428,10 +1530,8 @@ function SectionLayout({
     <section>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            {eyebrow}
-          </p>
-          <h1 className="mt-1 font-display text-3xl sm:text-4xl">{title}</h1>
+          <p className="section-kicker text-muted-foreground">{eyebrow}</p>
+          <h1 className="mt-1 font-display text-4xl leading-none sm:text-5xl">{title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{description}</p>
         </div>
         {action}

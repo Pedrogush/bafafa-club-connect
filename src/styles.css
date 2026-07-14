@@ -5,24 +5,25 @@
 @custom-variant dark (&:is(.dark *));
 
 /* =====================================================================
- * BAFAFÁ — Clube dos Bafafãs :: Design System
+ * BAFAFÁ — Clube dos Bafafãs :: Identidade visual 2026
  * ---------------------------------------------------------------------
- * Fundos claros/creme com destaques fortes de verde, laranja, rosa,
- * azul e amarelo. Tipografia com personalidade: Fraunces (display) +
- * Nunito (corpo). Cantos arredondados, sombras suaves, cara de festa.
- * As fontes são carregadas via <link> em src/routes/__root.tsx.
+ * A interface combina a logo de recortes, cartazes de pagode, stickers,
+ * a parede de tijolinhos e a praça em frente ao bar. A base continua
+ * clara e legível; as cores entram em blocos fortes, sem virar carnaval
+ * visual em todas as telas.
  * ===================================================================== */
 
 @theme inline {
-  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", "Nunito", ui-serif, Georgia, serif;
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bebas Neue", "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-poster: "Archivo Black", "Nunito Sans", ui-sans-serif, sans-serif;
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 5px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 6px);
-  --radius-2xl: calc(var(--radius) + 12px);
-  --radius-3xl: calc(var(--radius) + 20px);
+  --radius-xl: calc(var(--radius) + 5px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --radius-3xl: calc(var(--radius) + 18px);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -46,6 +47,13 @@
   --color-mango-foreground: var(--mango-foreground);
   --color-lagoa: var(--lagoa);
   --color-lagoa-foreground: var(--lagoa-foreground);
+  --color-electric: var(--electric);
+  --color-electric-foreground: var(--electric-foreground);
+  --color-brick: var(--brick);
+  --color-brick-foreground: var(--brick-foreground);
+  --color-mint: var(--mint);
+  --color-mint-foreground: var(--mint-foreground);
+  --color-cream: var(--cream);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -68,106 +76,81 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --shadow-festa: 0 10px 30px -12px color-mix(in oklab, var(--primary) 35%, transparent);
-  --shadow-card: 0 4px 20px -8px color-mix(in oklab, var(--foreground) 18%, transparent);
+  --shadow-festa: 4px 5px 0 var(--foreground);
+  --shadow-card: 0 12px 28px -20px color-mix(in srgb, var(--foreground) 45%, transparent);
+  --shadow-soft: 0 16px 40px -24px color-mix(in srgb, var(--foreground) 38%, transparent);
 }
 
 :root {
   --radius: 1rem;
 
-  /* Fundo creme, textos em azul-noite */
-  --background: oklch(0.985 0.015 90);          /* creme suave */
-  --foreground: oklch(0.20 0.04 260);           /* azul muito escuro */
-  --surface: oklch(1 0 0);
-  --surface-foreground: oklch(0.20 0.04 260);
+  --background: #fff8e9;
+  --foreground: #16122b;
+  --cream: #fff8e9;
+  --surface: #fffdf6;
+  --surface-foreground: #16122b;
+  --card: #fffdf6;
+  --card-foreground: #16122b;
+  --popover: #fffdf6;
+  --popover-foreground: #16122b;
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.20 0.04 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.20 0.04 260);
+  --primary: #36b84a;
+  --primary-foreground: #ffffff;
+  --secondary: #ff7a00;
+  --secondary-foreground: #16122b;
+  --accent: #ff3b30;
+  --accent-foreground: #ffffff;
+  --samba: #f42f91;
+  --samba-foreground: #ffffff;
+  --mango: #ffd126;
+  --mango-foreground: #16122b;
+  --lagoa: #08c7b5;
+  --lagoa-foreground: #16122b;
+  --electric: #2569d8;
+  --electric-foreground: #ffffff;
+  --brick: #ed4c17;
+  --brick-foreground: #ffffff;
+  --mint: #7fdc52;
+  --mint-foreground: #16122b;
 
-  /* Verde bafafá — cor primária (samba/festa) */
-  --primary: oklch(0.65 0.16 152);
-  --primary-foreground: oklch(0.985 0.02 90);
+  --muted: #f3ead7;
+  --muted-foreground: #675f70;
+  --destructive: #d81e35;
+  --destructive-foreground: #ffffff;
+  --border: #dfd4bf;
+  --input: #dfd4bf;
+  --ring: #2569d8;
 
-  /* Laranja quente — secundária */
-  --secondary: oklch(0.72 0.19 55);
-  --secondary-foreground: oklch(0.15 0.03 260);
+  --chart-1: #36b84a;
+  --chart-2: #ff7a00;
+  --chart-3: #f42f91;
+  --chart-4: #2569d8;
+  --chart-5: #ffd126;
 
-  /* Rosa pagode — reserved for accent */
-  --accent: oklch(0.72 0.19 12);
-  --accent-foreground: oklch(0.985 0.02 90);
-
-  /* Cores extras nomeadas na identidade */
-  --samba: oklch(0.72 0.19 12);        /* rosa */
-  --samba-foreground: oklch(0.985 0.02 90);
-  --mango: oklch(0.88 0.16 92);        /* amarelo manga */
-  --mango-foreground: oklch(0.20 0.04 260);
-  --lagoa: oklch(0.60 0.15 235);       /* azul lagoa */
-  --lagoa-foreground: oklch(0.985 0.02 90);
-
-  --muted: oklch(0.95 0.02 90);
-  --muted-foreground: oklch(0.45 0.03 260);
-
-  --destructive: oklch(0.58 0.24 27);
-  --destructive-foreground: oklch(0.985 0.02 90);
-
-  --border: oklch(0.90 0.02 90);
-  --input: oklch(0.94 0.02 90);
-  --ring: oklch(0.65 0.16 152);
-
-  --chart-1: oklch(0.65 0.16 152);
-  --chart-2: oklch(0.72 0.19 55);
-  --chart-3: oklch(0.72 0.19 12);
-  --chart-4: oklch(0.60 0.15 235);
-  --chart-5: oklch(0.88 0.16 92);
-
-  --sidebar: oklch(0.985 0.015 90);
-  --sidebar-foreground: oklch(0.20 0.04 260);
-  --sidebar-primary: oklch(0.65 0.16 152);
-  --sidebar-primary-foreground: oklch(0.985 0.02 90);
-  --sidebar-accent: oklch(0.95 0.02 90);
-  --sidebar-accent-foreground: oklch(0.20 0.04 260);
-  --sidebar-border: oklch(0.90 0.02 90);
-  --sidebar-ring: oklch(0.65 0.16 152);
+  --sidebar: #fff8e9;
+  --sidebar-foreground: #16122b;
+  --sidebar-primary: #36b84a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3ead7;
+  --sidebar-accent-foreground: #16122b;
+  --sidebar-border: #dfd4bf;
+  --sidebar-ring: #2569d8;
 }
 
 .dark {
-  --background: oklch(0.16 0.03 260);
-  --foreground: oklch(0.97 0.02 90);
-  --surface: oklch(0.22 0.03 260);
-  --surface-foreground: oklch(0.97 0.02 90);
-  --card: oklch(0.22 0.03 260);
-  --card-foreground: oklch(0.97 0.02 90);
-  --popover: oklch(0.22 0.03 260);
-  --popover-foreground: oklch(0.97 0.02 90);
-  --primary: oklch(0.75 0.16 152);
-  --primary-foreground: oklch(0.15 0.03 260);
-  --secondary: oklch(0.75 0.19 55);
-  --secondary-foreground: oklch(0.15 0.03 260);
-  --accent: oklch(0.78 0.18 12);
-  --accent-foreground: oklch(0.15 0.03 260);
-  --samba: oklch(0.78 0.18 12);
-  --samba-foreground: oklch(0.15 0.03 260);
-  --mango: oklch(0.88 0.16 92);
-  --mango-foreground: oklch(0.15 0.03 260);
-  --lagoa: oklch(0.70 0.15 235);
-  --lagoa-foreground: oklch(0.15 0.03 260);
-  --muted: oklch(0.28 0.03 260);
-  --muted-foreground: oklch(0.72 0.03 260);
-  --destructive: oklch(0.70 0.19 22);
-  --destructive-foreground: oklch(0.97 0.02 90);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.75 0.16 152);
-  --sidebar: oklch(0.22 0.03 260);
-  --sidebar-foreground: oklch(0.97 0.02 90);
-  --sidebar-primary: oklch(0.75 0.16 152);
-  --sidebar-primary-foreground: oklch(0.15 0.03 260);
-  --sidebar-accent: oklch(0.28 0.03 260);
-  --sidebar-accent-foreground: oklch(0.97 0.02 90);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.75 0.16 152);
+  --background: #111018;
+  --foreground: #fff8e9;
+  --surface: #1d1b26;
+  --surface-foreground: #fff8e9;
+  --card: #1d1b26;
+  --card-foreground: #fff8e9;
+  --popover: #1d1b26;
+  --popover-foreground: #fff8e9;
+  --muted: #292633;
+  --muted-foreground: #c5bbc9;
+  --border: #3a3543;
+  --input: #3a3543;
+  --cream: #fff8e9;
 }
 
 @layer base {
@@ -178,38 +161,157 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-feature-settings: "ss01","cv02";
+    min-width: 320px;
   }
+  button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
   h1, h2, h3, .font-display {
     font-family: var(--font-display);
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: 400;
+    letter-spacing: 0.015em;
+    text-transform: uppercase;
+  }
+  .font-poster {
+    font-family: var(--font-poster);
+    font-weight: 900;
+    letter-spacing: -0.035em;
+  }
+}
+
+@layer components {
+  .app-canvas {
+    background-color: var(--background);
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px);
+    background-size: 34px 34px;
+  }
+
+  .card-festa {
+    background: var(--color-card);
+    border: 2px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+  }
+
+  .sticker-card {
+    position: relative;
+    border: 2px solid var(--foreground);
+    border-radius: 1.45rem;
+    box-shadow: 4px 5px 0 var(--foreground);
+  }
+
+  .poster-card {
+    position: relative;
+    overflow: hidden;
+    border: 3px solid var(--foreground);
+    border-radius: 1.6rem;
+    box-shadow: 5px 6px 0 var(--foreground);
+  }
+
+  .ticket-card {
+    position: relative;
+    overflow: hidden;
+    border: 2px dashed color-mix(in srgb, var(--foreground) 65%, transparent);
+    border-radius: 1.35rem;
+    box-shadow: 4px 5px 0 var(--foreground);
+  }
+  .ticket-card::before,
+  .ticket-card::after {
+    content: "";
+    position: absolute;
+    top: 48%;
+    z-index: 2;
+    width: 1.35rem;
+    height: 1.35rem;
+    border: 2px solid var(--foreground);
+    border-radius: 999px;
+    background: var(--background);
+    transform: translateY(-50%);
+  }
+  .ticket-card::before { left: -0.75rem; }
+  .ticket-card::after { right: -0.75rem; }
+
+  .brick-texture {
+    background-color: var(--brick);
+    background-image:
+      linear-gradient(90deg, color-mix(in srgb, #fff 16%, transparent) 2px, transparent 2px),
+      linear-gradient(color-mix(in srgb, #fff 16%, transparent) 2px, transparent 2px),
+      linear-gradient(90deg, transparent 50%, color-mix(in srgb, #fff 12%, transparent) 50%);
+    background-size: 74px 34px, 74px 34px, 148px 68px;
+  }
+
+  .checker-texture {
+    background-color: var(--mango);
+    background-image:
+      linear-gradient(45deg, color-mix(in srgb, var(--secondary) 32%, transparent) 25%, transparent 25%, transparent 75%, color-mix(in srgb, var(--secondary) 32%, transparent) 75%),
+      linear-gradient(45deg, color-mix(in srgb, var(--secondary) 32%, transparent) 25%, transparent 25%, transparent 75%, color-mix(in srgb, var(--secondary) 32%, transparent) 75%);
+    background-position: 0 0, 22px 22px;
+    background-size: 44px 44px;
+  }
+
+  .grid-texture {
+    background-image:
+      linear-gradient(color-mix(in srgb, currentColor 11%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, currentColor 11%, transparent) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .cut-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    border: 2px solid var(--foreground);
+    border-radius: .45rem;
+    padding: .25rem .65rem;
+    font-family: var(--font-poster);
+    font-size: .68rem;
+    line-height: 1;
+    text-transform: uppercase;
+    box-shadow: 2px 3px 0 var(--foreground);
+    transform: rotate(-1.5deg);
+  }
+
+  .poster-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 11vw, 4.25rem);
+    line-height: .86;
+    letter-spacing: .015em;
+    text-transform: uppercase;
+  }
+
+  .section-kicker {
+    font-family: var(--font-poster);
+    font-size: .65rem;
+    line-height: 1;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  .plaza-line {
+    height: 18px;
+    opacity: .32;
+    background:
+      radial-gradient(ellipse at 12% 100%, transparent 0 43%, currentColor 44% 49%, transparent 50%) 0 100% / 62px 18px repeat-x;
   }
 }
 
 @utility wordmark {
-  font-family: var(--font-display);
+  font-family: var(--font-poster);
   font-weight: 900;
   letter-spacing: -0.03em;
   line-height: 0.9;
 }
 
-@utility card-festa {
-  background: var(--color-card);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-card);
-}
-
 @utility bg-confete {
   background-image:
-    radial-gradient(circle at 12% 18%, color-mix(in oklab, var(--samba) 60%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 78% 34%, color-mix(in oklab, var(--secondary) 60%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 40% 78%, color-mix(in oklab, var(--primary) 60%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 88% 82%, color-mix(in oklab, var(--mango) 70%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 22% 62%, color-mix(in oklab, var(--lagoa) 60%, transparent) 0 3px, transparent 4px);
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--samba) 75%, transparent) 0 3px, transparent 4px),
+    radial-gradient(circle at 78% 34%, color-mix(in srgb, var(--secondary) 75%, transparent) 0 3px, transparent 4px),
+    radial-gradient(circle at 40% 78%, color-mix(in srgb, var(--primary) 75%, transparent) 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 82%, color-mix(in srgb, var(--mango) 88%, transparent) 0 3px, transparent 4px),
+    radial-gradient(circle at 22% 62%, color-mix(in srgb, var(--electric) 75%, transparent) 0 3px, transparent 4px);
   background-size: 220px 220px;
 }
 
-/* Safe area bottom padding for iOS PWA */
 @utility pb-safe {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }

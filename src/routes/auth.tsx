@@ -51,17 +51,24 @@ function AuthPage() {
   useEffect(() => setMode(initialMode), [initialMode]);
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg bg-background px-5 py-8">
-      <Link to="/" className="inline-block">
-        <Wordmark variant="short" />
-      </Link>
-      <div className="mt-6 flex rounded-full bg-muted p-1 text-sm font-semibold">
+    <div className="app-canvas min-h-screen px-4 py-6">
+      <div className="mx-auto max-w-lg">
+        <div className="flex justify-center">
+          <Link to="/" className="inline-block">
+            <Wordmark variant="full" />
+          </Link>
+        </div>
+        <div className="poster-card checker-texture mt-6 p-4 text-center text-foreground">
+          <p className="section-kicker">Cerveja gelada e batucada</p>
+          <h1 className="mt-2 font-display text-4xl leading-none">Seu lugar na roda começa aqui.</h1>
+        </div>
+        <div className="mt-6 flex rounded-2xl border-2 border-foreground bg-card p-1 text-sm font-black shadow-[3px_4px_0_var(--foreground)]">
         {(["signin", "signup"] as Mode[]).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 rounded-full px-3 py-2 transition ${
-              mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+              mode === m ? "bg-lagoa text-foreground" : "text-muted-foreground"
             }`}
           >
             {m === "signin" ? "Entrar" : "Criar cadastro"}
@@ -69,10 +76,11 @@ function AuthPage() {
         ))}
       </div>
 
-      <div className="mt-6">
-        {mode === "signup" && <SignupForm onDone={() => setMode("signin")} />}
-        {mode === "signin" && <SigninForm onForgot={() => setMode("reset")} />}
-        {mode === "reset" && <ResetForm onDone={() => setMode("signin")} />}
+        <div className="sticker-card mt-6 bg-card p-5">
+          {mode === "signup" && <SignupForm onDone={() => setMode("signin")} />}
+          {mode === "signin" && <SigninForm onForgot={() => setMode("reset")} />}
+          {mode === "reset" && <ResetForm onDone={() => setMode("signin")} />}
+        </div>
       </div>
     </div>
   );
@@ -100,7 +108,7 @@ function Field({
 }
 
 const inputCls =
-  "w-full rounded-2xl border border-input bg-surface px-4 py-3 text-base outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15";
+  "w-full rounded-xl border-2 border-foreground/20 bg-surface px-4 py-3 text-base font-semibold outline-none transition focus:border-electric focus:ring-4 focus:ring-lagoa/20";
 
 function SignupForm({ onDone }: { onDone: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -229,7 +237,7 @@ function SignupForm({ onDone }: { onDone: () => void }) {
       <button
         type="submit"
         disabled={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-base font-bold text-primary-foreground shadow-festa disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />} Entrar pro clube
       </button>
@@ -285,7 +293,7 @@ function SigninForm({ onForgot }: { onForgot: () => void }) {
       <button
         type="submit"
         disabled={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-base font-bold text-primary-foreground shadow-festa disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />} Entrar
       </button>
@@ -326,7 +334,7 @@ function ResetForm({ onDone }: { onDone: () => void }) {
       <button
         type="submit"
         disabled={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 text-base font-bold text-primary-foreground shadow-festa disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />} Enviar link
       </button>

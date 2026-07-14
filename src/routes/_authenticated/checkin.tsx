@@ -1,6 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck, Clock3, KeyRound, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  CalendarCheck,
+  Clock3,
+  KeyRound,
+  MapPin,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
@@ -98,33 +106,32 @@ function Checkin() {
 
   return (
     <AppShell>
-      <ScreenHeader eyebrow="Sua presença vale mimo" title="Check-in" />
+      <ScreenHeader eyebrow="Sua presença vale mimo" title="Check-in" tone="blue" />
       {loading && <LoadingCard label="Procurando o evento de hoje…" />}
       {error && <ErrorCard message={error} />}
 
       {!loading && !error && (
-        <div className="space-y-4 px-5">
+        <div className="space-y-5 px-5 pt-2">
           {events.length === 0 ? (
-            <section className="card-festa bg-primary p-6 text-primary-foreground">
-              <CalendarCheck className="h-8 w-8" />
-              <h2 className="mt-3 font-display text-2xl">Ainda não tem check-in aberto.</h2>
-              <p className="mt-2 text-sm opacity-90">
+            <section className="poster-card checker-texture p-6 text-foreground">
+              <span className="cut-label bg-white">check-in</span>
+              <CalendarCheck className="mt-5 h-8 w-8" />
+              <h2 className="mt-3 font-display text-4xl leading-none">Ainda não abriu a catraca da fofoca.</h2>
+              <p className="mt-3 text-sm font-semibold opacity-75">
                 Assim que um evento for liberado pela equipe, seu código aparece aqui.
               </p>
             </section>
           ) : (
             <>
-              <section className="card-festa p-5">
-                <label className="block text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  Evento
-                </label>
+              <section className="sticker-card bg-card p-5">
+                <label className="section-kicker text-muted-foreground">Em qual rolê você está?</label>
                 <select
                   value={selectedId}
                   onChange={(event) => {
                     setSelectedId(event.target.value);
                     setToken(null);
                   }}
-                  className="mt-2 w-full rounded-2xl border border-input bg-surface px-4 py-3 font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  className="mt-3 w-full rounded-xl border-2 border-foreground bg-surface px-4 py-3 font-black outline-none focus:ring-4 focus:ring-lagoa/25"
                 >
                   {events.map((event) => (
                     <option key={event.id} value={event.id}>
@@ -133,77 +140,75 @@ function Checkin() {
                   ))}
                 </select>
                 {selected && (
-                  <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
+                  <div className="mt-4 grid gap-2 text-sm font-semibold text-muted-foreground">
                     <p className="flex items-center gap-2">
-                      <CalendarCheck className="h-4 w-4" /> {formatEventDate(selected.starts_at)}
+                      <CalendarCheck className="h-4 w-4 text-primary" /> {formatEventDate(selected.starts_at)} · {formatEventTime(selected.starts_at)}
                     </p>
                     <p className="flex items-center gap-2">
-                      <Clock3 className="h-4 w-4" /> A partir das{" "}
-                      {formatEventTime(selected.starts_at)}
+                      <MapPin className="h-4 w-4 text-brick" /> Praça Dr. Amaro de Souza
                     </p>
                   </div>
                 )}
               </section>
 
               {!windowOpen ? (
-                <section className="card-festa border border-mango bg-mango/35 p-5">
-                  <p className="font-display text-xl">Ainda não abriu, Bafafã.</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
+                <section className="ticket-card checker-texture p-5 text-foreground">
+                  <span className="cut-label bg-white">calma, emocionado</span>
+                  <p className="mt-4 font-display text-3xl leading-none">Ainda não abriu, Bafafã.</p>
+                  <p className="mt-2 text-sm font-semibold opacity-75">
                     O botão será liberado dentro da janela definida pela equipe para este evento.
                   </p>
                   {selected?.checkin_opens_at && (
-                    <p className="mt-3 text-sm font-bold">
-                      Abre às {formatEventTime(selected.checkin_opens_at)}.
+                    <p className="mt-3 flex items-center gap-2 text-sm font-black">
+                      <Clock3 className="h-4 w-4" /> Abre às {formatEventTime(selected.checkin_opens_at)}.
                     </p>
                   )}
                 </section>
               ) : token ? (
-                <section className="card-festa overflow-hidden bg-foreground text-center text-background">
-                  <div className="bg-samba px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-samba-foreground">
+                <section className="poster-card overflow-hidden bg-foreground text-center text-background">
+                  <div className="brick-texture border-b-[3px] border-foreground px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-white">
                     Mostre este código à equipe
                   </div>
-                  <div className="p-6">
-                    <KeyRound className="mx-auto h-8 w-8 text-mango" />
-                    <p className="mt-4 font-mono text-4xl font-black tracking-[0.18em] text-mango">
+                  <div className="bg-confete p-6">
+                    <KeyRound className="mx-auto h-9 w-9 text-mango" />
+                    <p className="mt-5 font-mono text-5xl font-black tracking-[0.15em] text-mango">
                       {codeGroups}
                     </p>
-                    <p className="mt-4 text-sm text-background/75">
-                      O código expira em <strong className="text-background">{secondsLeft}s</strong>{" "}
-                      e só pode ser usado uma vez.
+                    <p className="mt-4 text-sm font-semibold text-background/75">
+                      Expira em <strong className="text-background">{secondsLeft}s</strong> e só vale uma vez.
                     </p>
                     <button
                       type="button"
                       onClick={generateCode}
                       disabled={generating}
-                      className="mt-5 inline-flex items-center gap-2 rounded-full border border-background/25 px-5 py-2.5 text-sm font-bold disabled:opacity-50"
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl border-2 border-background bg-background px-5 py-2.5 text-sm font-black text-foreground shadow-[3px_4px_0_var(--mango)] disabled:opacity-50"
                     >
-                      <RefreshCw className={`h-4 w-4 ${generating ? "animate-spin" : ""}`} /> Gerar
-                      outro código
+                      <RefreshCw className={`h-4 w-4 ${generating ? "animate-spin" : ""}`} /> Gerar outro
                     </button>
                   </div>
                 </section>
               ) : (
-                <section className="card-festa bg-primary p-6 text-primary-foreground">
-                  <ShieldCheck className="h-8 w-8" />
-                  <h2 className="mt-3 font-display text-2xl">Chegou no Bafafá?</h2>
-                  <p className="mt-2 text-sm opacity-90">
-                    Gere um código temporário e mostre para a equipe. Depois da validação, seu
-                    check-in e os mimos do evento entram na conta.
+                <section className="poster-card grid-texture bg-primary p-6 text-primary-foreground">
+                  <span className="cut-label bg-mango text-foreground">chegou no bafas?</span>
+                  <ShieldCheck className="mt-6 h-9 w-9" />
+                  <h2 className="mt-3 font-display text-4xl leading-none">Sua presença vale mimo.</h2>
+                  <p className="mt-3 text-sm font-semibold opacity-90">
+                    Gere o código, mostre para a equipe e deixe o sistema fazer o resto da fofoca.
                   </p>
                   <button
                     type="button"
                     onClick={generateCode}
                     disabled={generating}
-                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-mango px-5 py-3 text-sm font-bold text-mango-foreground disabled:opacity-60"
+                    className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-mango px-5 py-3 text-sm font-black text-foreground shadow-[4px_5px_0_var(--foreground)] disabled:opacity-60"
                   >
-                    {generating && <RefreshCw className="h-4 w-4 animate-spin" />} Gerar meu código
+                    {generating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Gerar meu código
                   </button>
                 </section>
               )}
 
-              <p className="px-2 text-center text-xs text-muted-foreground">
-                Nesta primeira versão, a equipe valida o código numérico. O leitor visual de QR
-                entra na próxima evolução sem mudar a regra de segurança.
+              <p className="px-3 text-center text-[11px] font-semibold text-muted-foreground">
+                A equipe valida o código numérico. Ele não carrega telefone, aniversário nem outros dados pessoais.
               </p>
             </>
           )}

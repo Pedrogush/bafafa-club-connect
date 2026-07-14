@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Clube oficial do Bafafá Bar em Natal/RN. Check-in em eventos, mimos, selos e títulos.",
       },
-      { name: "theme-color", content: "#2f9d5a" },
+      { name: "theme-color", content: "#fff8e9" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Bafafá" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
@@ -105,12 +105,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:image",
         content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png",
+          "/brand/logo-bafafa.png",
       },
       {
         name: "twitter:image",
         content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/01afe14d-60a8-4c89-a25d-d73b68c8bcbe/id-preview-d9f14873--178dd466-fa9b-4dae-be6c-a7580f79db65.lovable.app-1784030711664.png",
+          "/brand/logo-bafafa.png",
       },
     ],
     links: [
@@ -122,7 +122,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=Nunito:wght@400;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Nunito+Sans:wght@400;600;700;800;900&display=swap",
       },
     ],
   }),

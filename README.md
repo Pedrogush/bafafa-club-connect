@@ -99,3 +99,26 @@ O script concede as permissões de banco necessárias, mantém o RLS, protege o 
 ## Atualização: imagens e validade flexível
 
 A versão inclui upload direto de imagens para eventos e fotos de perfil via Supabase Storage. Campanhas aceitam validade em minutos ou horas. Antes de testar, execute `docs/UPLOADS_AND_MINUTES_SETUP.sql` no SQL Editor do Supabase.
+
+## Identidade visual Bafafá v4
+
+Esta entrega aproxima o aplicativo da identidade real do Bafafá, preservando os fluxos existentes.
+
+Principais mudanças:
+
+- logo oficial aplicada no app, autenticação e ícones da PWA;
+- paleta vibrante inspirada nas artes do Instagram;
+- referências sutis a cartazes, adesivos, tijolinhos e à praça;
+- nova apresentação para Início, Eventos, Check-in, Mimos e Perfil;
+- cards de evento com linguagem de flyer;
+- mimos em formato de cupom/ticket;
+- perfil com aparência social, selos ao lado do nome e título ativo;
+- selo manual **Sócio Fundador**, concedido e removido somente por administrador;
+- perfil público seguro em `/u/<username>`;
+- painel administrativo refinado sem perder clareza operacional.
+
+Antes de testar esta versão, execute uma única vez no SQL Editor do Supabase:
+
+`docs/BRAND_V4_SETUP.sql`
+
+Depois reinicie o servidor local. O roteiro completo está em `docs/TESTE_IDENTIDADE_V4.md`.
