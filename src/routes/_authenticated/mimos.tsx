@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { campaignBenefitLabel, formatDateTime, rewardStatusLabel } from "@/lib/bafafa";
 
 type RewardRow = {
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/mimos")({
 });
 
 function Mimos() {
+  const { user } = useAuth();
   const [rewards, setRewards] = useState<RewardRow[]>([]);
   const [tab, setTab] = useState<Tab>("available");
   const [loading, setLoading] = useState(true);
@@ -47,12 +49,14 @@ function Mimos() {
   }, []);
 
   useEffect(() => {
+    if (!user) return;
     let mounted = true;
     supabase
       .from("user_rewards")
       .select(
         "id,status,expires_at,granted_at,campaigns(name,description,benefit_type,discount_percent,fixed_off_cents,product_name,public_rules),events(name)",
       )
+      .eq("user_id", user.id)
       .order("granted_at", { ascending: false })
       .then(({ data, error: queryError }) => {
         if (!mounted) return;
@@ -63,7 +67,7 @@ function Mimos() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [user]);
 
   const byTab = useMemo(
     () => rewards.filter((reward) => normalizedStatus(reward) === tab),
@@ -151,11 +155,7 @@ function Mimos() {
                     <div className="min-w-0">
                       <span
                         className={`cut-label ${
-                          available
-                            ? "bg-white"
-                            : tab === "redeemed"
-                              ? "bg-lagoa"
-                              : "bg-muted"
+                          available ? "bg-white" : tab === "redeemed" ? "bg-lagoa" : "bg-muted"
                         }`}
                       >
                         {rewardStatusLabel(reward.status, reward.expires_at)}
@@ -173,14 +173,17 @@ function Mimos() {
                     </p>
                   )}
                   {campaign?.description && (
-                    <p className="mt-2 text-sm font-semibold text-foreground/70">{campaign.description}</p>
+                    <p className="mt-2 text-sm font-semibold text-foreground/70">
+                      {campaign.description}
+                    </p>
                   )}
                   {reward.events?.name && (
                     <p className="mt-4 text-sm font-black">Rolê: {reward.events.name}</p>
                   )}
                   {reward.expires_at && (
                     <p className="mt-2 flex items-center gap-2 text-xs font-bold text-foreground/65">
-                      <Clock3 className="h-3.5 w-3.5" /> Válido até {formatDateTime(reward.expires_at)}
+                      <Clock3 className="h-3.5 w-3.5" /> Válido até{" "}
+                      {formatDateTime(reward.expires_at)}
                     </p>
                   )}
                   {campaign?.public_rules && (
@@ -196,7 +199,11 @@ function Mimos() {
                       disabled={generating}
                       className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
                     >
-                      {generating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <PartyPopper className="h-4 w-4" />}
+                      {generating ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <PartyPopper className="h-4 w-4" />
+                      )}
                       Usar meu mimo
                     </button>
                   )}
@@ -208,7 +215,8 @@ function Mimos() {
                         {token.short_code.match(/.{1,3}/g)?.join(" ")}
                       </p>
                       <p className="mt-2 flex items-center justify-center gap-1 text-xs font-bold text-background/70">
-                        <Sparkles className="h-3.5 w-3.5" /> Mostre à equipe · expira em {secondsLeft}s
+                        <Sparkles className="h-3.5 w-3.5" /> Mostre à equipe · expira em{" "}
+                        {secondsLeft}s
                       </p>
                     </div>
                   )}

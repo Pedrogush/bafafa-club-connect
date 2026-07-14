@@ -89,12 +89,17 @@ function Inicio() {
         supabase
           .from("user_rewards")
           .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id)
           .eq("status", "available")
           .or(`expires_at.is.null,expires_at.gt.${now}`),
-        supabase.from("checkins").select("id", { count: "exact", head: true }),
+        supabase
+          .from("checkins")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id),
         supabase
           .from("user_badges")
           .select("awarded_at,badge_definitions(slug,name,description,icon)")
+          .eq("user_id", user!.id)
           .eq("is_hidden", false)
           .order("awarded_at", { ascending: false })
           .limit(1)

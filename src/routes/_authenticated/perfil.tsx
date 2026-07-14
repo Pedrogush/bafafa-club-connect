@@ -25,6 +25,7 @@ import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 import {
   BadgeSticker,
   NameWithBadges,
+  dedupeBadgeDefinitions,
   type BafafaBadgeDefinition,
 } from "@/components/profile/bafafa-badge";
 import {
@@ -133,13 +134,15 @@ function Perfil() {
       supabase
         .from("user_badges")
         .select("id,is_featured,is_hidden,awarded_at,badge_definitions(slug,name,description,icon)")
+        .eq("user_id", user.id)
         .order("awarded_at", { ascending: false }),
       supabase
         .from("user_titles")
         .select("title_id,title_definitions(name,description)")
+        .eq("user_id", user.id)
         .order("awarded_at", { ascending: false }),
       supabase.rpc("my_profile_completion_details"),
-      supabase.from("checkins").select("id", { count: "exact", head: true }),
+      supabase.from("checkins").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     ]).then(
       ([
         profileResult,
@@ -236,10 +239,12 @@ function Perfil() {
           .select(
             "id,is_featured,is_hidden,awarded_at,badge_definitions(slug,name,description,icon)",
           )
+          .eq("user_id", user.id)
           .order("awarded_at", { ascending: false }),
         supabase
           .from("user_titles")
           .select("title_id,title_definitions(name,description)")
+          .eq("user_id", user.id)
           .order("awarded_at", { ascending: false }),
         supabase.rpc("my_profile_completion_details"),
       ]);
@@ -275,9 +280,15 @@ function Perfil() {
   const initial = (profile?.display_name?.[0] ?? "B").toUpperCase();
   const activeTitle = titles.find((title) => title.title_id === profile?.active_title_id)
     ?.title_definitions?.name;
-  const visibleBadgeDefinitions = badges
-    .filter((badge) => !badge.is_hidden && badge.badge_definitions)
-    .map((badge) => badge.badge_definitions as BafafaBadgeDefinition);
+  const visibleBadgeDefinitions = dedupeBadgeDefinitions(
+    badges
+      .filter((badge) => !badge.is_hidden && badge.badge_definitions)
+      .map((badge) => badge.badge_definitions as BafafaBadgeDefinition),
+  );
+  const uniqueVisibleBadges = visibleBadgeDefinitions.map((definition) => ({
+    id: definition.slug || definition.name,
+    definition,
+  }));
   const memberSince = profile?.member_since
     ? new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(
         new Date(profile.member_since),
@@ -302,11 +313,11 @@ function Perfil() {
       />
 
       <div className="space-y-5 px-5 pt-2">
-        <section className="poster-card overflow-hidden bg-card">
-          <div className="brick-texture h-24 border-b-[3px] border-foreground" />
-          <div className="relative px-5 pb-5">
-            <div className="-mt-12 flex items-end justify-between gap-4">
-              <div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-full border-[4px] border-foreground bg-primary font-display text-4xl text-primary-foreground shadow-[4px_5px_0_var(--foreground)]">
+        <section className="overflow-hidden rounded-[2rem] border-2 border-foreground/20 bg-card shadow-[0_6px_0_rgba(20,16,40,0.12)]">
+          <div className="brick-texture h-12 border-b-2 border-foreground/15" />
+          <div className="relative p-4 pt-0">
+            <div className="-mt-8 flex items-start gap-3">
+              <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full border-[3px] border-foreground bg-primary font-display text-2xl text-primary-foreground shadow-[2px_3px_0_var(--foreground)]">
                 {profile?.avatar_url ? (
                   <img
                     src={profile.avatar_url}
@@ -317,46 +328,58 @@ function Perfil() {
                   initial
                 )}
               </div>
+              <div className="min-w-0 flex-1 pt-9">
+                <NameWithBadges
+                  name={profile?.display_name ?? "Bafafã"}
+                  badges={visibleBadgeDefinitions}
+                  maxBadges={3}
+                  className="text-xl font-black"
+                />
+                <p className="mt-0.5 truncate text-sm font-semibold text-muted-foreground">
+                  {profile?.username ? `@${profile.username}` : "Escolha seu @ no perfil"}
+                </p>
+              </div>
               {profile?.username && profile.is_public && (
                 <Link
                   to="/u/$username"
                   params={{ username: profile.username }}
-                  className="mb-1 inline-flex items-center gap-1.5 rounded-xl border-2 border-foreground bg-mango px-3 py-2 text-xs font-black shadow-[2px_3px_0_var(--foreground)]"
+                  aria-label="Abrir perfil público"
+                  className="mt-3 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-foreground/30 bg-mango text-foreground"
                 >
-                  <Eye className="h-4 w-4" /> Perfil público
+                  <Eye className="h-4 w-4" />
                 </Link>
               )}
             </div>
 
-            <div className="mt-4">
-              <NameWithBadges
-                name={profile?.display_name ?? "Bafafã"}
-                badges={visibleBadgeDefinitions}
-                className="font-poster text-2xl"
-              />
-              <p className="mt-0.5 text-sm font-bold text-muted-foreground">
-                {profile?.username ? `@${profile.username}` : "Escolha seu @ no perfil"}
-              </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {activeTitle && (
-                <span className="cut-label mt-3 bg-foreground text-background">{activeTitle}</span>
+                <span className="rounded-full bg-foreground px-3 py-1 text-[10px] font-black uppercase tracking-wide text-background">
+                  {activeTitle}
+                </span>
               )}
               {profile?.bio && (
-                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>
+                <p className="w-full text-sm leading-relaxed text-muted-foreground">
+                  {profile.bio}
+                </p>
               )}
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-2 border-t-2 border-dashed border-foreground/25 pt-4 text-center">
+            <div className="mt-4 grid grid-cols-3 divide-x divide-foreground/10 rounded-2xl bg-muted/45 py-3 text-center">
               <div>
-                <p className="font-display text-3xl leading-none">{checkins}</p>
-                <p className="text-[10px] font-black uppercase text-muted-foreground">check-ins</p>
+                <p className="text-xl font-black leading-none">{checkins}</p>
+                <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
+                  check-ins
+                </p>
               </div>
               <div>
-                <p className="font-display text-3xl leading-none">{badges.length}</p>
-                <p className="text-[10px] font-black uppercase text-muted-foreground">selos</p>
+                <p className="text-xl font-black leading-none">{visibleBadgeDefinitions.length}</p>
+                <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">selos</p>
               </div>
               <div>
-                <p className="font-display text-xl leading-none">{memberSince}</p>
-                <p className="text-[10px] font-black uppercase text-muted-foreground">no clube</p>
+                <p className="text-sm font-black leading-none">{memberSince}</p>
+                <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
+                  no clube
+                </p>
               </div>
             </div>
           </div>
@@ -432,19 +455,19 @@ function Perfil() {
               <BadgeCheck className="h-5 w-5 text-samba" />
               <h2 className="font-display text-2xl">Meus selos</h2>
             </div>
-            <span className="cut-label bg-lagoa">{badges.length} na coleção</span>
+            <span className="rounded-full bg-lagoa px-3 py-1 text-[10px] font-black uppercase">
+              {visibleBadgeDefinitions.length} na coleção
+            </span>
           </div>
-          {badges.length === 0 ? (
+          {uniqueVisibleBadges.length === 0 ? (
             <p className="mt-4 text-sm font-semibold text-muted-foreground">
               Seu primeiro check-in libera o primeiro selo de presença.
             </p>
           ) : (
-            <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3">
-              {badges.map((badge) =>
-                badge.badge_definitions ? (
-                  <BadgeSticker key={badge.id} badge={badge.badge_definitions} />
-                ) : null,
-              )}
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {uniqueVisibleBadges.map((badge) => (
+                <BadgeSticker key={badge.id} badge={badge.definition} />
+              ))}
             </div>
           )}
         </section>

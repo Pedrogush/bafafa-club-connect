@@ -129,3 +129,11 @@ A versão v6 centraliza o cálculo de completude do perfil no Supabase e adicion
 
 Configuração: `docs/PERFIL_E_RESENHA_V6_SETUP.sql`  
 Roteiro de teste: `docs/TESTE_PERFIL_E_RESENHA_V6.md`
+
+## Atualização v7 — Resenha enxuta e perfis organizados
+
+- Resenha com foco nas mensagens, perfis compactos e ações por ícone.
+- Perfil pessoal com cabeçalho e coleção de selos mais minimalistas.
+- Consultas do app do cliente filtradas explicitamente por `user_id`, inclusive para contas administrativas.
+- Deduplicação defensiva de selos por slug.
+- Migration da correção `short_code` incorporada ao repositório.

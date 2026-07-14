@@ -242,7 +242,7 @@ function Resenha() {
       {error && !loading && <ErrorCard message={error} />}
 
       {!loading && !error && (
-        <div className="space-y-4 px-5 pt-2">
+        <div className="space-y-3 px-4 pt-1">
           {rooms.length === 0 ? (
             <section className="poster-card checker-texture p-6 text-foreground">
               <MessageCircleMore className="h-9 w-9" />
@@ -262,7 +262,7 @@ function Resenha() {
             </section>
           ) : (
             <>
-              <section className="sticker-card bg-card p-4">
+              <section className="rounded-2xl border border-foreground/15 bg-card p-3 shadow-sm">
                 <label className="section-kicker text-muted-foreground">
                   Qual roda está aberta?
                 </label>
@@ -272,7 +272,7 @@ function Resenha() {
                     setSelectedId(event.target.value);
                     setReplyingTo(null);
                   }}
-                  className="mt-3 w-full rounded-xl border-2 border-foreground bg-surface px-4 py-3 font-black outline-none focus:ring-4 focus:ring-lagoa/25"
+                  className="mt-2 h-11 w-full rounded-xl border border-foreground/20 bg-surface px-3 text-sm font-black outline-none focus:ring-4 focus:ring-lagoa/20"
                 >
                   {rooms.map((room) => (
                     <option key={room.event_id} value={room.event_id}>
@@ -281,24 +281,24 @@ function Resenha() {
                   ))}
                 </select>
                 {selectedRoom && (
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-black text-muted-foreground">
-                    <span className="rounded-full bg-muted px-3 py-1.5">
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2.5 py-1">
                       {formatEventDate(selectedRoom.starts_at)} ·{" "}
                       {formatEventTime(selectedRoom.starts_at)}
                     </span>
-                    <span className="rounded-full bg-lagoa px-3 py-1.5 text-foreground">
+                    <span className="rounded-full bg-lagoa/80 px-2.5 py-1 text-foreground">
                       {selectedRoom.message_count} mensagens
                     </span>
                   </div>
                 )}
               </section>
 
-              <section className="poster-card overflow-hidden bg-card">
-                <div className="flex items-center justify-between gap-3 border-b-2 border-foreground bg-foreground px-4 py-3 text-background">
+              <section className="overflow-hidden rounded-3xl border border-foreground/15 bg-card shadow-sm">
+                <div className="flex items-center justify-between gap-3 border-b border-foreground/10 bg-foreground px-4 py-2.5 text-background">
                   <div className="flex items-center gap-2">
                     <UsersRound className="h-5 w-5 text-mango" />
                     <div>
-                      <p className="font-poster text-base">Resenha do evento</p>
+                      <p className="text-sm font-black">Resenha do evento</p>
                       <p className="text-[10px] font-bold opacity-65">
                         Sem anonimato · com respeito · sem exposição
                       </p>
@@ -309,7 +309,7 @@ function Resenha() {
                   </span>
                 </div>
 
-                <div className="max-h-[52vh] min-h-80 space-y-3 overflow-y-auto bg-confete p-4">
+                <div className="max-h-[58vh] min-h-80 space-y-2 overflow-y-auto bg-background p-3">
                   {loadingMessages ? (
                     <p className="py-16 text-center text-sm font-bold text-muted-foreground">
                       Puxando as últimas fofocas…
@@ -334,12 +334,14 @@ function Resenha() {
                       return (
                         <article
                           key={message.message_id}
-                          className={`max-w-[92%] rounded-2xl border-2 border-foreground p-3 shadow-[2px_3px_0_var(--foreground)] ${
-                            message.is_mine ? "ml-auto bg-lagoa" : "bg-background"
+                          className={`max-w-[88%] rounded-2xl border px-3 py-2.5 ${
+                            message.is_mine
+                              ? "ml-auto border-primary/25 bg-primary/10"
+                              : "border-foreground/10 bg-muted/45"
                           }`}
                         >
-                          <div className="flex items-start gap-2.5">
-                            <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-foreground bg-primary font-display text-white">
+                          <div className="flex items-start gap-2">
+                            <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full border border-foreground/20 bg-primary text-xs font-black text-white">
                               {message.author_avatar_url ? (
                                 <img
                                   src={message.author_avatar_url}
@@ -351,45 +353,50 @@ function Resenha() {
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <div className="flex items-center gap-1.5">
                                 <NameWithBadges
                                   name={message.author_name}
                                   badges={message.author_badges}
-                                  className="text-sm font-black"
+                                  maxBadges={2}
+                                  className="min-w-0 flex-1 text-[13px] font-black"
                                 />
-                                <time className="text-[10px] font-bold opacity-50">
+                                <time className="shrink-0 text-[9px] font-bold text-muted-foreground">
                                   {formatMessageTime(message.created_at)}
                                 </time>
                               </div>
                               {message.author_title && (
-                                <p className="mt-0.5 text-[10px] font-black uppercase tracking-wide opacity-60">
+                                <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
                                   {message.author_title}
                                 </p>
                               )}
                               {replied && (
-                                <div className="mt-2 rounded-xl border-l-[3px] border-primary bg-foreground/5 px-3 py-2 text-xs opacity-70">
+                                <div className="mt-1.5 rounded-lg border-l-2 border-primary bg-background/60 px-2 py-1.5 text-[11px] text-muted-foreground">
                                   <strong>{replied.author_name}:</strong>{" "}
-                                  {replied.body.slice(0, 90)}
+                                  {replied.body.slice(0, 72)}
                                 </div>
                               )}
-                              <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-relaxed">
+                              <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
                                 {message.body}
                               </p>
-                              <div className="mt-2 flex flex-wrap gap-3 text-[10px] font-black opacity-60">
+                              <div className="mt-1.5 flex justify-end gap-1 text-muted-foreground">
                                 <button
                                   type="button"
                                   onClick={() => setReplyingTo(message)}
-                                  className="inline-flex items-center gap-1 hover:opacity-100"
+                                  className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-foreground"
+                                  aria-label="Responder"
+                                  title="Responder"
                                 >
-                                  <Reply className="h-3.5 w-3.5" /> responder
+                                  <Reply className="h-3.5 w-3.5" />
                                 </button>
                                 {(message.is_mine || canModerate) && (
                                   <button
                                     type="button"
                                     onClick={() => void deleteMessage(message)}
-                                    className="inline-flex items-center gap-1 hover:text-destructive hover:opacity-100"
+                                    className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-destructive"
+                                    aria-label="Apagar mensagem"
+                                    title="Apagar"
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" /> apagar
+                                    <Trash2 className="h-3.5 w-3.5" />
                                   </button>
                                 )}
                                 {!message.is_mine && (
@@ -397,16 +404,20 @@ function Resenha() {
                                     <button
                                       type="button"
                                       onClick={() => setReporting(message)}
-                                      className="inline-flex items-center gap-1 hover:opacity-100"
+                                      className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-foreground"
+                                      aria-label="Denunciar mensagem"
+                                      title="Denunciar"
                                     >
-                                      <Flag className="h-3.5 w-3.5" /> denunciar
+                                      <Flag className="h-3.5 w-3.5" />
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void blockUser(message)}
-                                      className="inline-flex items-center gap-1 hover:opacity-100"
+                                      className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-foreground"
+                                      aria-label="Bloquear usuário"
+                                      title="Bloquear"
                                     >
-                                      <Ban className="h-3.5 w-3.5" /> bloquear
+                                      <Ban className="h-3.5 w-3.5" />
                                     </button>
                                   </>
                                 )}
@@ -420,10 +431,7 @@ function Resenha() {
                   <div ref={feedEndRef} />
                 </div>
 
-                <form
-                  onSubmit={sendMessage}
-                  className="border-t-2 border-foreground bg-background p-3"
-                >
+                <form onSubmit={sendMessage} className="border-t border-foreground/10 bg-card p-3">
                   {replyingTo && (
                     <div className="mb-2 flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-xs font-bold">
                       <Reply className="h-3.5 w-3.5" />
@@ -445,12 +453,12 @@ function Resenha() {
                       onChange={(event) => setDraft(event.target.value.slice(0, 300))}
                       placeholder="Manda a boa, Bafafã…"
                       rows={2}
-                      className="min-h-12 resize-none border-2 border-foreground"
+                      className="min-h-11 resize-none rounded-2xl border border-foreground/20 bg-background"
                     />
                     <Button
                       type="submit"
                       disabled={sending || !draft.trim()}
-                      className="h-12 w-12 shrink-0 p-0"
+                      className="h-11 w-11 shrink-0 rounded-full p-0"
                       aria-label="Enviar mensagem"
                     >
                       <Send className="h-5 w-5" />
