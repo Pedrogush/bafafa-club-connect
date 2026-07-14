@@ -156,3 +156,5 @@ Antes de testar, execute uma vez `docs/EXPERIENCIA_V9_BLOCO1_SETUP.sql`. A sala 
 ## V10 — Bloco 2: operação
 
 Esta versão acrescenta leitura de QR pela câmera, QR local no cliente, validador com retorno visual/sonoro, eventos em rascunho/publicados, prévia, duplicação, fechamento imediato do check-in, campanhas pausáveis, métricas de mimos e histórico de resgates. Consulte `docs/TESTE_OPERACAO_V10_BLOCO2.md`.
+
+Deploy de teste da branch MVP.
