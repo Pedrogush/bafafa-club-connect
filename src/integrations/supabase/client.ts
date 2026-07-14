@@ -36,6 +36,12 @@ function createSupabaseClient() {
   const SUPABASE_PUBLISHABLE_KEY =
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
+  if (SUPABASE_PUBLISHABLE_KEY?.startsWith("sb_secret_")) {
+    throw new Error(
+      "A chave secreta do Supabase não pode ser usada no navegador. Configure somente a Publishable key.",
+    );
+  }
+
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),

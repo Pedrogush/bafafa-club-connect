@@ -15,13 +15,13 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated/reservas'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedMimosRouteImport } from './routes/_authenticated/mimos'
 import { Route as AuthenticatedInicioRouteImport } from './routes/_authenticated/inicio'
 import { Route as AuthenticatedFofoquinhasRouteImport } from './routes/_authenticated/fofoquinhas'
-import { Route as AuthenticatedCarteiraRouteImport } from './routes/_authenticated/carteira'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedMimosRouteImport } from './routes/_authenticated/mimos'
 import { Route as AuthenticatedEventosRouteImport } from './routes/_authenticated/eventos'
 import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated/checkin'
+import { Route as AuthenticatedCarteiraRouteImport } from './routes/_authenticated/carteira'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedStaffCheckinRouteImport } from './routes/_authenticated/staff/checkin'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -53,6 +53,11 @@ const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMimosRoute = AuthenticatedMimosRouteImport.update({
+  id: '/mimos',
+  path: '/mimos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedInicioRoute = AuthenticatedInicioRouteImport.update({
   id: '/inicio',
   path: '/inicio',
@@ -64,21 +69,6 @@ const AuthenticatedFofoquinhasRoute =
     path: '/fofoquinhas',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedCarteiraRoute = AuthenticatedCarteiraRouteImport.update({
-  id: '/carteira',
-  path: '/carteira',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedMimosRoute = AuthenticatedMimosRouteImport.update({
-  id: '/mimos',
-  path: '/mimos',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedEventosRoute = AuthenticatedEventosRouteImport.update({
   id: '/eventos',
   path: '/eventos',
@@ -89,47 +79,54 @@ const AuthenticatedCheckinRoute = AuthenticatedCheckinRouteImport.update({
   path: '/checkin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedStaffCheckinRoute = AuthenticatedStaffCheckinRouteImport.update({
-  id: '/staff/checkin',
-  path: '/staff/checkin',
+const AuthenticatedCarteiraRoute = AuthenticatedCarteiraRouteImport.update({
+  id: '/carteira',
+  path: '/carteira',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStaffCheckinRoute =
+  AuthenticatedStaffCheckinRouteImport.update({
+    id: '/staff/checkin',
+    path: '/staff/checkin',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/checkin': typeof AuthenticatedCheckinRoute
-  '/eventos': typeof AuthenticatedEventosRoute
-  '/mimos': typeof AuthenticatedMimosRoute
-  '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/carteira': typeof AuthenticatedCarteiraRoute
+  '/checkin': typeof AuthenticatedCheckinRoute
+  '/eventos': typeof AuthenticatedEventosRoute
   '/fofoquinhas': typeof AuthenticatedFofoquinhasRoute
   '/inicio': typeof AuthenticatedInicioRoute
+  '/mimos': typeof AuthenticatedMimosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
 export interface FileRoutesByTo {
-  '/checkin': typeof AuthenticatedCheckinRoute
-  '/eventos': typeof AuthenticatedEventosRoute
-  '/mimos': typeof AuthenticatedMimosRoute
-  '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/carteira': typeof AuthenticatedCarteiraRoute
+  '/checkin': typeof AuthenticatedCheckinRoute
+  '/eventos': typeof AuthenticatedEventosRoute
   '/fofoquinhas': typeof AuthenticatedFofoquinhasRoute
   '/inicio': typeof AuthenticatedInicioRoute
+  '/mimos': typeof AuthenticatedMimosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
 export interface FileRoutesById {
-  '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
-  '/_authenticated/eventos': typeof AuthenticatedEventosRoute
-  '/_authenticated/mimos': typeof AuthenticatedMimosRoute
-  '/_authenticated/staff/checkin': typeof AuthenticatedStaffCheckinRoute
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
@@ -137,10 +134,14 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/carteira': typeof AuthenticatedCarteiraRoute
+  '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
+  '/_authenticated/eventos': typeof AuthenticatedEventosRoute
   '/_authenticated/fofoquinhas': typeof AuthenticatedFofoquinhasRoute
   '/_authenticated/inicio': typeof AuthenticatedInicioRoute
+  '/_authenticated/mimos': typeof AuthenticatedMimosRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
+  '/_authenticated/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,47 +149,47 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
-    | '/checkin'
-    | '/eventos'
-    | '/mimos'
-    | '/staff/checkin'
     | '/admin'
     | '/carteira'
+    | '/checkin'
+    | '/eventos'
     | '/fofoquinhas'
     | '/inicio'
+    | '/mimos'
     | '/perfil'
     | '/reservas'
+    | '/staff/checkin'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/reset-password'
-    | '/checkin'
-    | '/eventos'
-    | '/mimos'
-    | '/staff/checkin'
     | '/admin'
     | '/carteira'
+    | '/checkin'
+    | '/eventos'
     | '/fofoquinhas'
     | '/inicio'
+    | '/mimos'
     | '/perfil'
     | '/reservas'
+    | '/staff/checkin'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/reset-password'
-    | '/_authenticated/checkin'
-    | '/_authenticated/eventos'
-    | '/_authenticated/mimos'
-    | '/_authenticated/staff/checkin'
     | '/_authenticated/admin'
     | '/_authenticated/carteira'
+    | '/_authenticated/checkin'
+    | '/_authenticated/eventos'
     | '/_authenticated/fofoquinhas'
     | '/_authenticated/inicio'
+    | '/_authenticated/mimos'
     | '/_authenticated/perfil'
     | '/_authenticated/reservas'
+    | '/_authenticated/staff/checkin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -242,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerfilRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mimos': {
+      id: '/_authenticated/mimos'
+      path: '/mimos'
+      fullPath: '/mimos'
+      preLoaderRoute: typeof AuthenticatedMimosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/inicio': {
       id: '/_authenticated/inicio'
       path: '/inicio'
@@ -256,11 +264,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFofoquinhasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/carteira': {
-      id: '/_authenticated/carteira'
-      path: '/carteira'
-      fullPath: '/carteira'
-      preLoaderRoute: typeof AuthenticatedCarteiraRouteImport
+    '/_authenticated/eventos': {
+      id: '/_authenticated/eventos'
+      path: '/eventos'
+      fullPath: '/eventos'
+      preLoaderRoute: typeof AuthenticatedEventosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/checkin': {
@@ -270,25 +278,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCheckinRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/eventos': {
-      id: '/_authenticated/eventos'
-      path: '/eventos'
-      fullPath: '/eventos'
-      preLoaderRoute: typeof AuthenticatedEventosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/mimos': {
-      id: '/_authenticated/mimos'
-      path: '/mimos'
-      fullPath: '/mimos'
-      preLoaderRoute: typeof AuthenticatedMimosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/staff/checkin': {
-      id: '/_authenticated/staff/checkin'
-      path: '/staff/checkin'
-      fullPath: '/staff/checkin'
-      preLoaderRoute: typeof AuthenticatedStaffCheckinRouteImport
+    '/_authenticated/carteira': {
+      id: '/_authenticated/carteira'
+      path: '/carteira'
+      fullPath: '/carteira'
+      preLoaderRoute: typeof AuthenticatedCarteiraRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
@@ -298,33 +292,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/staff/checkin': {
+      id: '/_authenticated/staff/checkin'
+      path: '/staff/checkin'
+      fullPath: '/staff/checkin'
+      preLoaderRoute: typeof AuthenticatedStaffCheckinRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
-  AuthenticatedEventosRoute: typeof AuthenticatedEventosRoute
-  AuthenticatedMimosRoute: typeof AuthenticatedMimosRoute
-  AuthenticatedStaffCheckinRoute: typeof AuthenticatedStaffCheckinRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCarteiraRoute: typeof AuthenticatedCarteiraRoute
+  AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
+  AuthenticatedEventosRoute: typeof AuthenticatedEventosRoute
   AuthenticatedFofoquinhasRoute: typeof AuthenticatedFofoquinhasRoute
   AuthenticatedInicioRoute: typeof AuthenticatedInicioRoute
+  AuthenticatedMimosRoute: typeof AuthenticatedMimosRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedReservasRoute: typeof AuthenticatedReservasRoute
+  AuthenticatedStaffCheckinRoute: typeof AuthenticatedStaffCheckinRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
-  AuthenticatedEventosRoute: AuthenticatedEventosRoute,
-  AuthenticatedMimosRoute: AuthenticatedMimosRoute,
-  AuthenticatedStaffCheckinRoute: AuthenticatedStaffCheckinRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCarteiraRoute: AuthenticatedCarteiraRoute,
+  AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
+  AuthenticatedEventosRoute: AuthenticatedEventosRoute,
   AuthenticatedFofoquinhasRoute: AuthenticatedFofoquinhasRoute,
   AuthenticatedInicioRoute: AuthenticatedInicioRoute,
+  AuthenticatedMimosRoute: AuthenticatedMimosRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedReservasRoute: AuthenticatedReservasRoute,
+  AuthenticatedStaffCheckinRoute: AuthenticatedStaffCheckinRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -339,3 +340,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

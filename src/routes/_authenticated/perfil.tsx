@@ -192,9 +192,8 @@ function Perfil() {
     });
   }
 
-  const isPrivileged = roles.some(
-    (role) => role === "admin" || role === "moderador" || role === "equipe",
-  );
+  const canValidate = roles.some((role) => role === "admin" || role === "equipe");
+  const isAdmin = roles.includes("admin");
   const initial = (profile?.display_name?.[0] ?? "B").toUpperCase();
   const activeTitle = titles.find((title) => title.title_id === profile?.active_title_id)
     ?.title_definitions?.name;
@@ -242,8 +241,9 @@ function Perfil() {
           </div>
         </section>
 
-        {isPrivileged && (
+        {(canValidate || isAdmin) && (
           <div className="grid gap-3 sm:grid-cols-2">
+            {canValidate && (
             <Link
               to="/staff/checkin"
               className="card-festa flex items-center gap-3 bg-primary p-4 text-primary-foreground"
@@ -254,6 +254,8 @@ function Perfil() {
                 <p className="text-xs opacity-75">Check-in e mimos.</p>
               </div>
             </Link>
+            )}
+            {isAdmin && (
             <Link
               to="/admin"
               className="card-festa flex items-center gap-3 bg-foreground p-4 text-background"
@@ -264,6 +266,7 @@ function Perfil() {
                 <p className="text-xs opacity-70">Gestão do aplicativo.</p>
               </div>
             </Link>
+            )}
           </div>
         )}
 

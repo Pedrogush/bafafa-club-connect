@@ -77,3 +77,21 @@ O arquivo `docs/TESTE_MVP.sql` contém comandos opcionais para:
 - criar um evento e uma campanha de demonstração.
 
 Revise os e-mails e o produto antes de executar. O script não deve ser usado sem adaptação em produção.
+
+## Painel administrativo v2
+
+Esta versão adiciona um painel funcional em `/admin` para:
+
+- visão geral do MVP;
+- criar, editar e excluir eventos;
+- criar, editar e excluir campanhas/mimos;
+- consultar clientes e completude do perfil;
+- consultar check-ins;
+- conceder ou remover acesso de equipe e administrador;
+- consultar auditoria.
+
+Antes de usar o painel, execute uma única vez no SQL Editor do Supabase:
+
+`docs/ADMIN_V2_SETUP.sql`
+
+O script concede as permissões de banco necessárias, mantém o RLS, protege o último administrador e cria auditoria automática das alterações principais.
