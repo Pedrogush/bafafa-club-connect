@@ -154,17 +154,32 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { -webkit-font-smoothing: antialiased; }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
   body {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    overflow-x: hidden;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-feature-settings: "ss01","cv02";
+    font-feature-settings: "ss01", "cv02";
     min-width: 320px;
   }
-  button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
-  h1, h2, h3, .font-display {
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: var(--font-display);
     font-weight: 400;
     letter-spacing: 0.015em;
@@ -182,7 +197,11 @@
     background-color: var(--background);
     background-image:
       linear-gradient(color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in srgb, var(--foreground) 3%, transparent) 1px, transparent 1px);
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--foreground) 3%, transparent) 1px,
+        transparent 1px
+      );
     background-size: 34px 34px;
   }
 
@@ -228,8 +247,12 @@
     background: var(--background);
     transform: translateY(-50%);
   }
-  .ticket-card::before { left: -0.75rem; }
-  .ticket-card::after { right: -0.75rem; }
+  .ticket-card::before {
+    left: -0.75rem;
+  }
+  .ticket-card::after {
+    right: -0.75rem;
+  }
 
   .brick-texture {
     background-color: var(--brick);
@@ -237,15 +260,32 @@
       linear-gradient(90deg, color-mix(in srgb, #fff 16%, transparent) 2px, transparent 2px),
       linear-gradient(color-mix(in srgb, #fff 16%, transparent) 2px, transparent 2px),
       linear-gradient(90deg, transparent 50%, color-mix(in srgb, #fff 12%, transparent) 50%);
-    background-size: 74px 34px, 74px 34px, 148px 68px;
+    background-size:
+      74px 34px,
+      74px 34px,
+      148px 68px;
   }
 
   .checker-texture {
     background-color: var(--mango);
     background-image:
-      linear-gradient(45deg, color-mix(in srgb, var(--secondary) 32%, transparent) 25%, transparent 25%, transparent 75%, color-mix(in srgb, var(--secondary) 32%, transparent) 75%),
-      linear-gradient(45deg, color-mix(in srgb, var(--secondary) 32%, transparent) 25%, transparent 25%, transparent 75%, color-mix(in srgb, var(--secondary) 32%, transparent) 75%);
-    background-position: 0 0, 22px 22px;
+      linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--secondary) 32%, transparent) 25%,
+        transparent 25%,
+        transparent 75%,
+        color-mix(in srgb, var(--secondary) 32%, transparent) 75%
+      ),
+      linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--secondary) 32%, transparent) 25%,
+        transparent 25%,
+        transparent 75%,
+        color-mix(in srgb, var(--secondary) 32%, transparent) 75%
+      );
+    background-position:
+      0 0,
+      22px 22px;
     background-size: 44px 44px;
   }
 
@@ -259,12 +299,12 @@
   .cut-label {
     display: inline-flex;
     align-items: center;
-    gap: .3rem;
+    gap: 0.3rem;
     border: 2px solid var(--foreground);
-    border-radius: .45rem;
-    padding: .25rem .65rem;
+    border-radius: 0.45rem;
+    padding: 0.25rem 0.65rem;
     font-family: var(--font-poster);
-    font-size: .68rem;
+    font-size: 0.68rem;
     line-height: 1;
     text-transform: uppercase;
     box-shadow: 2px 3px 0 var(--foreground);
@@ -274,24 +314,29 @@
   .poster-title {
     font-family: var(--font-display);
     font-size: clamp(2.25rem, 11vw, 4.25rem);
-    line-height: .86;
-    letter-spacing: .015em;
+    line-height: 0.86;
+    letter-spacing: 0.015em;
     text-transform: uppercase;
   }
 
   .section-kicker {
     font-family: var(--font-poster);
-    font-size: .65rem;
+    font-size: 0.65rem;
     line-height: 1;
-    letter-spacing: .16em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
   }
 
   .plaza-line {
     height: 18px;
-    opacity: .32;
-    background:
-      radial-gradient(ellipse at 12% 100%, transparent 0 43%, currentColor 44% 49%, transparent 50%) 0 100% / 62px 18px repeat-x;
+    opacity: 0.32;
+    background: radial-gradient(
+        ellipse at 12% 100%,
+        transparent 0 43%,
+        currentColor 44% 49%,
+        transparent 50%
+      )
+      0 100% / 62px 18px repeat-x;
   }
 }
 
@@ -304,11 +349,31 @@
 
 @utility bg-confete {
   background-image:
-    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--samba) 75%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 78% 34%, color-mix(in srgb, var(--secondary) 75%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 40% 78%, color-mix(in srgb, var(--primary) 75%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 88% 82%, color-mix(in srgb, var(--mango) 88%, transparent) 0 3px, transparent 4px),
-    radial-gradient(circle at 22% 62%, color-mix(in srgb, var(--electric) 75%, transparent) 0 3px, transparent 4px);
+    radial-gradient(
+      circle at 12% 18%,
+      color-mix(in srgb, var(--samba) 75%, transparent) 0 3px,
+      transparent 4px
+    ),
+    radial-gradient(
+      circle at 78% 34%,
+      color-mix(in srgb, var(--secondary) 75%, transparent) 0 3px,
+      transparent 4px
+    ),
+    radial-gradient(
+      circle at 40% 78%,
+      color-mix(in srgb, var(--primary) 75%, transparent) 0 3px,
+      transparent 4px
+    ),
+    radial-gradient(
+      circle at 88% 82%,
+      color-mix(in srgb, var(--mango) 88%, transparent) 0 3px,
+      transparent 4px
+    ),
+    radial-gradient(
+      circle at 22% 62%,
+      color-mix(in srgb, var(--electric) 75%, transparent) 0 3px,
+      transparent 4px
+    );
   background-size: 220px 220px;
 }
 
@@ -332,16 +397,16 @@
     min-height: 5.3rem;
     align-items: center;
     justify-content: center;
-    padding: .72rem .9rem .62rem;
+    padding: 0.72rem 0.9rem 0.62rem;
     overflow: visible;
     border: 2px solid var(--foreground);
-    border-radius: 1.15rem .95rem 1.25rem .9rem;
+    border-radius: 1.15rem 0.95rem 1.25rem 0.9rem;
     background:
-      linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,248,233,.96)),
-      repeating-linear-gradient(0deg, transparent 0 11px, rgba(22,18,43,.035) 12px 13px);
+      linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(255, 248, 233, 0.96)),
+      repeating-linear-gradient(0deg, transparent 0 11px, rgba(22, 18, 43, 0.035) 12px 13px);
     box-shadow:
-      inset 0 2px 0 rgba(255,255,255,.96),
-      inset 0 -4px 0 rgba(237,76,23,.12),
+      inset 0 2px 0 rgba(255, 255, 255, 0.96),
+      inset 0 -4px 0 rgba(237, 76, 23, 0.12),
       3px 4px 0 var(--foreground),
       7px 8px 0 var(--brick);
     transform: rotate(-1.25deg);
@@ -350,35 +415,41 @@
   .bafafa-sign::after {
     content: "";
     position: absolute;
-    inset: .36rem;
+    inset: 0.36rem;
     z-index: 0;
     pointer-events: none;
     border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
-    border-radius: .8rem .65rem .9rem .7rem;
+    border-radius: 0.8rem 0.65rem 0.9rem 0.7rem;
   }
 
   .bafafa-sign__nail {
     position: absolute;
-    top: .42rem;
+    top: 0.42rem;
     z-index: 2;
-    width: .36rem;
-    height: .36rem;
+    width: 0.36rem;
+    height: 0.36rem;
     border: 1px solid color-mix(in srgb, var(--foreground) 70%, transparent);
     border-radius: 999px;
     background: var(--mango);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 1px 1px 0 var(--foreground);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      1px 1px 0 var(--foreground);
   }
 
-  .bafafa-sign__nail--left { left: .62rem; }
-  .bafafa-sign__nail--right { right: .62rem; }
+  .bafafa-sign__nail--left {
+    left: 0.62rem;
+  }
+  .bafafa-sign__nail--right {
+    right: 0.62rem;
+  }
 
   .home-hero__institutional {
     margin-top: 1.15rem;
-    padding-left: .1rem;
+    padding-left: 0.1rem;
     font-family: var(--font-poster);
-    font-size: .63rem;
+    font-size: 0.63rem;
     line-height: 1.3;
-    letter-spacing: .17em;
+    letter-spacing: 0.17em;
     text-transform: uppercase;
     color: var(--muted-foreground);
   }
@@ -387,47 +458,72 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-top: .15rem;
+    margin-top: 0.15rem;
     border: 2px solid var(--foreground);
-    border-radius: .55rem;
-    padding: .27rem .55rem;
+    border-radius: 0.55rem;
+    padding: 0.27rem 0.55rem;
     background: var(--lagoa);
     color: var(--foreground);
     font-family: var(--font-poster);
-    font-size: .59rem;
+    font-size: 0.59rem;
     line-height: 1;
-    letter-spacing: .035em;
+    letter-spacing: 0.035em;
     text-transform: uppercase;
     box-shadow: 2px 3px 0 var(--foreground);
     transform: rotate(-1deg);
     white-space: nowrap;
   }
 
+  .home-hero__invitation {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    border: 2px solid var(--foreground);
+    border-radius: 0.65rem;
+    padding: 0.38rem 0.72rem 0.32rem;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-poster);
+    font-size: 0.66rem;
+    line-height: 1.05;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow: 2px 3px 0 var(--foreground);
+    transform: rotate(-1deg);
+    white-space: normal;
+  }
+
   .home-hero__copy {
     max-width: 100%;
-    padding-left: .95rem;
+    padding-left: 0.95rem;
     border-left: 3px solid color-mix(in srgb, var(--foreground) 16%, transparent);
   }
 
   .home-hero__greeting {
     display: flex;
     max-width: 100%;
+    min-width: 0;
     align-items: flex-start;
-    flex-wrap: wrap;
-    gap: .08em;
+    flex-wrap: nowrap;
+    gap: 0.08em;
     font-family: var(--font-display);
     font-size: clamp(3rem, 13vw, 4.8rem);
-    line-height: .83;
-    letter-spacing: .012em;
+    line-height: 0.83;
+    letter-spacing: 0.012em;
     text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .home-hero__greeting > span:first-child {
+    min-width: 0;
     overflow-wrap: anywhere;
   }
 
   .home-hero__asterisk {
     display: inline-block;
-    margin-top: -.05em;
+    margin-top: -0.05em;
     color: var(--samba);
-    font-size: .66em;
+    font-size: 0.66em;
     line-height: 1;
     transform: rotate(8deg);
   }
@@ -435,9 +531,9 @@
   .home-hero__location {
     display: flex;
     align-items: flex-start;
-    gap: .45rem;
+    gap: 0.45rem;
     max-width: 26rem;
-    font-size: .77rem;
+    font-size: 0.77rem;
     font-weight: 800;
     line-height: 1.35;
     color: var(--muted-foreground);
@@ -447,10 +543,10 @@
     .bafafa-sign {
       width: min(11rem, 56vw);
       min-height: 4.65rem;
-      padding: .62rem .75rem .55rem;
+      padding: 0.62rem 0.75rem 0.55rem;
       box-shadow:
-        inset 0 2px 0 rgba(255,255,255,.96),
-        inset 0 -3px 0 rgba(237,76,23,.12),
+        inset 0 2px 0 rgba(255, 255, 255, 0.96),
+        inset 0 -3px 0 rgba(237, 76, 23, 0.12),
         3px 4px 0 var(--foreground),
         6px 7px 0 var(--brick);
     }
@@ -458,16 +554,25 @@
     .home-hero__institutional {
       margin-top: 1rem;
       max-width: 12rem;
-      font-size: .55rem;
-      letter-spacing: .13em;
+      font-size: 0.55rem;
+      letter-spacing: 0.13em;
     }
 
     .home-hero__official-badge {
-      padding: .24rem .45rem;
-      font-size: .52rem;
+      padding: 0.24rem 0.45rem;
+      font-size: 0.52rem;
     }
 
-    .home-hero__copy { margin-top: 1.65rem; }
-    .home-hero__greeting { font-size: clamp(2.75rem, 14vw, 4rem); }
+    .home-hero__copy {
+      margin-top: 1.65rem;
+      padding-left: 0.72rem;
+    }
+    .home-hero__invitation {
+      font-size: 0.56rem;
+      letter-spacing: 0.09em;
+    }
+    .home-hero__greeting {
+      font-size: clamp(2.55rem, 13vw, 3.65rem);
+    }
   }
 }

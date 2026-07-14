@@ -1,10 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+  type UIEvent,
+} from "react";
+import {
+  ArrowDown,
   Ban,
+  CalendarDays,
   Clock3,
   Flag,
   MessageCircleMore,
+  RefreshCw,
   Reply,
   Send,
   ShieldCheck,
@@ -13,7 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { NameWithBadges, type BafafaBadgeDefinition } from "@/components/profile/bafafa-badge";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { Button } from "@/components/ui/button";
@@ -74,13 +86,15 @@ const REPORT_REASONS = [
 ] as const;
 
 function Resenha() {
-  const { user, roles } = useAuth();
+  const { roles } = useAuth();
   const search = Route.useSearch();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesRef = useRef<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -88,10 +102,25 @@ function Resenha() {
   const [reporting, setReporting] = useState<ChatMessage | null>(null);
   const [reportReason, setReportReason] = useState("outro");
   const [reportDetails, setReportDetails] = useState("");
+  const [newMessages, setNewMessages] = useState(0);
+  const [now, setNow] = useState(Date.now());
+  const feedRef = useRef<HTMLDivElement | null>(null);
   const feedEndRef = useRef<HTMLDivElement | null>(null);
+  const nearBottomRef = useRef(true);
+  const forceScrollRef = useRef(false);
 
   const selectedRoom = rooms.find((room) => room.event_id === selectedId) ?? null;
   const canModerate = roles.includes("admin") || roles.includes("moderador");
+  const roomClosed = selectedRoom ? now > new Date(selectedRoom.chat_closes_at).getTime() : false;
+  const participantCount = useMemo(
+    () => new Set(messages.map((message) => message.author_id)).size,
+    [messages],
+  );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 15000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const loadRooms = useCallback(async () => {
     const { data, error: roomError } = await supabase.rpc("my_event_chat_rooms");
@@ -118,41 +147,59 @@ function Resenha() {
     if (feedError) {
       if (!quiet) setError(feedError.message);
     } else {
-      setMessages(
-        (data ?? []).map((message) => ({
-          ...message,
-          author_badges: Array.isArray(message.author_badges)
-            ? (message.author_badges as unknown as BafafaBadgeDefinition[])
-            : [],
-        })) as ChatMessage[],
-      );
+      const nextMessages = (data ?? []).map((message) => ({
+        ...message,
+        author_badges: Array.isArray(message.author_badges)
+          ? (message.author_badges as unknown as BafafaBadgeDefinition[])
+          : [],
+      })) as ChatMessage[];
+
+      const wasEmpty = messagesRef.current.length === 0;
+      const oldIds = new Set(messagesRef.current.map((message) => message.message_id));
+      const added = nextMessages.filter((message) => !oldIds.has(message.message_id));
+      const ownAdded = added.some((message) => message.is_mine);
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+
+      if (nearBottomRef.current || forceScrollRef.current || ownAdded || wasEmpty) {
+        forceScrollRef.current = false;
+        setNewMessages(0);
+        window.requestAnimationFrame(() => scrollToBottom("smooth"));
+      } else if (added.length > 0) {
+        setNewMessages((count) => count + added.length);
+      }
     }
     if (!quiet) setLoadingMessages(false);
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-    void loadRooms()
-      .catch((roomError: unknown) => {
-        if (mounted)
-          setError(
-            roomError instanceof Error ? roomError.message : "Não foi possível abrir a Resenha.",
-          );
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
+  const initialize = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loadRooms();
+    } catch (roomError) {
+      setError(
+        roomError instanceof Error ? roomError.message : "Não foi possível abrir a Resenha.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [loadRooms]);
 
   useEffect(() => {
+    void initialize();
+  }, [initialize]);
+
+  useEffect(() => {
     if (!selectedId) {
+      messagesRef.current = [];
       setMessages([]);
       return;
     }
     setError(null);
+    setNewMessages(0);
+    nearBottomRef.current = true;
+    forceScrollRef.current = true;
     void loadMessages(selectedId);
 
     const channel = supabase
@@ -174,13 +221,30 @@ function Resenha() {
     };
   }, [loadMessages, selectedId]);
 
-  useEffect(() => {
-    feedEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length]);
+  function scrollToBottom(behavior: ScrollBehavior = "smooth") {
+    feedEndRef.current?.scrollIntoView({ behavior, block: "end" });
+    nearBottomRef.current = true;
+    setNewMessages(0);
+  }
+
+  function handleFeedScroll(event: UIEvent<HTMLDivElement>) {
+    const element = event.currentTarget;
+    const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
+    nearBottomRef.current = distance < 90;
+    if (nearBottomRef.current) setNewMessages(0);
+  }
+
+  async function refreshChat() {
+    if (!selectedId) return;
+    setRefreshing(true);
+    await Promise.all([loadRooms(), loadMessages(selectedId, true)]);
+    setRefreshing(false);
+    toast.success("Resenha atualizada.");
+  }
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedId || !draft.trim() || sending) return;
+    if (!selectedId || !draft.trim() || sending || roomClosed) return;
     setSending(true);
     const { error: sendError } = await supabase.rpc("send_event_chat_message", {
       _event_id: selectedId,
@@ -191,6 +255,7 @@ function Resenha() {
     if (sendError) return toast.error(sendError.message);
     setDraft("");
     setReplyingTo(null);
+    forceScrollRef.current = true;
     await loadMessages(selectedId, true);
   }
 
@@ -237,12 +302,42 @@ function Resenha() {
 
   return (
     <AppShell>
-      <ScreenHeader eyebrow="Só entra quem fez check-in" title="Resenha" tone="green" />
+      <header className="border-b border-foreground/10 bg-card px-4 pb-3 pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="section-kicker text-muted-foreground">Só entra quem fez check-in</p>
+            <h1 className="mt-1 font-display text-3xl leading-none">Resenha</h1>
+          </div>
+          <button
+            type="button"
+            onClick={() => void refreshChat()}
+            disabled={refreshing || !selectedId}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground disabled:opacity-50"
+            aria-label="Atualizar Resenha"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+      </header>
+
       {loading && <LoadingCard label="Abrindo a roda de conversa…" />}
-      {error && !loading && <ErrorCard message={error} />}
+      {error && !loading && (
+        <div className="space-y-3">
+          <ErrorCard message={error} />
+          <div className="px-5">
+            <button
+              type="button"
+              onClick={() => void initialize()}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+            >
+              <RefreshCw className="h-4 w-4" /> Tentar de novo
+            </button>
+          </div>
+        </div>
+      )}
 
       {!loading && !error && (
-        <div className="space-y-3 px-4 pt-1">
+        <div className="px-3 pt-3">
           {rooms.length === 0 ? (
             <section className="poster-card checker-texture p-6 text-foreground">
               <MessageCircleMore className="h-9 w-9" />
@@ -261,18 +356,16 @@ function Resenha() {
               </Link>
             </section>
           ) : (
-            <>
-              <section className="rounded-2xl border border-foreground/15 bg-card p-3 shadow-sm">
-                <label className="section-kicker text-muted-foreground">
-                  Qual roda está aberta?
-                </label>
+            <section className="flex h-[calc(100dvh-9.8rem)] min-h-[430px] flex-col overflow-hidden rounded-3xl border-2 border-foreground/15 bg-card shadow-sm">
+              <div className="border-b border-foreground/10 bg-card px-3 py-2.5">
                 <select
                   value={selectedId}
                   onChange={(event) => {
                     setSelectedId(event.target.value);
                     setReplyingTo(null);
                   }}
-                  className="mt-2 h-11 w-full rounded-xl border border-foreground/20 bg-surface px-3 text-sm font-black outline-none focus:ring-4 focus:ring-lagoa/20"
+                  aria-label="Selecionar evento da Resenha"
+                  className="h-10 w-full rounded-xl border border-foreground/20 bg-surface px-3 text-sm font-black outline-none focus:ring-4 focus:ring-lagoa/20"
                 >
                   {rooms.map((room) => (
                     <option key={room.event_id} value={room.event_id}>
@@ -281,67 +374,60 @@ function Resenha() {
                   ))}
                 </select>
                 {selectedRoom && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-muted-foreground">
-                    <span className="rounded-full bg-muted px-2.5 py-1">
+                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5" />{" "}
                       {formatEventDate(selectedRoom.starts_at)} ·{" "}
                       {formatEventTime(selectedRoom.starts_at)}
                     </span>
-                    <span className="rounded-full bg-lagoa/80 px-2.5 py-1 text-foreground">
-                      {selectedRoom.message_count} mensagens
+                    <span className="flex items-center gap-1">
+                      <UsersRound className="h-3.5 w-3.5" /> {participantCount} na conversa
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock3 className="h-3.5 w-3.5" /> {roomClosed ? "encerrada" : "ao vivo"}
                     </span>
                   </div>
                 )}
-              </section>
+              </div>
 
-              <section className="overflow-hidden rounded-3xl border border-foreground/15 bg-card shadow-sm">
-                <div className="flex items-center justify-between gap-3 border-b border-foreground/10 bg-foreground px-4 py-2.5 text-background">
-                  <div className="flex items-center gap-2">
-                    <UsersRound className="h-5 w-5 text-mango" />
+              <div
+                ref={feedRef}
+                onScroll={handleFeedScroll}
+                className="relative flex-1 space-y-2 overflow-y-auto bg-background px-3 py-3"
+              >
+                {loadingMessages ? (
+                  <p className="py-16 text-center text-sm font-bold text-muted-foreground">
+                    Puxando as últimas fofocas…
+                  </p>
+                ) : messages.length === 0 ? (
+                  <div className="grid min-h-full place-items-center px-5 text-center">
                     <div>
-                      <p className="text-sm font-black">Resenha do evento</p>
-                      <p className="text-[10px] font-bold opacity-65">
-                        Sem anonimato · com respeito · sem exposição
+                      <MessageCircleMore className="mx-auto h-9 w-9 text-primary" />
+                      <p className="mt-3 font-display text-3xl">
+                        A primeira mensagem pode ser sua.
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-muted-foreground">
+                        Puxe assunto sem entregar ninguém.
                       </p>
                     </div>
                   </div>
-                  <span className="flex items-center gap-1 text-[10px] font-bold opacity-70">
-                    <Clock3 className="h-3.5 w-3.5" /> ao vivo
-                  </span>
-                </div>
-
-                <div className="max-h-[58vh] min-h-80 space-y-2 overflow-y-auto bg-background p-3">
-                  {loadingMessages ? (
-                    <p className="py-16 text-center text-sm font-bold text-muted-foreground">
-                      Puxando as últimas fofocas…
-                    </p>
-                  ) : messages.length === 0 ? (
-                    <div className="grid min-h-72 place-items-center text-center">
-                      <div>
-                        <MessageCircleMore className="mx-auto h-10 w-10 text-primary" />
-                        <p className="mt-3 font-display text-3xl">
-                          A primeira mensagem pode ser sua.
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-muted-foreground">
-                          Puxe assunto sem entregar ninguém.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    messages.map((message) => {
-                      const replied = message.reply_to
-                        ? messages.find((candidate) => candidate.message_id === message.reply_to)
-                        : null;
-                      return (
-                        <article
-                          key={message.message_id}
-                          className={`max-w-[88%] rounded-2xl border px-3 py-2.5 ${
-                            message.is_mine
-                              ? "ml-auto border-primary/25 bg-primary/10"
-                              : "border-foreground/10 bg-muted/45"
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full border border-foreground/20 bg-primary text-xs font-black text-white">
+                ) : (
+                  messages.map((message) => {
+                    const replied = message.reply_to
+                      ? messages.find((candidate) => candidate.message_id === message.reply_to)
+                      : null;
+                    return (
+                      <article
+                        key={message.message_id}
+                        className={`max-w-[86%] rounded-2xl border px-3 py-2.5 ${
+                          message.is_mine
+                            ? "ml-auto border-lagoa/45 bg-lagoa/20"
+                            : "mr-auto border-foreground/10 bg-card"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {!message.is_mine && (
+                            <div className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full border border-foreground/20 bg-primary text-[10px] font-black text-white">
                               {message.author_avatar_url ? (
                                 <img
                                   src={message.author_avatar_url}
@@ -352,85 +438,94 @@ function Resenha() {
                                 (message.author_name[0]?.toUpperCase() ?? "B")
                               )}
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <NameWithBadges
-                                  name={message.author_name}
-                                  badges={message.author_badges}
-                                  maxBadges={2}
-                                  className="min-w-0 flex-1 text-[13px] font-black"
-                                />
-                                <time className="shrink-0 text-[9px] font-bold text-muted-foreground">
-                                  {formatMessageTime(message.created_at)}
-                                </time>
-                              </div>
-                              {message.author_title && (
-                                <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
-                                  {message.author_title}
-                                </p>
-                              )}
-                              {replied && (
-                                <div className="mt-1.5 rounded-lg border-l-2 border-primary bg-background/60 px-2 py-1.5 text-[11px] text-muted-foreground">
-                                  <strong>{replied.author_name}:</strong>{" "}
-                                  {replied.body.slice(0, 72)}
-                                </div>
-                              )}
-                              <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
-                                {message.body}
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <NameWithBadges
+                                name={message.is_mine ? "Você" : message.author_name}
+                                badges={message.author_badges}
+                                maxBadges={2}
+                                className="min-w-0 flex-1 text-[12px] font-black"
+                              />
+                              <time className="shrink-0 text-[9px] font-bold text-muted-foreground">
+                                {formatMessageTime(message.created_at)}
+                              </time>
+                            </div>
+                            {message.author_title && !message.is_mine && (
+                              <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                                {message.author_title}
                               </p>
-                              <div className="mt-1.5 flex justify-end gap-1 text-muted-foreground">
-                                <button
-                                  type="button"
-                                  onClick={() => setReplyingTo(message)}
-                                  className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-foreground"
-                                  aria-label="Responder"
-                                  title="Responder"
-                                >
-                                  <Reply className="h-3.5 w-3.5" />
-                                </button>
-                                {(message.is_mine || canModerate) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => void deleteMessage(message)}
-                                    className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-destructive"
-                                    aria-label="Apagar mensagem"
-                                    title="Apagar"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                )}
-                                {!message.is_mine && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => setReporting(message)}
-                                      className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-foreground"
-                                      aria-label="Denunciar mensagem"
-                                      title="Denunciar"
-                                    >
-                                      <Flag className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => void blockUser(message)}
-                                      className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-foreground"
-                                      aria-label="Bloquear usuário"
-                                      title="Bloquear"
-                                    >
-                                      <Ban className="h-3.5 w-3.5" />
-                                    </button>
-                                  </>
-                                )}
+                            )}
+                            {replied && (
+                              <div className="mt-1.5 rounded-lg border-l-2 border-primary bg-background/70 px-2 py-1.5 text-[11px] text-muted-foreground">
+                                <strong>{replied.is_mine ? "Você" : replied.author_name}:</strong>{" "}
+                                {replied.body.slice(0, 72)}
                               </div>
+                            )}
+                            <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                              {message.body}
+                            </p>
+                            <div className="mt-1 flex justify-end gap-0.5 text-muted-foreground">
+                              <MessageAction
+                                label="Responder"
+                                onClick={() => setReplyingTo(message)}
+                              >
+                                <Reply className="h-3.5 w-3.5" />
+                              </MessageAction>
+                              {(message.is_mine || canModerate) && (
+                                <MessageAction
+                                  label="Apagar"
+                                  onClick={() => void deleteMessage(message)}
+                                  destructive
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </MessageAction>
+                              )}
+                              {!message.is_mine && (
+                                <>
+                                  <MessageAction
+                                    label="Denunciar"
+                                    onClick={() => setReporting(message)}
+                                  >
+                                    <Flag className="h-3.5 w-3.5" />
+                                  </MessageAction>
+                                  <MessageAction
+                                    label="Bloquear"
+                                    onClick={() => void blockUser(message)}
+                                  >
+                                    <Ban className="h-3.5 w-3.5" />
+                                  </MessageAction>
+                                </>
+                              )}
                             </div>
                           </div>
-                        </article>
-                      );
-                    })
-                  )}
-                  <div ref={feedEndRef} />
-                </div>
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+                <div ref={feedEndRef} />
 
+                {newMessages > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => scrollToBottom()}
+                    className="sticky bottom-2 left-1/2 z-10 mx-auto flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-foreground/20 bg-foreground px-3 py-2 text-xs font-black text-background shadow-lg"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" /> {newMessages} nova
+                    {newMessages > 1 ? "s" : ""}
+                  </button>
+                )}
+              </div>
+
+              {roomClosed ? (
+                <div className="border-t border-foreground/10 bg-muted px-4 py-3 text-center">
+                  <p className="text-sm font-black">Resenha encerrada.</p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    As mensagens ficam somente para consulta.
+                  </p>
+                </div>
+              ) : (
                 <form onSubmit={sendMessage} className="border-t border-foreground/10 bg-card p-3">
                   {replyingTo && (
                     <div className="mb-2 flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-xs font-bold">
@@ -452,8 +547,8 @@ function Resenha() {
                       value={draft}
                       onChange={(event) => setDraft(event.target.value.slice(0, 300))}
                       placeholder="Manda a boa, Bafafã…"
-                      rows={2}
-                      className="min-h-11 resize-none rounded-2xl border border-foreground/20 bg-background"
+                      rows={1}
+                      className="max-h-28 min-h-11 resize-none rounded-2xl border border-foreground/20 bg-background"
                     />
                     <Button
                       type="submit"
@@ -464,17 +559,12 @@ function Resenha() {
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>
-                  <p className="mt-1 text-right text-[10px] font-bold text-muted-foreground">
+                  <p className="mt-1 text-right text-[9px] font-bold text-muted-foreground">
                     {draft.length}/300
                   </p>
                 </form>
-              </section>
-
-              <p className="px-3 pb-3 text-center text-[11px] font-semibold text-muted-foreground">
-                Seu telefone e outros dados privados nunca aparecem na sala. Você pode denunciar e
-                bloquear sem avisar a outra pessoa.
-              </p>
-            </>
+              )}
+            </section>
           )}
         </div>
       )}
@@ -525,6 +615,30 @@ function Resenha() {
         </DialogContent>
       </Dialog>
     </AppShell>
+  );
+}
+
+function MessageAction({
+  label,
+  onClick,
+  destructive = false,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`grid h-7 w-7 place-items-center rounded-full hover:bg-background ${destructive ? "hover:text-destructive" : "hover:text-foreground"}`}
+      aria-label={label}
+      title={label}
+    >
+      {children}
+    </button>
   );
 }
 

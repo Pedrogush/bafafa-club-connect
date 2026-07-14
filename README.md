@@ -137,3 +137,18 @@ Roteiro de teste: `docs/TESTE_PERFIL_E_RESENHA_V6.md`
 - Consultas do app do cliente filtradas explicitamente por `user_id`, inclusive para contas administrativas.
 - Deduplicação defensiva de selos por slug.
 - Migration da correção `short_code` incorporada ao repositório.
+
+## V9 — Bloco 1: correções e experiência
+
+Atualização de frontend focada em Home, Check-in, Perfil e Resenha:
+
+- correção definitiva do selo recente e de vazamentos horizontais na Home;
+- hero com melhor separação da chamada “Chegue mais, Bafafã”;
+- carregamento, erro e tentativa novamente nas telas principais;
+- Check-in com estados distintos, janela completa, contagem regressiva e atualização manual;
+- atalhos para Mimos e Resenha após a validação;
+- Perfil com botão que leva diretamente ao próximo campo pendente;
+- Resenha com mais espaço para mensagens, campo de envio persistente, mensagens próprias diferenciadas e aviso de novas mensagens sem rolagem forçada;
+- estado de Resenha encerrada e contador compacto de participantes que já conversaram.
+
+Antes de testar, execute uma vez `docs/EXPERIENCIA_V9_BLOCO1_SETUP.sql`. A sala encerrada permanece disponível em modo somente leitura por 48 horas. Roteiro: `docs/TESTE_EXPERIENCIA_V9_BLOCO1.md`.
