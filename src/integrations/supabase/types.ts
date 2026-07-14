@@ -1049,6 +1049,8 @@ export type Database = {
         Args: never;
         Returns: Database["public"]["Enums"]["app_role"][];
       };
+      close_event_checkin: { Args: { _event_id: string }; Returns: undefined };
+      duplicate_event_with_campaigns: { Args: { _event_id: string }; Returns: string };
       delete_event_chat_message: { Args: { _message_id: string }; Returns: undefined };
       get_event_chat_feed: {
         Args: { _event_id: string; _limit?: number };
@@ -1104,6 +1106,7 @@ export type Database = {
       my_profile_completion_details: { Args: never; Returns: Json };
       my_profile_completeness: { Args: never; Returns: number };
       profile_completion_details: { Args: { _user_id: string }; Returns: Json };
+      refresh_my_reward_statuses: { Args: never; Returns: number };
       report_event_chat_message: {
         Args: { _details?: string | null; _message_id: string; _reason: string };
         Returns: undefined;

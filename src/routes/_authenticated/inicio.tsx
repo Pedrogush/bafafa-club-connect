@@ -87,7 +87,7 @@ function Inicio() {
         .select(
           "id,name,starts_at,attraction,image_url,category,checkin_enabled,campaigns(name,benefit_type,discount_percent,fixed_off_cents,product_name)",
         )
-        .in("status", ["scheduled", "ongoing"])
+        .in("status", ["scheduled", "published", "ongoing"])
         .gte("starts_at", new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString())
         .order("starts_at", { ascending: true })
         .limit(1)

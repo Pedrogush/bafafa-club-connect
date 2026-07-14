@@ -152,3 +152,7 @@ Atualização de frontend focada em Home, Check-in, Perfil e Resenha:
 - estado de Resenha encerrada e contador compacto de participantes que já conversaram.
 
 Antes de testar, execute uma vez `docs/EXPERIENCIA_V9_BLOCO1_SETUP.sql`. A sala encerrada permanece disponível em modo somente leitura por 48 horas. Roteiro: `docs/TESTE_EXPERIENCIA_V9_BLOCO1.md`.
+
+## V10 — Bloco 2: operação
+
+Esta versão acrescenta leitura de QR pela câmera, QR local no cliente, validador com retorno visual/sonoro, eventos em rascunho/publicados, prévia, duplicação, fechamento imediato do check-in, campanhas pausáveis, métricas de mimos e histórico de resgates. Consulte `docs/TESTE_OPERACAO_V10_BLOCO2.md`.

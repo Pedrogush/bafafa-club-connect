@@ -4,6 +4,16 @@ import { Clock3, Gift, KeyRound, PartyPopper, RefreshCw, Sparkles, Ticket } from
 import { toast } from "sonner";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
+import { SecureQr } from "@/components/operations/secure-qr";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { campaignBenefitLabel, formatDateTime, rewardStatusLabel } from "@/lib/bafafa";
@@ -41,6 +51,7 @@ function Mimos() {
   const [activeReward, setActiveReward] = useState<string | null>(null);
   const [token, setToken] = useState<RedemptionToken | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [confirmReward, setConfirmReward] = useState<RewardRow | null>(null);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -51,6 +62,7 @@ function Mimos() {
   useEffect(() => {
     if (!user) return;
     let mounted = true;
+    void supabase.rpc("refresh_my_reward_statuses");
     supabase
       .from("user_rewards")
       .select(
@@ -70,7 +82,7 @@ function Mimos() {
   }, [user]);
 
   const byTab = useMemo(
-    () => rewards.filter((reward) => normalizedStatus(reward) === tab),
+    () => rewards.filter((reward) => normalizedStatus(reward, now) === tab),
     [rewards, tab, now],
   );
   const secondsLeft = token
@@ -195,7 +207,7 @@ function Mimos() {
                   {available && !isActive && (
                     <button
                       type="button"
-                      onClick={() => generateRewardCode(reward.id)}
+                      onClick={() => setConfirmReward(reward)}
                       disabled={generating}
                       className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
                     >
@@ -211,13 +223,18 @@ function Mimos() {
                   {isActive && token && (
                     <div className="poster-card mt-5 bg-foreground p-5 text-center text-background shadow-none">
                       <KeyRound className="mx-auto h-7 w-7 text-mango" />
-                      <p className="mt-3 font-mono text-4xl font-black tracking-[0.16em] text-mango">
-                        {token.short_code.match(/.{1,3}/g)?.join(" ")}
+                      <p className="mt-2 text-xs font-bold text-background/70">
+                        Mostre à equipe para concluir o uso.
                       </p>
-                      <p className="mt-2 flex items-center justify-center gap-1 text-xs font-bold text-background/70">
-                        <Sparkles className="h-3.5 w-3.5" /> Mostre à equipe · expira em{" "}
-                        {secondsLeft}s
-                      </p>
+                      <div className="mt-4">
+                        <SecureQr
+                          value={token.token}
+                          shortCode={token.short_code}
+                          secondsLeft={secondsLeft}
+                          label="QR do mimo"
+                          dark
+                        />
+                      </div>
                     </div>
                   )}
                 </article>
@@ -226,13 +243,55 @@ function Mimos() {
           )}
         </div>
       )}
+
+      <Dialog
+        open={Boolean(confirmReward)}
+        onOpenChange={(open) => !open && setConfirmReward(null)}
+      >
+        <DialogContent className="max-w-sm rounded-[28px] border-[3px] border-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-display text-3xl">Usar este mimo agora?</DialogTitle>
+            <DialogDescription>
+              O código expira rapidamente. Gere somente quando estiver perto da equipe.
+            </DialogDescription>
+          </DialogHeader>
+          {confirmReward?.campaigns && (
+            <div className="ticket-card checker-texture p-4 text-foreground">
+              <p className="font-display text-2xl leading-none">{confirmReward.campaigns.name}</p>
+              <p className="mt-2 text-sm font-black">
+                {campaignBenefitLabel(confirmReward.campaigns)}
+              </p>
+              {confirmReward.campaigns.product_name && (
+                <p className="mt-1 text-xs font-semibold opacity-70">
+                  Produto: {confirmReward.campaigns.product_name}
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmReward(null)}>
+              Agora não
+            </Button>
+            <Button
+              onClick={() => {
+                if (!confirmReward) return;
+                const rewardId = confirmReward.id;
+                setConfirmReward(null);
+                void generateRewardCode(rewardId);
+              }}
+            >
+              <Sparkles className="h-4 w-4" /> Gerar código
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
 
-function normalizedStatus(reward: RewardRow): Tab {
+function normalizedStatus(reward: RewardRow, timestamp = Date.now()): Tab {
   if (reward.status === "redeemed") return "redeemed";
   if (reward.status === "expired" || reward.status === "revoked") return "expired";
-  if (reward.expires_at && new Date(reward.expires_at).getTime() <= Date.now()) return "expired";
+  if (reward.expires_at && new Date(reward.expires_at).getTime() <= timestamp) return "expired";
   return "available";
 }

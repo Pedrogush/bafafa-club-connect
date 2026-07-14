@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CalendarCheck,
   CheckCircle2,
@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
+import { SecureQr } from "@/components/operations/secure-qr";
 import { supabase } from "@/integrations/supabase/client";
 import { formatEventDate, formatEventTime } from "@/lib/bafafa";
 import { useAuth } from "@/hooks/use-auth";
@@ -75,7 +76,7 @@ function Checkin() {
       .from("events")
       .select("id,name,starts_at,checkin_opens_at,checkin_closes_at,status,chat_enabled")
       .eq("checkin_enabled", true)
-      .in("status", ["scheduled", "ongoing"])
+      .in("status", ["scheduled", "published", "ongoing"])
       .order("starts_at", { ascending: true });
 
     if (queryError) {
@@ -126,7 +127,6 @@ function Checkin() {
   const secondsLeft = token
     ? Math.max(0, Math.ceil((new Date(token.expires_at).getTime() - now) / 1000))
     : 0;
-  const codeGroups = useMemo(() => token?.short_code.match(/.{1,3}/g)?.join(" ") ?? "", [token]);
 
   useEffect(() => {
     if (token && secondsLeft === 0) setToken(null);
@@ -316,14 +316,18 @@ function Checkin() {
                     Mostre este código à equipe
                   </div>
                   <div className="bg-confete p-6">
-                    <KeyRound className="mx-auto h-9 w-9 text-mango" />
-                    <p className="mt-5 break-all font-mono text-5xl font-black tracking-[0.15em] text-mango">
-                      {codeGroups}
+                    <KeyRound className="mx-auto h-8 w-8 text-mango" />
+                    <p className="mt-3 text-sm font-semibold text-background/75">
+                      A equipe pode escanear o QR ou digitar o código abaixo.
                     </p>
-                    <p className="mt-4 text-sm font-semibold text-background/75">
-                      Expira em <strong className="text-background">{secondsLeft}s</strong> e só
-                      vale uma vez.
-                    </p>
+                    <div className="mt-5">
+                      <SecureQr
+                        value={token.token}
+                        shortCode={token.short_code}
+                        secondsLeft={secondsLeft}
+                        dark
+                      />
+                    </div>
                     <div className="mt-5 flex flex-wrap justify-center gap-3">
                       <button
                         type="button"

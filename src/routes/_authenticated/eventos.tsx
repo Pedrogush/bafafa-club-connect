@@ -61,7 +61,7 @@ function Eventos() {
         .select(
           "id,name,description,category,attraction,image_url,starts_at,checkin_enabled,checkin_opens_at,checkin_closes_at,status,chat_enabled,chat_opens_at,chat_closes_at,campaigns(id,name,benefit_type,discount_percent,fixed_off_cents,product_name)",
         )
-        .in("status", ["scheduled", "ongoing", "ended"])
+        .in("status", ["scheduled", "published", "ongoing", "ended"])
         .order("starts_at", { ascending: true }),
       user
         ? supabase.from("checkins").select("event_id").eq("user_id", user.id)
