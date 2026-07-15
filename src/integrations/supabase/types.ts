@@ -392,8 +392,12 @@ export type Database = {
           starts_at: string;
           status: string;
           updated_at: string;
+          venue_address: string | null;
+          venue_google_place_id: string | null;
+          venue_id: string | null;
           venue_latitude: number | null;
           venue_longitude: number | null;
+          venue_name: string | null;
         };
         Insert: {
           attraction?: string | null;
@@ -419,8 +423,12 @@ export type Database = {
           starts_at: string;
           status?: string;
           updated_at?: string;
+          venue_address?: string | null;
+          venue_google_place_id?: string | null;
+          venue_id?: string | null;
           venue_latitude?: number | null;
           venue_longitude?: number | null;
+          venue_name?: string | null;
         };
         Update: {
           attraction?: string | null;
@@ -446,10 +454,22 @@ export type Database = {
           starts_at?: string;
           status?: string;
           updated_at?: string;
+          venue_address?: string | null;
+          venue_google_place_id?: string | null;
+          venue_id?: string | null;
           venue_latitude?: number | null;
           venue_longitude?: number | null;
+          venue_name?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "events_venue_id_fkey";
+            columns: ["venue_id"];
+            isOneToOne: false;
+            referencedRelation: "venues";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       feed_posts: {
         Row: {
@@ -1263,6 +1283,51 @@ export type Database = {
         severity?: string;
         target_user_id?: string | null;
         title?: string;
+      };
+      Relationships: [];
+    };
+    venues: {
+      Row: {
+        address: string;
+        created_at: string;
+        created_by: string | null;
+        default_geofence_radius_m: number;
+        default_max_accuracy_m: number;
+        google_place_id: string | null;
+        id: string;
+        is_active: boolean;
+        latitude: number;
+        longitude: number;
+        name: string;
+        updated_at: string;
+      };
+      Insert: {
+        address: string;
+        created_at?: string;
+        created_by?: string | null;
+        default_geofence_radius_m?: number;
+        default_max_accuracy_m?: number;
+        google_place_id?: string | null;
+        id?: string;
+        is_active?: boolean;
+        latitude: number;
+        longitude: number;
+        name: string;
+        updated_at?: string;
+      };
+      Update: {
+        address?: string;
+        created_at?: string;
+        created_by?: string | null;
+        default_geofence_radius_m?: number;
+        default_max_accuracy_m?: number;
+        google_place_id?: string | null;
+        id?: string;
+        is_active?: boolean;
+        latitude?: number;
+        longitude?: number;
+        name?: string;
+        updated_at?: string;
       };
       Relationships: [];
     };

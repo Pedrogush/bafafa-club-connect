@@ -21,6 +21,9 @@ function contentSecurityPolicy(url: URL) {
     "https://vercel.live",
     "https://*.vercel.live",
     "wss://*.vercel.live",
+    "https://maps.googleapis.com",
+    "https://places.googleapis.com",
+    "https://maps.gstatic.com",
   ];
 
   if (local)
@@ -37,10 +40,10 @@ function contentSecurityPolicy(url: URL) {
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self'",
-    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://vercel.live https://*.vercel.live",
+    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live https://*.vercel.live",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https://*.supabase.co https://vercel.live https://*.vercel.live",
+    "img-src 'self' data: blob: https://*.supabase.co https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com",
     `connect-src ${connectSources.join(" ")}`,
     "frame-src 'self' https://challenges.cloudflare.com https://vercel.live https://*.vercel.live",
     "media-src 'self' blob:",

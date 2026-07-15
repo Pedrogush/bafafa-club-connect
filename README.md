@@ -220,3 +220,14 @@ O check-in deixou de ser uma aba e passou a ser uma ação do evento. A geolocal
 A área Mimos passou a se apresentar como Fofoquinhas e ganhou suporte a missões e campanhas que não dependem de um único evento. O Perfil recebeu campos opcionais e inclusivos de identidade de gênero e pronomes, sem interferir no percentual de conclusão.
 
 Consulte `docs/TESTE_NAVEGACAO_FEED_GEOLOCALIZACAO_V19.md` antes do merge.
+
+## Locais reutilizáveis e Google Maps
+
+A partir da V19.1, o administrador cadastra um local uma única vez e o reutiliza nos eventos.
+A busca automática por estabelecimento/endereço é opcional e usa:
+
+```env
+VITE_GOOGLE_MAPS_API_KEY=
+```
+
+Sem a chave, o cadastro continua disponível por localização atual ou coordenadas manuais.

@@ -223,8 +223,8 @@ function Checkin() {
                       {formatEventDate(selected.starts_at)} · {formatEventTime(selected.starts_at)}
                     </p>
                     <p className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-brick" /> Praça Dr. Amaro de Souza · Lagoa
-                      Nova
+                      <MapPin className="h-4 w-4 text-brick" />{" "}
+                      {selected.venue_address ?? "Praça Dr. Amaro de Souza · Lagoa Nova"}
                     </p>
                     <span
                       className={`mt-1 w-fit rounded-full px-3 py-1 text-xs font-black ${phase === "open" ? "bg-primary/15 text-primary" : "bg-muted"}`}

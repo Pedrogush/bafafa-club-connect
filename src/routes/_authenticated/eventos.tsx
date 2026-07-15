@@ -273,7 +273,8 @@ function EventCard({
             {formatEventTime(event.starts_at)}
           </p>
           <p className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-brick" /> Praça Dr. Amaro de Souza · Lagoa Nova
+            <MapPin className="h-4 w-4 text-brick" />{" "}
+            {event.venue_address ?? "Praça Dr. Amaro de Souza · Lagoa Nova"}
           </p>
         </div>
 

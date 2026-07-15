@@ -57,6 +57,7 @@ import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { ManagementDashboard } from "@/components/admin/management-dashboard";
 import { SecurityDashboard } from "@/components/admin/security-dashboard";
+import { GoogleVenueSearch } from "@/components/admin/venue-picker";
 
 export type AdminSection =
   | "overview"
@@ -74,6 +75,8 @@ export type AdminSection =
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
 type EventUpdate = Database["public"]["Tables"]["events"]["Update"];
+type VenueRow = Database["public"]["Tables"]["venues"]["Row"];
+type VenueInsert = Database["public"]["Tables"]["venues"]["Insert"];
 type CampaignRow = Database["public"]["Tables"]["campaigns"]["Row"];
 type FeedPostRow = Database["public"]["Tables"]["feed_posts"]["Row"];
 type CampaignInsert = Database["public"]["Tables"]["campaigns"]["Insert"];
@@ -92,6 +95,7 @@ type ProfileCompletionRow = { user_id: string; percentage: number; details: unkn
 
 type AdminData = {
   events: EventRow[];
+  venues: VenueRow[];
   campaigns: CampaignRow[];
   feedPosts: FeedPostRow[];
   profiles: ProfileRow[];
@@ -110,6 +114,7 @@ type AdminData = {
 
 const EMPTY_DATA: AdminData = {
   events: [],
+  venues: [],
   campaigns: [],
   feedPosts: [],
   profiles: [],
@@ -154,6 +159,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
 
     const [
       events,
+      venues,
       campaigns,
       feedPosts,
       profiles,
@@ -170,6 +176,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       chatMessages,
     ] = await Promise.all([
       supabase.from("events").select("*").order("starts_at", { ascending: false }),
+      supabase.from("venues").select("*").order("name"),
       supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
       supabase.from("feed_posts").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*").is("deleted_at", null).order("created_at", {
@@ -206,6 +213,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
 
     const firstError = [
       events,
+      venues,
       campaigns,
       feedPosts,
       profiles,
@@ -230,6 +238,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
     } else {
       setData({
         events: events.data ?? [],
+        venues: venues.data ?? [],
         campaigns: campaigns.data ?? [],
         feedPosts: feedPosts.data ?? [],
         profiles: profiles.data ?? [],
@@ -327,7 +336,11 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
               <ManagementDashboard data={data} currentUserId={currentUserId} />
             )}
             {section === "events" && (
-              <EventsManager events={data.events} onChanged={() => void loadData(true)} />
+              <EventsManager
+                events={data.events}
+                venues={data.venues}
+                onChanged={() => void loadData(true)}
+              />
             )}
             {section === "campaigns" && (
               <CampaignsManager
@@ -496,7 +509,15 @@ function Overview({ data }: { data: AdminData }) {
   );
 }
 
-function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: () => void }) {
+function EventsManager({
+  events,
+  venues,
+  onChanged,
+}: {
+  events: EventRow[];
+  venues: VenueRow[];
+  onChanged: () => void;
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<EventRow | null>(null);
   const [previewing, setPreviewing] = useState<EventRow | null>(null);
@@ -765,6 +786,7 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
       <EventDialog
         open={dialogOpen}
         event={editing}
+        venues={venues}
         onOpenChange={setDialogOpen}
         onSaved={onChanged}
       />
@@ -779,20 +801,72 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
 function EventDialog({
   open,
   event,
+  venues,
   onOpenChange,
   onSaved,
 }: {
   open: boolean;
   event: EventRow | null;
+  venues: VenueRow[];
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const [imageSelection, setImageSelection] = useState<File | null | undefined>(undefined);
+  const [localVenues, setLocalVenues] = useState<VenueRow[]>(venues);
+  const [selectedVenueId, setSelectedVenueId] = useState(event?.venue_id ?? "");
+  const [venueName, setVenueName] = useState(event?.venue_name ?? "");
+  const [venueAddress, setVenueAddress] = useState(event?.venue_address ?? "");
+  const [venuePlaceId, setVenuePlaceId] = useState(event?.venue_google_place_id ?? "");
+  const [venueLatitude, setVenueLatitude] = useState(
+    event?.venue_latitude === null || event?.venue_latitude === undefined
+      ? ""
+      : String(event.venue_latitude),
+  );
+  const [venueLongitude, setVenueLongitude] = useState(
+    event?.venue_longitude === null || event?.venue_longitude === undefined
+      ? ""
+      : String(event.venue_longitude),
+  );
+  const [geofenceRadius, setGeofenceRadius] = useState(String(event?.geofence_radius_m ?? 80));
+  const [maxAccuracy, setMaxAccuracy] = useState(String(event?.max_location_accuracy_m ?? 80));
+  const [venueDialogOpen, setVenueDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (open) setImageSelection(undefined);
+    setLocalVenues(venues);
+  }, [venues]);
+
+  useEffect(() => {
+    if (!open) return;
+    setImageSelection(undefined);
+    setSelectedVenueId(event?.venue_id ?? "");
+    setVenueName(event?.venue_name ?? "");
+    setVenueAddress(event?.venue_address ?? "");
+    setVenuePlaceId(event?.venue_google_place_id ?? "");
+    setVenueLatitude(
+      event?.venue_latitude === null || event?.venue_latitude === undefined
+        ? ""
+        : String(event.venue_latitude),
+    );
+    setVenueLongitude(
+      event?.venue_longitude === null || event?.venue_longitude === undefined
+        ? ""
+        : String(event.venue_longitude),
+    );
+    setGeofenceRadius(String(event?.geofence_radius_m ?? 80));
+    setMaxAccuracy(String(event?.max_location_accuracy_m ?? 80));
   }, [open, event]);
+
+  function applyVenue(venue: VenueRow | null) {
+    setSelectedVenueId(venue?.id ?? "");
+    setVenueName(venue?.name ?? "");
+    setVenueAddress(venue?.address ?? "");
+    setVenuePlaceId(venue?.google_place_id ?? "");
+    setVenueLatitude(venue ? String(venue.latitude) : "");
+    setVenueLongitude(venue ? String(venue.longitude) : "");
+    setGeofenceRadius(String(venue?.default_geofence_radius_m ?? 80));
+    setMaxAccuracy(String(venue?.default_max_accuracy_m ?? 80));
+  }
 
   async function submit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
@@ -805,8 +879,8 @@ function EventDialog({
     const chatOpensAt = nullableIso(form, "chat_opens_at");
     const chatClosesAt = nullableIso(form, "chat_closes_at");
     const geoEnabled = form.get("geolocation_checkin_enabled") === "on";
-    const venueLatitude = nullableNumber(form, "venue_latitude");
-    const venueLongitude = nullableNumber(form, "venue_longitude");
+    const parsedVenueLatitude = venueLatitude.trim() ? Number(venueLatitude) : null;
+    const parsedVenueLongitude = venueLongitude.trim() ? Number(venueLongitude) : null;
 
     if (endsAt && new Date(endsAt) <= new Date(toIso(startsAt)))
       return toast.error("O fim do evento precisa ser depois do início.");
@@ -814,8 +888,14 @@ function EventDialog({
       return toast.error("O encerramento do check-in precisa ser depois da abertura.");
     if (chatOpensAt && chatClosesAt && new Date(chatClosesAt) <= new Date(chatOpensAt))
       return toast.error("O encerramento da Resenha precisa ser depois da abertura.");
-    if (geoEnabled && (venueLatitude === null || venueLongitude === null))
-      return toast.error("Informe latitude e longitude para ativar o check-in por localização.");
+    if (
+      geoEnabled &&
+      (parsedVenueLatitude === null ||
+        parsedVenueLongitude === null ||
+        !Number.isFinite(parsedVenueLatitude) ||
+        !Number.isFinite(parsedVenueLongitude))
+    )
+      return toast.error("Escolha um local válido para ativar o check-in por localização.");
 
     setSaving(true);
     const slug = textValue(form, "slug") || slugify(name);
@@ -847,10 +927,14 @@ function EventDialog({
         checkin_closes_at: checkinClosesAt,
         checkin_enabled: form.get("checkin_enabled") === "on",
         geolocation_checkin_enabled: geoEnabled,
-        venue_latitude: venueLatitude,
-        venue_longitude: venueLongitude,
-        geofence_radius_m: numberValue(form, "geofence_radius_m", 80),
-        max_location_accuracy_m: numberValue(form, "max_location_accuracy_m", 80),
+        venue_id: selectedVenueId || null,
+        venue_name: venueName.trim() || null,
+        venue_address: venueAddress.trim() || null,
+        venue_google_place_id: venuePlaceId.trim() || null,
+        venue_latitude: parsedVenueLatitude,
+        venue_longitude: parsedVenueLongitude,
+        geofence_radius_m: Math.max(Number(geofenceRadius) || 80, 20),
+        max_location_accuracy_m: Math.max(Number(maxAccuracy) || 80, 20),
         chat_opens_at: chatOpensAt,
         chat_closes_at: chatClosesAt,
         chat_enabled: form.get("chat_enabled") === "on",
@@ -942,42 +1026,121 @@ function EventDialog({
               type="datetime-local"
               defaultValue={toLocalInput(event?.checkin_closes_at)}
             />
-            <Field
-              label="Latitude do evento"
-              name="venue_latitude"
-              type="number"
-              step="0.000001"
-              min="-90"
-              max="90"
-              defaultValue={event?.venue_latitude}
-              placeholder="Ex.: -5.812345"
-            />
-            <Field
-              label="Longitude do evento"
-              name="venue_longitude"
-              type="number"
-              step="0.000001"
-              min="-180"
-              max="180"
-              defaultValue={event?.venue_longitude}
-              placeholder="Ex.: -35.205678"
-            />
-            <Field
-              label="Raio permitido (metros)"
-              name="geofence_radius_m"
-              type="number"
-              min="20"
-              max="500"
-              defaultValue={event?.geofence_radius_m ?? 80}
-            />
-            <Field
-              label="Precisão máxima do GPS (metros)"
-              name="max_location_accuracy_m"
-              type="number"
-              min="20"
-              max="500"
-              defaultValue={event?.max_location_accuracy_m ?? 80}
-            />
+            <div className="space-y-2 sm:col-span-2">
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Label htmlFor="event-venue">Local do evento</Label>
+                  <select
+                    id="event-venue"
+                    value={selectedVenueId}
+                    onChange={(inputEvent) => {
+                      const id = inputEvent.target.value;
+                      applyVenue(localVenues.find((venue) => venue.id === id) ?? null);
+                    }}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">Local ainda não cadastrado</option>
+                    {localVenues
+                      .filter((venue) => venue.is_active)
+                      .map((venue) => (
+                        <option key={venue.id} value={venue.id}>
+                          {venue.name} — {venue.address}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <Button type="button" variant="outline" onClick={() => setVenueDialogOpen(true)}>
+                  <Plus className="h-4 w-4" /> Novo local
+                </Button>
+              </div>
+              {venueName && (
+                <div className="rounded-2xl border-2 border-primary/15 bg-primary/5 p-4">
+                  <p className="font-bold">{venueName}</p>
+                  {venueAddress && (
+                    <p className="mt-1 text-sm text-muted-foreground">{venueAddress}</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
+                    <span>Raio: {geofenceRadius} m</span>
+                    <span>•</span>
+                    <span>Precisão: até {maxAccuracy} m</span>
+                    {venueLatitude && venueLongitude && (
+                      <>
+                        <span>•</span>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venueLatitude},${venueLongitude}`)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline underline-offset-2"
+                        >
+                          Ver no Google Maps
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <details className="rounded-2xl border border-input bg-muted/40 p-4 sm:col-span-2">
+              <summary className="cursor-pointer font-bold">
+                Ajustes avançados da geolocalização
+              </summary>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="venue-latitude">Latitude</Label>
+                  <Input
+                    id="venue-latitude"
+                    type="number"
+                    step="0.000001"
+                    min="-90"
+                    max="90"
+                    value={venueLatitude}
+                    onChange={(inputEvent) => {
+                      setVenueLatitude(inputEvent.target.value);
+                      setSelectedVenueId("");
+                    }}
+                    placeholder="Ex.: -5.812345"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="venue-longitude">Longitude</Label>
+                  <Input
+                    id="venue-longitude"
+                    type="number"
+                    step="0.000001"
+                    min="-180"
+                    max="180"
+                    value={venueLongitude}
+                    onChange={(inputEvent) => {
+                      setVenueLongitude(inputEvent.target.value);
+                      setSelectedVenueId("");
+                    }}
+                    placeholder="Ex.: -35.205678"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="geofence-radius">Raio permitido (metros)</Label>
+                  <Input
+                    id="geofence-radius"
+                    type="number"
+                    min="20"
+                    max="500"
+                    value={geofenceRadius}
+                    onChange={(inputEvent) => setGeofenceRadius(inputEvent.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="max-location-accuracy">Precisão máxima do GPS (metros)</Label>
+                  <Input
+                    id="max-location-accuracy"
+                    type="number"
+                    min="20"
+                    max="500"
+                    value={maxAccuracy}
+                    onChange={(inputEvent) => setMaxAccuracy(inputEvent.target.value)}
+                  />
+                </div>
+              </div>
+            </details>
             <Field
               label="Abertura da Resenha"
               name="chat_opens_at"
@@ -1047,6 +1210,188 @@ function EventDialog({
             <Button type="submit" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {saving ? "Salvando…" : "Salvar evento"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+      <VenueDialog
+        open={venueDialogOpen}
+        onOpenChange={setVenueDialogOpen}
+        onCreated={(venue) => {
+          setLocalVenues((current) => [...current.filter((item) => item.id !== venue.id), venue]);
+          applyVenue(venue);
+          setVenueDialogOpen(false);
+        }}
+      />
+    </Dialog>
+  );
+}
+
+function VenueDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: (venue: VenueRow) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [placeId, setPlaceId] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [radius, setRadius] = useState("80");
+  const [accuracy, setAccuracy] = useState("80");
+
+  useEffect(() => {
+    if (!open) return;
+    setName("");
+    setAddress("");
+    setPlaceId("");
+    setLatitude("");
+    setLongitude("");
+    setRadius("80");
+    setAccuracy("80");
+  }, [open]);
+
+  async function submitVenue(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+    if (!name.trim() || !address.trim())
+      return toast.error("Informe o nome e o endereço do local.");
+    if (!Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude))
+      return toast.error("Escolha um local válido no Google Maps ou use a localização atual.");
+
+    setSaving(true);
+    const payload: VenueInsert = {
+      name: name.trim(),
+      address: address.trim(),
+      google_place_id: placeId.trim() || null,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
+      default_geofence_radius_m: Math.max(Number(radius) || 80, 20),
+      default_max_accuracy_m: Math.max(Number(accuracy) || 80, 20),
+      is_active: true,
+    };
+    const result = await supabase.from("venues").insert(payload).select("*").single();
+    setSaving(false);
+    if (result.error || !result.data) {
+      if (import.meta.env.DEV) console.error("venue_insert_failed", result.error);
+      return toast.error(publicErrorMessage(result.error, "Não foi possível salvar o local."));
+    }
+    toast.success("Local cadastrado. Nos próximos eventos, basta selecioná-lo.");
+    onCreated(result.data);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">Cadastrar local</DialogTitle>
+          <DialogDescription>
+            Cadastre uma vez e reutilize em todos os eventos. A busca do Google Maps preenche as
+            coordenadas automaticamente.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submitVenue} className="space-y-4">
+          <GoogleVenueSearch
+            onSelected={(place) => {
+              setName(place.name);
+              setAddress(place.address);
+              setPlaceId(place.placeId ?? "");
+              setLatitude(String(place.latitude));
+              setLongitude(String(place.longitude));
+            }}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="venue-name">Nome do local</Label>
+              <Input
+                id="venue-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="venue-address">Endereço</Label>
+              <Input
+                id="venue-address"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                placeholder="Praça Dr. Amaro de Souza, Lagoa Nova, Natal/RN"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-venue-latitude">Latitude</Label>
+              <Input
+                id="new-venue-latitude"
+                type="number"
+                step="0.000001"
+                min="-90"
+                max="90"
+                value={latitude}
+                onChange={(event) => setLatitude(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-venue-longitude">Longitude</Label>
+              <Input
+                id="new-venue-longitude"
+                type="number"
+                step="0.000001"
+                min="-180"
+                max="180"
+                value={longitude}
+                onChange={(event) => setLongitude(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-venue-radius">Raio padrão (metros)</Label>
+              <Input
+                id="new-venue-radius"
+                type="number"
+                min="20"
+                max="500"
+                value={radius}
+                onChange={(event) => setRadius(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-venue-accuracy">Precisão máxima (metros)</Label>
+              <Input
+                id="new-venue-accuracy"
+                type="number"
+                min="20"
+                max="500"
+                value={accuracy}
+                onChange={(event) => setAccuracy(event.target.value)}
+              />
+            </div>
+          </div>
+          {latitude && longitude && (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex text-sm font-bold text-primary underline underline-offset-4"
+            >
+              Conferir ponto no Google Maps
+            </a>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {saving ? "Salvando…" : "Salvar local"}
             </Button>
           </DialogFooter>
         </form>
@@ -1415,6 +1760,7 @@ function CampaignDialog({
       return toast.error("O fim da campanha precisa ser depois do início.");
     const totalAvailable = nullableNumber(form, "total_available");
     const perUser = numberValue(form, "per_user_limit", 1);
+    const requiresCheckin = campaignKind !== "milestone" && form.get("requires_checkin") === "on";
     if (totalAvailable !== null && perUser > totalAvailable)
       return toast.error("O limite por cliente não pode ser maior que o limite total.");
 
@@ -1422,8 +1768,13 @@ function CampaignDialog({
     const payload: CampaignInsert = {
       event_id: campaignKind === "event" ? nullableText(form, "event_id") : null,
       campaign_kind: campaignKind,
-      trigger_type: campaignKind === "event" ? "event_checkin" : triggerType,
-      trigger_target: numberValue(form, "trigger_target", 1),
+      trigger_type:
+        campaignKind === "event"
+          ? "event_checkin"
+          : campaignKind === "global"
+            ? "none"
+            : triggerType,
+      trigger_target: campaignKind === "milestone" ? numberValue(form, "trigger_target", 1) : 1,
       trigger_category:
         triggerType === "category_checkins" ? nullableText(form, "trigger_category") : null,
       feed_priority: numberValue(form, "feed_priority", 0),
@@ -1445,15 +1796,16 @@ function CampaignDialog({
           : Math.max(Number(durationValue) || 1, 1),
       total_available: totalAvailable,
       per_user_limit: perUser,
-      requires_checkin:
-        campaignKind === "milestone" ? false : form.get("requires_checkin") === "on",
+      requires_checkin: campaignKind === "milestone" ? false : requiresCheckin,
       requires_min_profile: form.get("requires_min_profile") === "on",
       requires_staff_validation:
         campaignKind === "event"
           ? true
-          : triggerType === "profile_completion"
-            ? false
-            : form.get("requires_staff_validation") === "on",
+          : campaignKind === "global"
+            ? requiresCheckin && form.get("requires_staff_validation") === "on"
+            : triggerType === "profile_completion"
+              ? false
+              : form.get("requires_staff_validation") === "on",
       status: textValue(form, "status"),
       public_rules: nullableText(form, "public_rules"),
       internal_rules: nullableText(form, "internal_rules"),
@@ -1462,7 +1814,15 @@ function CampaignDialog({
       ? await supabase.from("campaigns").update(payload).eq("id", campaign.id)
       : await supabase.from("campaigns").insert(payload);
     setSaving(false);
-    if (result.error) return toast.error(publicErrorMessage(result.error));
+    if (result.error) {
+      if (import.meta.env.DEV) console.error("campaign_save_failed", result.error, payload);
+      return toast.error(
+        publicErrorMessage(
+          result.error,
+          "Não foi possível salvar a campanha. Confira período, limites, benefício e regras.",
+        ),
+      );
+    }
     toast.success(campaign ? "Campanha atualizada." : "Campanha criada.");
     onOpenChange(false);
     onSaved();
@@ -2794,7 +3154,9 @@ function nullableText(form: FormData, key: string) {
 }
 
 function numberValue(form: FormData, key: string, fallback = 0) {
-  const value = Number(form.get(key));
+  const raw = form.get(key);
+  if (raw === null || String(raw).trim() === "") return fallback;
+  const value = Number(raw);
   return Number.isFinite(value) ? value : fallback;
 }
 
