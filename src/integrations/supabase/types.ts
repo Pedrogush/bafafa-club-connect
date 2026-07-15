@@ -110,15 +110,19 @@ export type Database = {
       campaigns: {
         Row: {
           benefit_type: string;
+          campaign_kind: string;
           created_at: string;
           description: string | null;
           discount_max_cents: number | null;
           discount_percent: number | null;
           ends_at: string | null;
           event_id: string | null;
+          feed_priority: number;
+          feed_visible: boolean;
           fixed_off_cents: number | null;
           id: string;
           instructions: string | null;
+          is_pinned: boolean;
           internal_rules: string | null;
           name: string;
           per_user_limit: number;
@@ -127,23 +131,31 @@ export type Database = {
           required_badge_id: string | null;
           requires_checkin: boolean;
           requires_min_profile: boolean;
+          requires_staff_validation: boolean;
           reward_valid_hours: number;
           starts_at: string;
           status: string;
           total_available: number | null;
+          trigger_category: string | null;
+          trigger_target: number;
+          trigger_type: string;
           updated_at: string;
         };
         Insert: {
           benefit_type: string;
+          campaign_kind?: string;
           created_at?: string;
           description?: string | null;
           discount_max_cents?: number | null;
           discount_percent?: number | null;
           ends_at?: string | null;
           event_id?: string | null;
+          feed_priority?: number;
+          feed_visible?: boolean;
           fixed_off_cents?: number | null;
           id?: string;
           instructions?: string | null;
+          is_pinned?: boolean;
           internal_rules?: string | null;
           name: string;
           per_user_limit?: number;
@@ -152,23 +164,31 @@ export type Database = {
           required_badge_id?: string | null;
           requires_checkin?: boolean;
           requires_min_profile?: boolean;
+          requires_staff_validation?: boolean;
           reward_valid_hours?: number;
           starts_at?: string;
           status?: string;
           total_available?: number | null;
+          trigger_category?: string | null;
+          trigger_target?: number;
+          trigger_type?: string;
           updated_at?: string;
         };
         Update: {
           benefit_type?: string;
+          campaign_kind?: string;
           created_at?: string;
           description?: string | null;
           discount_max_cents?: number | null;
           discount_percent?: number | null;
           ends_at?: string | null;
           event_id?: string | null;
+          feed_priority?: number;
+          feed_visible?: boolean;
           fixed_off_cents?: number | null;
           id?: string;
           instructions?: string | null;
+          is_pinned?: boolean;
           internal_rules?: string | null;
           name?: string;
           per_user_limit?: number;
@@ -177,10 +197,14 @@ export type Database = {
           required_badge_id?: string | null;
           requires_checkin?: boolean;
           requires_min_profile?: boolean;
+          requires_staff_validation?: boolean;
           reward_valid_hours?: number;
           starts_at?: string;
           status?: string;
           total_available?: number | null;
+          trigger_category?: string | null;
+          trigger_target?: number;
+          trigger_type?: string;
           updated_at?: string;
         };
         Relationships: [
@@ -352,6 +376,8 @@ export type Database = {
           chat_opens_at: string | null;
           checkin_closes_at: string | null;
           checkin_enabled: boolean;
+          geofence_radius_m: number;
+          geolocation_checkin_enabled: boolean;
           checkin_opens_at: string | null;
           created_at: string;
           created_by: string | null;
@@ -359,12 +385,15 @@ export type Database = {
           ends_at: string | null;
           id: string;
           image_url: string | null;
+          max_location_accuracy_m: number;
           instructions: string | null;
           name: string;
           slug: string;
           starts_at: string;
           status: string;
           updated_at: string;
+          venue_latitude: number | null;
+          venue_longitude: number | null;
         };
         Insert: {
           attraction?: string | null;
@@ -374,6 +403,8 @@ export type Database = {
           chat_opens_at?: string | null;
           checkin_closes_at?: string | null;
           checkin_enabled?: boolean;
+          geofence_radius_m?: number;
+          geolocation_checkin_enabled?: boolean;
           checkin_opens_at?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -381,12 +412,15 @@ export type Database = {
           ends_at?: string | null;
           id?: string;
           image_url?: string | null;
+          max_location_accuracy_m?: number;
           instructions?: string | null;
           name: string;
           slug: string;
           starts_at: string;
           status?: string;
           updated_at?: string;
+          venue_latitude?: number | null;
+          venue_longitude?: number | null;
         };
         Update: {
           attraction?: string | null;
@@ -396,6 +430,8 @@ export type Database = {
           chat_opens_at?: string | null;
           checkin_closes_at?: string | null;
           checkin_enabled?: boolean;
+          geofence_radius_m?: number;
+          geolocation_checkin_enabled?: boolean;
           checkin_opens_at?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -403,11 +439,65 @@ export type Database = {
           ends_at?: string | null;
           id?: string;
           image_url?: string | null;
+          max_location_accuracy_m?: number;
           instructions?: string | null;
           name?: string;
           slug?: string;
           starts_at?: string;
           status?: string;
+          updated_at?: string;
+          venue_latitude?: number | null;
+          venue_longitude?: number | null;
+        };
+        Relationships: [];
+      };
+      feed_posts: {
+        Row: {
+          body: string | null;
+          created_at: string;
+          created_by: string | null;
+          ends_at: string | null;
+          id: string;
+          image_url: string | null;
+          is_pinned: boolean;
+          post_type: string;
+          priority: number;
+          published_at: string | null;
+          starts_at: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          body?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          image_url?: string | null;
+          is_pinned?: boolean;
+          post_type?: string;
+          priority?: number;
+          published_at?: string | null;
+          starts_at?: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          image_url?: string | null;
+          is_pinned?: boolean;
+          post_type?: string;
+          priority?: number;
+          published_at?: string | null;
+          starts_at?: string;
+          status?: string;
+          title?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -581,6 +671,8 @@ export type Database = {
           created_at: string;
           deleted_at: string | null;
           display_name: string;
+          gender_custom: string | null;
+          gender_identity: string | null;
           how_found_us: string | null;
           id: string;
           is_over_18: boolean;
@@ -589,10 +681,12 @@ export type Database = {
           member_since: string;
           neighborhood: string | null;
           phone_verified_at: string | null;
+          pronouns: string | null;
           show_birth_month: boolean;
           show_city: boolean;
           show_checkin_count: boolean;
           show_event_preferences: boolean;
+          show_gender: boolean;
           updated_at: string;
           username: string | null;
           whatsapp: string | null;
@@ -606,6 +700,8 @@ export type Database = {
           created_at?: string;
           deleted_at?: string | null;
           display_name: string;
+          gender_custom?: string | null;
+          gender_identity?: string | null;
           how_found_us?: string | null;
           id: string;
           is_over_18?: boolean;
@@ -614,10 +710,12 @@ export type Database = {
           member_since?: string;
           neighborhood?: string | null;
           phone_verified_at?: string | null;
+          pronouns?: string | null;
           show_birth_month?: boolean;
           show_city?: boolean;
           show_checkin_count?: boolean;
           show_event_preferences?: boolean;
+          show_gender?: boolean;
           updated_at?: string;
           username?: string | null;
           whatsapp?: string | null;
@@ -631,6 +729,8 @@ export type Database = {
           created_at?: string;
           deleted_at?: string | null;
           display_name?: string;
+          gender_custom?: string | null;
+          gender_identity?: string | null;
           how_found_us?: string | null;
           id?: string;
           is_over_18?: boolean;
@@ -639,10 +739,12 @@ export type Database = {
           member_since?: string;
           neighborhood?: string | null;
           phone_verified_at?: string | null;
+          pronouns?: string | null;
           show_birth_month?: boolean;
           show_city?: boolean;
           show_checkin_count?: boolean;
           show_event_preferences?: boolean;
+          show_gender?: boolean;
           updated_at?: string;
           username?: string | null;
           whatsapp?: string | null;
@@ -1065,105 +1167,105 @@ export type Database = {
         ];
       };
     };
-      security_controls: {
-        Row: {
-          category: string;
-          completed: boolean;
-          control_key: string;
-          created_at: string;
-          description: string;
-          evidence: string | null;
-          label: string;
-          notes: string | null;
-          required: boolean;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          updated_at: string;
-        };
-        Insert: {
-          category: string;
-          completed?: boolean;
-          control_key: string;
-          created_at?: string;
-          description: string;
-          evidence?: string | null;
-          label: string;
-          notes?: string | null;
-          required?: boolean;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          updated_at?: string;
-        };
-        Update: {
-          category?: string;
-          completed?: boolean;
-          control_key?: string;
-          created_at?: string;
-          description?: string;
-          evidence?: string | null;
-          label?: string;
-          notes?: string | null;
-          required?: boolean;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          updated_at?: string;
-        };
-        Relationships: [];
+    security_controls: {
+      Row: {
+        category: string;
+        completed: boolean;
+        control_key: string;
+        created_at: string;
+        description: string;
+        evidence: string | null;
+        label: string;
+        notes: string | null;
+        required: boolean;
+        reviewed_at: string | null;
+        reviewed_by: string | null;
+        updated_at: string;
       };
-      security_events: {
-        Row: {
-          actor_id: string | null;
-          category: string;
-          created_at: string;
-          details: Json;
-          entity: string | null;
-          entity_id: string | null;
-          event_key: string;
-          id: string;
-          occurred_at: string;
-          resolution_note: string | null;
-          resolved_at: string | null;
-          resolved_by: string | null;
-          severity: string;
-          target_user_id: string | null;
-          title: string;
-        };
-        Insert: {
-          actor_id?: string | null;
-          category: string;
-          created_at?: string;
-          details?: Json;
-          entity?: string | null;
-          entity_id?: string | null;
-          event_key: string;
-          id?: string;
-          occurred_at?: string;
-          resolution_note?: string | null;
-          resolved_at?: string | null;
-          resolved_by?: string | null;
-          severity: string;
-          target_user_id?: string | null;
-          title: string;
-        };
-        Update: {
-          actor_id?: string | null;
-          category?: string;
-          created_at?: string;
-          details?: Json;
-          entity?: string | null;
-          entity_id?: string | null;
-          event_key?: string;
-          id?: string;
-          occurred_at?: string;
-          resolution_note?: string | null;
-          resolved_at?: string | null;
-          resolved_by?: string | null;
-          severity?: string;
-          target_user_id?: string | null;
-          title?: string;
-        };
-        Relationships: [];
+      Insert: {
+        category: string;
+        completed?: boolean;
+        control_key: string;
+        created_at?: string;
+        description: string;
+        evidence?: string | null;
+        label: string;
+        notes?: string | null;
+        required?: boolean;
+        reviewed_at?: string | null;
+        reviewed_by?: string | null;
+        updated_at?: string;
       };
+      Update: {
+        category?: string;
+        completed?: boolean;
+        control_key?: string;
+        created_at?: string;
+        description?: string;
+        evidence?: string | null;
+        label?: string;
+        notes?: string | null;
+        required?: boolean;
+        reviewed_at?: string | null;
+        reviewed_by?: string | null;
+        updated_at?: string;
+      };
+      Relationships: [];
+    };
+    security_events: {
+      Row: {
+        actor_id: string | null;
+        category: string;
+        created_at: string;
+        details: Json;
+        entity: string | null;
+        entity_id: string | null;
+        event_key: string;
+        id: string;
+        occurred_at: string;
+        resolution_note: string | null;
+        resolved_at: string | null;
+        resolved_by: string | null;
+        severity: string;
+        target_user_id: string | null;
+        title: string;
+      };
+      Insert: {
+        actor_id?: string | null;
+        category: string;
+        created_at?: string;
+        details?: Json;
+        entity?: string | null;
+        entity_id?: string | null;
+        event_key: string;
+        id?: string;
+        occurred_at?: string;
+        resolution_note?: string | null;
+        resolved_at?: string | null;
+        resolved_by?: string | null;
+        severity: string;
+        target_user_id?: string | null;
+        title: string;
+      };
+      Update: {
+        actor_id?: string | null;
+        category?: string;
+        created_at?: string;
+        details?: Json;
+        entity?: string | null;
+        entity_id?: string | null;
+        event_key?: string;
+        id?: string;
+        occurred_at?: string;
+        resolution_note?: string | null;
+        resolved_at?: string | null;
+        resolved_by?: string | null;
+        severity?: string;
+        target_user_id?: string | null;
+        title?: string;
+      };
+      Relationships: [];
+    };
     Views: {
       public_profiles: {
         Row: {
@@ -1203,6 +1305,40 @@ export type Database = {
       };
     };
     Functions: {
+      checkin_with_geolocation: {
+        Args: {
+          _accuracy_m: number;
+          _event_id: string;
+          _latitude: number;
+          _longitude: number;
+        };
+        Returns: Json;
+      };
+      my_fofoquinhas: {
+        Args: never;
+        Returns: {
+          campaign_id: string;
+          name: string;
+          description: string | null;
+          benefit_type: string;
+          discount_percent: number | null;
+          fixed_off_cents: number | null;
+          product_name: string | null;
+          public_rules: string | null;
+          campaign_kind: string;
+          trigger_type: string;
+          trigger_target: number;
+          progress_value: number;
+          completed: boolean;
+          reward_id: string | null;
+          reward_status: string | null;
+          reward_expires_at: string | null;
+          starts_at: string;
+          ends_at: string | null;
+          is_pinned: boolean;
+          feed_priority: number;
+        }[];
+      };
       admin_prune_security_events: { Args: { _days?: number }; Returns: number };
       admin_resolve_security_event: {
         Args: { _event_id: string; _resolution_note?: string | null };

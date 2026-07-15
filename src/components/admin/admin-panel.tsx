@@ -21,6 +21,7 @@ import {
   Gift,
   Loader2,
   MessageCircleMore,
+  Newspaper,
   Pause,
   Play,
   Plus,
@@ -62,6 +63,7 @@ export type AdminSection =
   | "management"
   | "events"
   | "campaigns"
+  | "content"
   | "clients"
   | "checkins"
   | "chat"
@@ -73,6 +75,7 @@ type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
 type EventUpdate = Database["public"]["Tables"]["events"]["Update"];
 type CampaignRow = Database["public"]["Tables"]["campaigns"]["Row"];
+type FeedPostRow = Database["public"]["Tables"]["feed_posts"]["Row"];
 type CampaignInsert = Database["public"]["Tables"]["campaigns"]["Insert"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type PreferenceRow = Database["public"]["Tables"]["user_preferences"]["Row"];
@@ -90,6 +93,7 @@ type ProfileCompletionRow = { user_id: string; percentage: number; details: unkn
 type AdminData = {
   events: EventRow[];
   campaigns: CampaignRow[];
+  feedPosts: FeedPostRow[];
   profiles: ProfileRow[];
   preferences: PreferenceRow[];
   checkins: CheckinRow[];
@@ -107,6 +111,7 @@ type AdminData = {
 const EMPTY_DATA: AdminData = {
   events: [],
   campaigns: [],
+  feedPosts: [],
   profiles: [],
   preferences: [],
   checkins: [],
@@ -126,6 +131,7 @@ const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart
   { key: "management", label: "Gestão e piloto", icon: Target },
   { key: "events", label: "Eventos", icon: CalendarDays },
   { key: "campaigns", label: "Campanhas", icon: Gift },
+  { key: "content", label: "Feed", icon: Newspaper },
   { key: "clients", label: "Clientes", icon: Users },
   { key: "checkins", label: "Check-ins", icon: CheckCircle2 },
   { key: "chat", label: "Resenha", icon: MessageCircleMore },
@@ -149,6 +155,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
     const [
       events,
       campaigns,
+      feedPosts,
       profiles,
       preferences,
       checkins,
@@ -164,6 +171,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
     ] = await Promise.all([
       supabase.from("events").select("*").order("starts_at", { ascending: false }),
       supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
+      supabase.from("feed_posts").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*").is("deleted_at", null).order("created_at", {
         ascending: false,
       }),
@@ -199,6 +207,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
     const firstError = [
       events,
       campaigns,
+      feedPosts,
       profiles,
       preferences,
       checkins,
@@ -222,6 +231,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       setData({
         events: events.data ?? [],
         campaigns: campaigns.data ?? [],
+        feedPosts: feedPosts.data ?? [],
         profiles: profiles.data ?? [],
         preferences: preferences.data ?? [],
         checkins: checkins.data ?? [],
@@ -326,6 +336,13 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
                 rewards={data.rewards}
                 redemptions={data.redemptions}
                 profiles={data.profiles}
+                onChanged={() => void loadData(true)}
+              />
+            )}
+            {section === "content" && (
+              <FeedContentManager
+                posts={data.feedPosts}
+                currentUserId={currentUserId}
                 onChanged={() => void loadData(true)}
               />
             )}
@@ -787,6 +804,9 @@ function EventDialog({
     const checkinClosesAt = nullableIso(form, "checkin_closes_at");
     const chatOpensAt = nullableIso(form, "chat_opens_at");
     const chatClosesAt = nullableIso(form, "chat_closes_at");
+    const geoEnabled = form.get("geolocation_checkin_enabled") === "on";
+    const venueLatitude = nullableNumber(form, "venue_latitude");
+    const venueLongitude = nullableNumber(form, "venue_longitude");
 
     if (endsAt && new Date(endsAt) <= new Date(toIso(startsAt)))
       return toast.error("O fim do evento precisa ser depois do início.");
@@ -794,6 +814,8 @@ function EventDialog({
       return toast.error("O encerramento do check-in precisa ser depois da abertura.");
     if (chatOpensAt && chatClosesAt && new Date(chatClosesAt) <= new Date(chatOpensAt))
       return toast.error("O encerramento da Resenha precisa ser depois da abertura.");
+    if (geoEnabled && (venueLatitude === null || venueLongitude === null))
+      return toast.error("Informe latitude e longitude para ativar o check-in por localização.");
 
     setSaving(true);
     const slug = textValue(form, "slug") || slugify(name);
@@ -824,6 +846,11 @@ function EventDialog({
         checkin_opens_at: checkinOpensAt,
         checkin_closes_at: checkinClosesAt,
         checkin_enabled: form.get("checkin_enabled") === "on",
+        geolocation_checkin_enabled: geoEnabled,
+        venue_latitude: venueLatitude,
+        venue_longitude: venueLongitude,
+        geofence_radius_m: numberValue(form, "geofence_radius_m", 80),
+        max_location_accuracy_m: numberValue(form, "max_location_accuracy_m", 80),
         chat_opens_at: chatOpensAt,
         chat_closes_at: chatClosesAt,
         chat_enabled: form.get("chat_enabled") === "on",
@@ -916,6 +943,42 @@ function EventDialog({
               defaultValue={toLocalInput(event?.checkin_closes_at)}
             />
             <Field
+              label="Latitude do evento"
+              name="venue_latitude"
+              type="number"
+              step="0.000001"
+              min="-90"
+              max="90"
+              defaultValue={event?.venue_latitude}
+              placeholder="Ex.: -5.812345"
+            />
+            <Field
+              label="Longitude do evento"
+              name="venue_longitude"
+              type="number"
+              step="0.000001"
+              min="-180"
+              max="180"
+              defaultValue={event?.venue_longitude}
+              placeholder="Ex.: -35.205678"
+            />
+            <Field
+              label="Raio permitido (metros)"
+              name="geofence_radius_m"
+              type="number"
+              min="20"
+              max="500"
+              defaultValue={event?.geofence_radius_m ?? 80}
+            />
+            <Field
+              label="Precisão máxima do GPS (metros)"
+              name="max_location_accuracy_m"
+              type="number"
+              min="20"
+              max="500"
+              defaultValue={event?.max_location_accuracy_m ?? 80}
+            />
+            <Field
               label="Abertura da Resenha"
               name="chat_opens_at"
               type="datetime-local"
@@ -955,6 +1018,18 @@ function EventDialog({
               </p>
             </div>
             <Switch name="checkin_enabled" defaultChecked={event?.checkin_enabled ?? true} />
+          </label>
+          <label className="flex items-center justify-between rounded-2xl border-2 border-primary/20 bg-primary/10 p-4">
+            <div className="pr-4">
+              <p className="font-bold">Check-in rápido por localização</p>
+              <p className="text-xs text-muted-foreground">
+                Usa o GPS uma única vez. QR continua como alternativa e para validar benefícios.
+              </p>
+            </div>
+            <Switch
+              name="geolocation_checkin_enabled"
+              defaultChecked={event?.geolocation_checkin_enabled ?? false}
+            />
           </label>
           <label className="flex items-center justify-between rounded-2xl border-2 border-samba/25 bg-samba/10 p-4">
             <div className="pr-4">
@@ -1037,6 +1112,7 @@ function CampaignsManager({
   onChanged,
 }: {
   campaigns: CampaignRow[];
+  feedPosts: FeedPostRow[];
   events: EventRow[];
   rewards: RewardRow[];
   redemptions: RedemptionRow[];
@@ -1314,12 +1390,16 @@ function CampaignDialog({
 }) {
   const [saving, setSaving] = useState(false);
   const [benefitType, setBenefitType] = useState(campaign?.benefit_type ?? "percent_off");
+  const [campaignKind, setCampaignKind] = useState(campaign?.campaign_kind ?? "event");
+  const [triggerType, setTriggerType] = useState(campaign?.trigger_type ?? "event_checkin");
   const [durationUnit, setDurationUnit] = useState<"minutes" | "hours">("hours");
   const [durationValue, setDurationValue] = useState("24");
 
   useEffect(() => {
     if (!open) return;
     setBenefitType(campaign?.benefit_type ?? "percent_off");
+    setCampaignKind(campaign?.campaign_kind ?? (campaign?.event_id ? "event" : "global"));
+    setTriggerType(campaign?.trigger_type ?? (campaign?.event_id ? "event_checkin" : "none"));
     const storedHours = Number(campaign?.reward_valid_hours ?? 24);
     const useMinutes = storedHours < 1 || !Number.isInteger(storedHours);
     setDurationUnit(useMinutes ? "minutes" : "hours");
@@ -1340,7 +1420,15 @@ function CampaignDialog({
 
     setSaving(true);
     const payload: CampaignInsert = {
-      event_id: nullableText(form, "event_id"),
+      event_id: campaignKind === "event" ? nullableText(form, "event_id") : null,
+      campaign_kind: campaignKind,
+      trigger_type: campaignKind === "event" ? "event_checkin" : triggerType,
+      trigger_target: numberValue(form, "trigger_target", 1),
+      trigger_category:
+        triggerType === "category_checkins" ? nullableText(form, "trigger_category") : null,
+      feed_priority: numberValue(form, "feed_priority", 0),
+      feed_visible: form.get("feed_visible") === "on",
+      is_pinned: form.get("is_pinned") === "on",
       name: textValue(form, "name"),
       description: nullableText(form, "description"),
       benefit_type: textValue(form, "benefit_type"),
@@ -1357,8 +1445,15 @@ function CampaignDialog({
           : Math.max(Number(durationValue) || 1, 1),
       total_available: totalAvailable,
       per_user_limit: perUser,
-      requires_checkin: form.get("requires_checkin") === "on",
+      requires_checkin:
+        campaignKind === "milestone" ? false : form.get("requires_checkin") === "on",
       requires_min_profile: form.get("requires_min_profile") === "on",
+      requires_staff_validation:
+        campaignKind === "event"
+          ? true
+          : triggerType === "profile_completion"
+            ? false
+            : form.get("requires_staff_validation") === "on",
       status: textValue(form, "status"),
       public_rules: nullableText(form, "public_rules"),
       internal_rules: nullableText(form, "internal_rules"),
@@ -1381,30 +1476,99 @@ function CampaignDialog({
             {campaign ? "Editar campanha" : "Nova campanha"}
           </DialogTitle>
           <DialogDescription>
-            O mimo será liberado após um check-in válido e respeitará os limites abaixo.
+            Crie uma promoção de evento, uma missão de frequência ou uma vantagem geral.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="campaign-event">Evento</Label>
+            <div className="space-y-2">
+              <Label htmlFor="campaign-kind">Formato</Label>
               <select
-                id="campaign-event"
-                name="event_id"
-                defaultValue={campaign?.event_id ?? events[0]?.id ?? ""}
+                id="campaign-kind"
+                name="campaign_kind"
+                value={campaignKind}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setCampaignKind(value);
+                  setTriggerType(
+                    value === "event"
+                      ? "event_checkin"
+                      : value === "milestone"
+                        ? "distinct_checkins"
+                        : "none",
+                  );
+                }}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                required
               >
-                <option value="">Selecione</option>
-                {events
-                  .filter((event) => !["cancelled"].includes(event.status))
-                  .map((event) => (
-                    <option key={event.id} value={event.id}>
-                      {event.name} — {formatDateTime(event.starts_at)}
-                    </option>
-                  ))}
+                <option value="event">Promoção ligada a evento</option>
+                <option value="milestone">Missão / marco do cliente</option>
+                <option value="global">Promoção geral</option>
               </select>
             </div>
+            {campaignKind === "event" && (
+              <div className="space-y-2">
+                <Label htmlFor="campaign-event">Evento</Label>
+                <select
+                  id="campaign-event"
+                  name="event_id"
+                  defaultValue={campaign?.event_id ?? events[0]?.id ?? ""}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  required
+                >
+                  <option value="">Selecione</option>
+                  {events
+                    .filter((event) => !["cancelled"].includes(event.status))
+                    .map((event) => (
+                      <option key={event.id} value={event.id}>
+                        {event.name} — {formatDateTime(event.starts_at)}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+            {campaignKind === "milestone" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="trigger-type">Regra da missão</Label>
+                  <select
+                    id="trigger-type"
+                    name="trigger_type"
+                    value={triggerType}
+                    onChange={(event) => setTriggerType(event.target.value)}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="distinct_checkins">Check-ins em eventos diferentes</option>
+                    <option value="total_checkins">Quantidade total de check-ins</option>
+                    <option value="profile_completion">Percentual do perfil</option>
+                    <option value="category_checkins">Check-ins por categoria</option>
+                  </select>
+                </div>
+                <Field
+                  label={
+                    triggerType === "profile_completion"
+                      ? "Meta do perfil (%)"
+                      : "Quantidade necessária"
+                  }
+                  name="trigger_target"
+                  type="number"
+                  min="1"
+                  max={triggerType === "profile_completion" ? "100" : "1000"}
+                  defaultValue={
+                    campaign?.trigger_target ?? (triggerType === "profile_completion" ? 100 : 3)
+                  }
+                  required
+                />
+                {triggerType === "category_checkins" && (
+                  <Field
+                    label="Categoria exata do evento"
+                    name="trigger_category"
+                    defaultValue={campaign?.trigger_category}
+                    placeholder="Feijoada"
+                    required
+                  />
+                )}
+              </>
+            )}
             <Field label="Nome da campanha" name="name" defaultValue={campaign?.name} required />
             <Field
               label="Produto participante"
@@ -1525,6 +1689,14 @@ function CampaignDialog({
                 <option value="ended">Encerrada</option>
               </select>
             </div>
+            <Field
+              label="Prioridade no feed"
+              name="feed_priority"
+              type="number"
+              min="-100"
+              max="1000"
+              defaultValue={campaign?.feed_priority ?? 0}
+            />
           </div>
           <TextField label="Descrição" name="description" defaultValue={campaign?.description} />
           <TextField
@@ -1542,15 +1714,57 @@ function CampaignDialog({
             name="internal_rules"
             defaultValue={campaign?.internal_rules}
           />
-          <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
+          <label className="flex items-center justify-between rounded-2xl border-2 border-mango/30 bg-mango/10 p-4">
             <div>
-              <p className="font-bold">Exigir check-in</p>
+              <p className="font-bold">Fixar entre as primeiras promoções</p>
               <p className="text-xs text-muted-foreground">
-                Libera o mimo somente após presença validada.
+                Aparece antes das demais no feed e em Fofoquinhas.
               </p>
             </div>
-            <Switch name="requires_checkin" defaultChecked={campaign?.requires_checkin ?? true} />
+            <Switch name="is_pinned" defaultChecked={campaign?.is_pinned ?? false} />
           </label>
+          <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
+            <div>
+              <p className="font-bold">Mostrar no feed</p>
+              <p className="text-xs text-muted-foreground">
+                Permite comunicar a promoção mesmo antes de ser liberada.
+              </p>
+            </div>
+            <Switch name="feed_visible" defaultChecked={campaign?.feed_visible ?? true} />
+          </label>
+          {campaignKind !== "milestone" && (
+            <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
+              <div>
+                <p className="font-bold">
+                  {campaignKind === "global" ? "Exigir presença no período" : "Exigir check-in"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {campaignKind === "global"
+                    ? "Libera a vantagem depois de qualquer check-in válido durante a campanha."
+                    : "Libera o mimo somente após presença validada no evento."}
+                </p>
+              </div>
+              <Switch
+                name="requires_checkin"
+                defaultChecked={campaign?.requires_checkin ?? campaignKind === "event"}
+              />
+            </label>
+          )}
+          {campaignKind !== "event" && triggerType !== "profile_completion" && (
+            <label className="flex items-center justify-between rounded-2xl border-2 border-primary/15 bg-primary/5 p-4">
+              <div className="pr-4">
+                <p className="font-bold">Contar somente presenças confirmadas pela equipe</p>
+                <p className="text-xs text-muted-foreground">
+                  Recomendado quando a recompensa tem valor financeiro. O check-in por localização
+                  continua liberando a Resenha, mas só o QR confirmado conta para esta vantagem.
+                </p>
+              </div>
+              <Switch
+                name="requires_staff_validation"
+                defaultChecked={campaign?.requires_staff_validation ?? true}
+              />
+            </label>
+          )}
           <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
             <div>
               <p className="font-bold">Exigir perfil mínimo</p>
@@ -2178,6 +2392,242 @@ function AuditManager({ data }: { data: AdminData }) {
           <EmptyMessage>A auditoria começa após a primeira alteração.</EmptyMessage>
         )}
       </div>
+    </SectionLayout>
+  );
+}
+
+function FeedContentManager({
+  posts,
+  currentUserId,
+  onChanged,
+}: {
+  posts: FeedPostRow[];
+  currentUserId: string;
+  onChanged: () => void;
+}) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<FeedPostRow | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [imageSelection, setImageSelection] = useState<File | null | undefined>(undefined);
+
+  async function remove(post: FeedPostRow) {
+    if (!window.confirm(`Remover a publicação “${post.title}”?`)) return;
+    const { error } = await supabase.from("feed_posts").delete().eq("id", post.id);
+    if (error) return toast.error(publicErrorMessage(error));
+    if (post.image_url) await removePublicImage("event-images", post.image_url);
+    toast.success("Publicação removida.");
+    onChanged();
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setSaving(true);
+    const previousImage = editing?.image_url ?? null;
+    let imageUrl = previousImage;
+    let uploadedUrl: string | null = null;
+    try {
+      if (imageSelection instanceof File) {
+        const uploaded = await uploadPublicImage({
+          bucket: "event-images",
+          folder: "feed",
+          file: imageSelection,
+        });
+        imageUrl = uploaded.url;
+        uploadedUrl = uploaded.url;
+      } else if (imageSelection === null) imageUrl = null;
+
+      const status = textValue(form, "status");
+      const payload: Database["public"]["Tables"]["feed_posts"]["Insert"] = {
+        post_type: textValue(form, "post_type"),
+        title: textValue(form, "title"),
+        body: nullableText(form, "body"),
+        image_url: imageUrl,
+        starts_at: toIso(textValue(form, "starts_at")),
+        ends_at: nullableIso(form, "ends_at"),
+        is_pinned: form.get("is_pinned") === "on",
+        priority: numberValue(form, "priority", 0),
+        status,
+        created_by: currentUserId,
+        published_at:
+          status === "published" ? (editing?.published_at ?? new Date().toISOString()) : null,
+      };
+      const result = editing
+        ? await supabase.from("feed_posts").update(payload).eq("id", editing.id)
+        : await supabase.from("feed_posts").insert(payload);
+      if (result.error) throw result.error;
+      if (previousImage && previousImage !== imageUrl)
+        await removePublicImage("event-images", previousImage);
+      toast.success(editing ? "Publicação atualizada." : "Publicação criada.");
+      setDialogOpen(false);
+      setEditing(null);
+      setImageSelection(undefined);
+      onChanged();
+    } catch (error) {
+      if (uploadedUrl) await removePublicImage("event-images", uploadedUrl);
+      toast.error(publicErrorMessage(error, "Não foi possível salvar a publicação."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SectionLayout
+      eyebrow="Comunicação oficial"
+      title="Feed do Bafafá"
+      description="Publique fotos, avisos, bastidores e novidades. Promoções e eventos continuam com prioridade automática."
+      action={
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setImageSelection(undefined);
+            setDialogOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" /> Nova publicação
+        </Button>
+      }
+    >
+      <div className="grid gap-4 lg:grid-cols-2">
+        {posts.length === 0 ? (
+          <div className="lg:col-span-2">
+            <EmptyMessage>Nenhuma publicação no feed.</EmptyMessage>
+          </div>
+        ) : (
+          posts.map((post) => (
+            <article key={post.id} className="sticker-card overflow-hidden bg-card">
+              {post.image_url && (
+                <img src={post.image_url} alt="" className="aspect-[16/8] w-full object-cover" />
+              )}
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="section-kicker text-muted-foreground">{post.post_type}</p>
+                    <h3 className="mt-1 font-display text-3xl leading-none">{post.title}</h3>
+                  </div>
+                  <StatusPill status={post.status} />
+                </div>
+                {post.body && (
+                  <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{post.body}</p>
+                )}
+                <p className="mt-3 text-xs font-bold text-muted-foreground">
+                  Entra no feed: {formatDateTime(post.starts_at)}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditing(post);
+                      setImageSelection(undefined);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Edit3 className="h-4 w-4" /> Editar
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => void remove(post)}>
+                    <Trash2 className="h-4 w-4 text-destructive" /> Excluir
+                  </Button>
+                </div>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">
+              {editing ? "Editar publicação" : "Nova publicação"}
+            </DialogTitle>
+            <DialogDescription>
+              Conteúdo entra depois das promoções e dos eventos prioritários.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={submit} className="space-y-5">
+            <ImageUploadField
+              id="feed-image"
+              label="Imagem (opcional)"
+              currentUrl={editing?.image_url}
+              onChange={setImageSelection}
+              description="Escolha uma foto horizontal do computador ou celular."
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="feed-type">Tipo</Label>
+                <select
+                  id="feed-type"
+                  name="post_type"
+                  defaultValue={editing?.post_type ?? "news"}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="news">Novidade</option>
+                  <option value="photo">Foto / álbum</option>
+                  <option value="notice">Aviso</option>
+                  <option value="behind_scenes">Bastidor</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="feed-status">Status</Label>
+                <select
+                  id="feed-status"
+                  name="status"
+                  defaultValue={editing?.status ?? "draft"}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="draft">Rascunho</option>
+                  <option value="published">Publicado</option>
+                  <option value="archived">Arquivado</option>
+                </select>
+              </div>
+              <Field label="Título" name="title" defaultValue={editing?.title} required />
+              <Field
+                label="Prioridade"
+                name="priority"
+                type="number"
+                min="-100"
+                max="1000"
+                defaultValue={editing?.priority ?? 0}
+              />
+              <Field
+                label="Início"
+                name="starts_at"
+                type="datetime-local"
+                defaultValue={
+                  toLocalInput(editing?.starts_at) || toLocalInput(new Date().toISOString())
+                }
+                required
+              />
+              <Field
+                label="Fim (opcional)"
+                name="ends_at"
+                type="datetime-local"
+                defaultValue={toLocalInput(editing?.ends_at)}
+              />
+            </div>
+            <TextField label="Texto" name="body" defaultValue={editing?.body} />
+            <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
+              <div>
+                <p className="font-bold">Fixar entre as publicações</p>
+                <p className="text-xs text-muted-foreground">
+                  Prioriza este conteúdo dentro da seção editorial.
+                </p>
+              </div>
+              <Switch name="is_pinned" defaultChecked={editing?.is_pinned ?? false} />
+            </label>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {saving ? "Salvando…" : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </SectionLayout>
   );
 }

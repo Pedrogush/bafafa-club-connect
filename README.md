@@ -210,3 +210,13 @@ A V17 também adiciona `.github/workflows/security.yml`: cada Pull Request compi
 ## Segurança e continuidade (V18)
 
 A aba **Administração → Segurança** reúne eventos de acesso, exportações, contas privilegiadas e um checklist das configurações externas. Os procedimentos de backup, restauração e resposta a incidentes estão em `docs/INFRAESTRUTURA_CONTINUIDADE_V18.md` e `docs/RESPOSTA_A_INCIDENTES_V18.md`.
+
+## V19 — Feed, nova navegação e check-in por localização
+
+A navegação do cliente foi reorganizada para `Eventos · Fofoquinhas · Início · Resenha · Perfil`. O Início agora é o feed oficial do Bafafá, com prioridade para promoções vigentes, evento atual, próximos eventos e publicações administrativas.
+
+O check-in deixou de ser uma aba e passou a ser uma ação do evento. A geolocalização é a forma principal de confirmar presença, com QR temporário como alternativa. Recompensas com valor financeiro continuam exigindo validação operacional.
+
+A área Mimos passou a se apresentar como Fofoquinhas e ganhou suporte a missões e campanhas que não dependem de um único evento. O Perfil recebeu campos opcionais e inclusivos de identidade de gênero e pronomes, sem interferir no percentual de conclusão.
+
+Consulte `docs/TESTE_NAVEGACAO_FEED_GEOLOCALIZACAO_V19.md` antes do merge.

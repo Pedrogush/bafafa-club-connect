@@ -32,6 +32,8 @@ type PublicProfile = {
   badge_count: number;
   checkin_count: number | null;
   event_preferences: string[];
+  gender: string | null;
+  pronouns: string | null;
 };
 
 export const Route = createFileRoute("/u/$username")({
@@ -117,6 +119,11 @@ function PublicProfilePage() {
                   {profile.bio && (
                     <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                       {profile.bio}
+                    </p>
+                  )}
+                  {(profile.gender || profile.pronouns) && (
+                    <p className="mt-3 text-xs font-bold text-muted-foreground">
+                      {[profile.gender, profile.pronouns].filter(Boolean).join(" · ")}
                     </p>
                   )}
                   <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-muted-foreground">

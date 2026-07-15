@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { BadgeCheck, CalendarCheck, Gift, UserRound } from "lucide-react";
+import { BadgeCheck, CalendarCheck, MapPin, Sparkles, UserRound } from "lucide-react";
 import { Wordmark } from "@/components/brand/wordmark";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,8 +23,8 @@ function LandingPage() {
             Chega mais, <span className="text-mango">Bafafã</span>.
           </h1>
           <p className="mt-4 max-w-sm text-base text-primary-foreground/90">
-            Cadastre-se, faça check-in nos eventos e desbloqueie mimos. Quanto mais você completa o
-            perfil e volta ao Bafafá, mais selos e títulos aparecem na sua conta.
+            Veja as promoções, encontre o evento e confirme sua presença pelo celular. Quanto mais
+            você volta ao Bafafá, mais Fofoquinhas, selos e títulos aparecem na sua carteirinha.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -51,15 +51,15 @@ function LandingPage() {
         </p>
         {[
           {
-            icon: CalendarCheck,
-            title: "Faça check-in no evento",
-            copy: "Chegou no Bafafá? Gere seu código e confirme sua presença com a equipe.",
+            icon: MapPin,
+            title: "Confirme que já chegou",
+            copy: "Abra o evento e faça check-in pela localização. Se o GPS falhar, a equipe valida seu QR.",
             tone: "bg-primary text-primary-foreground",
           },
           {
-            icon: Gift,
-            title: "Desbloqueie mimos",
-            copy: "Eventos e campanhas podem liberar descontos e benefícios de uso único.",
+            icon: Sparkles,
+            title: "Descubra as Fofoquinhas",
+            copy: "Promoções, vantagens e missões do clube aparecem conforme você participa.",
             tone: "bg-samba text-samba-foreground",
           },
           {
@@ -90,7 +90,7 @@ function LandingPage() {
       <section className="px-5 pb-16">
         <div className="card-festa bg-foreground p-6 text-background">
           <p className="font-display text-2xl leading-tight">
-            Chegue. Faça check-in. Desbloqueie seu mimo.
+            Chegue. Faça check-in. Desbloqueie a Fofoquinha.
           </p>
           <p className="mt-2 text-sm opacity-80">
             Cadastro gratuito para maiores de 18 anos. Promoções têm regras e validade informadas no

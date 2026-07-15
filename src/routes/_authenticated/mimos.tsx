@@ -1,10 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Clock3, Gift, KeyRound, PartyPopper, RefreshCw, Sparkles, Ticket } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  CheckCircle2,
+  Clock3,
+  Gift,
+  History,
+  LockKeyhole,
+  RefreshCw,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { SecureQr } from "@/components/operations/secure-qr";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,16 +23,40 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { campaignBenefitLabel, formatDateTime, rewardStatusLabel } from "@/lib/bafafa";
+import { campaignBenefitLabel, formatDateTime } from "@/lib/bafafa";
+import { publicErrorMessage } from "@/lib/public-error";
 
-type RewardRow = {
+export const Route = createFileRoute("/_authenticated/mimos")({ component: Fofoquinhas });
+
+type Fofoquinha = {
+  campaign_id: string;
+  name: string;
+  description: string | null;
+  benefit_type: string;
+  discount_percent: number | null;
+  fixed_off_cents: number | null;
+  product_name: string | null;
+  public_rules: string | null;
+  campaign_kind: string;
+  trigger_type: string;
+  trigger_target: number;
+  progress_value: number;
+  completed: boolean;
+  reward_id: string | null;
+  reward_status: string | null;
+  reward_expires_at: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  is_pinned: boolean;
+  feed_priority: number;
+};
+
+type HistoryRow = {
   id: string;
   status: string;
   expires_at: string | null;
-  granted_at: string;
+  created_at: string;
   campaigns: {
     name: string;
     description: string | null;
@@ -30,268 +64,361 @@ type RewardRow = {
     discount_percent: number | null;
     fixed_off_cents: number | null;
     product_name: string | null;
-    public_rules: string | null;
   } | null;
-  events: { name: string } | null;
 };
 
-type RedemptionToken = { token: string; short_code: string; expires_at: string };
-type Tab = "available" | "redeemed" | "expired";
+type TokenResult = { token: string; short_code: string; expires_at: string };
+type Tab = "available" | "missions" | "history";
 
-export const Route = createFileRoute("/_authenticated/mimos")({
-  component: Mimos,
-});
-
-function Mimos() {
-  const { user } = useAuth();
-  const [rewards, setRewards] = useState<RewardRow[]>([]);
+function Fofoquinhas() {
+  const [items, setItems] = useState<Fofoquinha[]>([]);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const [tab, setTab] = useState<Tab>("available");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeReward, setActiveReward] = useState<string | null>(null);
-  const [token, setToken] = useState<RedemptionToken | null>(null);
+  const [confirmItem, setConfirmItem] = useState<Fofoquinha | null>(null);
+  const [token, setToken] = useState<TokenResult | null>(null);
+  const [tokenItem, setTokenItem] = useState<Fofoquinha | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [confirmReward, setConfirmReward] = useState<RewardRow | null>(null);
-  const [now, setNow] = useState(Date.now());
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    await supabase.rpc("refresh_my_reward_statuses");
+    const [fofoquinhas, rewards] = await Promise.all([
+      supabase.rpc("my_fofoquinhas"),
+      supabase
+        .from("user_rewards")
+        .select(
+          "id,status,expires_at,created_at,campaigns(name,description,benefit_type,discount_percent,fixed_off_cents,product_name)",
+        )
+        .in("status", ["redeemed", "expired", "revoked"])
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
+    const firstError = fofoquinhas.error ?? rewards.error;
+    if (firstError) setError(firstError.message);
+    else {
+      setItems((fofoquinhas.data ?? []) as Fofoquinha[]);
+      setHistory((rewards.data ?? []) as unknown as HistoryRow[]);
+    }
+    setLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (!user) return;
-    let mounted = true;
-    void supabase.rpc("refresh_my_reward_statuses");
-    supabase
-      .from("user_rewards")
-      .select(
-        "id,status,expires_at,granted_at,campaigns(name,description,benefit_type,discount_percent,fixed_off_cents,product_name,public_rules),events(name)",
-      )
-      .eq("user_id", user.id)
-      .order("granted_at", { ascending: false })
-      .then(({ data, error: queryError }) => {
-        if (!mounted) return;
-        if (queryError) setError(queryError.message);
-        else setRewards((data ?? []) as unknown as RewardRow[]);
-        setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [user]);
+  useEffect(() => void load(), [load]);
 
-  const byTab = useMemo(
-    () => rewards.filter((reward) => normalizedStatus(reward, now) === tab),
-    [rewards, tab, now],
+  const available = useMemo(
+    () => items.filter((item) => item.reward_id && item.reward_status === "available"),
+    [items],
   );
-  const secondsLeft = token
-    ? Math.max(0, Math.ceil((new Date(token.expires_at).getTime() - now) / 1000))
-    : 0;
+  const missions = useMemo(
+    () => items.filter((item) => item.campaign_kind === "milestone" && !item.reward_id),
+    [items],
+  );
+  const generalPromos = useMemo(
+    () => items.filter((item) => item.campaign_kind !== "milestone" && !item.reward_id),
+    [items],
+  );
 
-  useEffect(() => {
-    if (token && secondsLeft === 0) {
-      setToken(null);
-      setActiveReward(null);
-    }
-  }, [secondsLeft, token]);
-
-  async function generateRewardCode(rewardId: string) {
+  async function generateCode(item: Fofoquinha) {
+    if (!item.reward_id) return;
     setGenerating(true);
     const { data, error: rpcError } = await supabase.rpc("create_my_qr_token", {
       _purpose: "redemption",
-      _ref_id: rewardId,
+      _ref_id: item.reward_id,
     });
     setGenerating(false);
-    if (rpcError) return toast.error(rpcError.message);
-    const result = Array.isArray(data) ? data[0] : null;
-    if (!result) return toast.error("Não foi possível gerar o código do mimo.");
-    setActiveReward(rewardId);
-    setToken(result as RedemptionToken);
+    if (rpcError) return toast.error(publicErrorMessage(rpcError));
+    const row = Array.isArray(data) ? data[0] : null;
+    if (!row) return toast.error("Não foi possível gerar o código.");
+    setToken(row as TokenResult);
+    setTokenItem(item);
   }
 
   return (
     <AppShell>
-      <ScreenHeader eyebrow="Benefícios liberados" title="Mimos" tone="green" />
-      {loading && <LoadingCard label="Abrindo sua carteira de mimos…" />}
+      <ScreenHeader
+        eyebrow="Vantagens do clube"
+        title="Fofoquinhas"
+        tone="green"
+        action={
+          <button
+            type="button"
+            onClick={() => void load()}
+            aria-label="Atualizar"
+            className="grid h-10 w-10 place-items-center rounded-full border-2 border-foreground bg-background text-foreground shadow-[2px_3px_0_var(--foreground)]"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+        }
+      />
+
+      <div className="px-5 pt-2">
+        <p className="mb-5 text-sm font-semibold text-muted-foreground">
+          Promoções, missões e vantagens que a gente não consegue guardar em segredo.
+        </p>
+        <div className="grid grid-cols-3 gap-2 rounded-2xl border-2 border-foreground/15 bg-muted p-1.5">
+          <TabButton
+            active={tab === "available"}
+            onClick={() => setTab("available")}
+            icon={Gift}
+            label="Disponíveis"
+            count={available.length}
+          />
+          <TabButton
+            active={tab === "missions"}
+            onClick={() => setTab("missions")}
+            icon={Target}
+            label="Missões"
+            count={missions.length + generalPromos.length}
+          />
+          <TabButton
+            active={tab === "history"}
+            onClick={() => setTab("history")}
+            icon={History}
+            label="Histórico"
+            count={history.length}
+          />
+        </div>
+      </div>
+
+      {loading && <LoadingCard label="Apurando as Fofoquinhas…" />}
       {error && <ErrorCard message={error} />}
 
       {!loading && !error && (
-        <div className="space-y-5 px-5 pt-2">
-          <div className="grid grid-cols-3 rounded-2xl border-2 border-foreground bg-card p-1.5 text-[11px] font-black shadow-[3px_4px_0_var(--foreground)]">
-            {(
-              [
-                ["available", "Disponíveis"],
-                ["redeemed", "Usados"],
-                ["expired", "Expirados"],
-              ] as const
-            ).map(([value, label], index) => (
-              <button
-                key={value}
-                onClick={() => {
-                  setTab(value);
-                  setToken(null);
-                  setActiveReward(null);
-                }}
-                className={`rounded-xl px-2 py-2.5 transition ${
-                  tab === value
-                    ? ["bg-mango", "bg-lagoa", "bg-muted"][index] + " text-foreground"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {label}
-              </button>
+        <div className="space-y-4 px-5 pt-5">
+          {tab === "available" &&
+            (available.length === 0 ? (
+              <Empty
+                icon={Gift}
+                title="Nada liberado agora"
+                copy="Continue participando dos eventos e das missões. A próxima vantagem aparece aqui."
+              />
+            ) : (
+              available.map((item) => (
+                <RewardCard key={item.campaign_id} item={item} onUse={() => setConfirmItem(item)} />
+              ))
             ))}
-          </div>
 
-          {byTab.length === 0 ? (
-            <section className="poster-card grid-texture bg-electric p-6 text-white">
-              <span className="cut-label bg-mango text-foreground">carteira vazia</span>
-              <Gift className="mt-5 h-8 w-8" />
-              <h2 className="mt-3 font-display text-4xl leading-none">Nada por aqui. Ainda.</h2>
-              <p className="mt-3 text-sm font-semibold text-white/85">
-                Faça check-in nos eventos participantes e deixe os mimos aparecerem sozinhos.
-              </p>
-            </section>
-          ) : (
-            byTab.map((reward, index) => {
-              const campaign = reward.campaigns;
-              const isActive = activeReward === reward.id && token;
-              const available = tab === "available";
-              return (
-                <article
-                  key={reward.id}
-                  className={`ticket-card ${available ? (index % 2 === 0 ? "checker-texture" : "grid-texture bg-lagoa") : "bg-card"} p-5 text-foreground`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <span
-                        className={`cut-label ${
-                          available ? "bg-white" : tab === "redeemed" ? "bg-lagoa" : "bg-muted"
-                        }`}
-                      >
-                        {rewardStatusLabel(reward.status, reward.expires_at)}
-                      </span>
-                      <h2 className="mt-4 font-display text-3xl leading-none">
-                        {campaign?.name ?? "Mimo do Bafafá"}
-                      </h2>
-                    </div>
-                    <Ticket className="h-8 w-8 shrink-0" strokeWidth={2.3} />
-                  </div>
-
-                  {campaign && (
-                    <p className="mt-4 font-poster text-xl leading-tight">
-                      {campaignBenefitLabel(campaign)}
-                    </p>
-                  )}
-                  {campaign?.description && (
-                    <p className="mt-2 text-sm font-semibold text-foreground/70">
-                      {campaign.description}
-                    </p>
-                  )}
-                  {reward.events?.name && (
-                    <p className="mt-4 text-sm font-black">Rolê: {reward.events.name}</p>
-                  )}
-                  {reward.expires_at && (
-                    <p className="mt-2 flex items-center gap-2 text-xs font-bold text-foreground/65">
-                      <Clock3 className="h-3.5 w-3.5" /> Válido até{" "}
-                      {formatDateTime(reward.expires_at)}
-                    </p>
-                  )}
-                  {campaign?.public_rules && (
-                    <p className="mt-4 rounded-xl border-2 border-foreground/20 bg-white/65 p-3 text-xs font-semibold text-foreground/70">
-                      {campaign.public_rules}
-                    </p>
-                  )}
-
-                  {available && !isActive && (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmReward(reward)}
-                      disabled={generating}
-                      className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
-                    >
-                      {generating ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <PartyPopper className="h-4 w-4" />
-                      )}
-                      Usar meu mimo
-                    </button>
-                  )}
-
-                  {isActive && token && (
-                    <div className="poster-card mt-5 bg-foreground p-5 text-center text-background shadow-none">
-                      <KeyRound className="mx-auto h-7 w-7 text-mango" />
-                      <p className="mt-2 text-xs font-bold text-background/70">
-                        Mostre à equipe para concluir o uso.
+          {tab === "missions" &&
+            (missions.length === 0 && generalPromos.length === 0 ? (
+              <Empty
+                icon={Target}
+                title="Nenhuma missão ativa"
+                copy="Quando o Bafafá lançar um novo desafio, o seu progresso aparece aqui."
+              />
+            ) : (
+              <>
+                {missions.map((item) => (
+                  <MissionCard key={item.campaign_id} item={item} />
+                ))}
+                {generalPromos.map((item) => (
+                  <article
+                    key={item.campaign_id}
+                    className="ticket-card checker-texture p-5 text-foreground"
+                  >
+                    <span className="cut-label bg-white">promoção aberta</span>
+                    <h2 className="mt-5 font-display text-3xl leading-none">{item.name}</h2>
+                    <p className="mt-3 font-poster text-lg">{campaignBenefitLabel(item)}</p>
+                    {item.description && (
+                      <p className="mt-2 text-sm font-semibold opacity-70">{item.description}</p>
+                    )}
+                    {item.public_rules && (
+                      <p className="mt-4 rounded-xl bg-white/70 p-3 text-xs font-semibold">
+                        {item.public_rules}
                       </p>
-                      <div className="mt-4">
-                        <SecureQr
-                          value={token.token}
-                          shortCode={token.short_code}
-                          secondsLeft={secondsLeft}
-                          label="QR do mimo"
-                          dark
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </article>
+                ))}
+              </>
+            ))}
+
+          {tab === "history" &&
+            (history.length === 0 ? (
+              <Empty
+                icon={History}
+                title="Seu histórico começa aqui"
+                copy="Fofoquinhas utilizadas e expiradas ficarão guardadas nesta área."
+              />
+            ) : (
+              history.map((row) => (
+                <article
+                  key={row.id}
+                  className="sticker-card flex items-center gap-3 bg-card p-4 opacity-75"
+                >
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground/20 bg-muted">
+                    {row.status === "redeemed" ? (
+                      <CheckCircle2 className="h-5 w-5" />
+                    ) : (
+                      <Clock3 className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-black">{row.campaigns?.name ?? "Fofoquinha"}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      {row.status === "redeemed"
+                        ? "Utilizada"
+                        : row.status === "expired"
+                          ? "Expirada"
+                          : "Encerrada"}{" "}
+                      · {formatDateTime(row.created_at)}
+                    </p>
+                  </div>
                 </article>
-              );
-            })
-          )}
+              ))
+            ))}
         </div>
       )}
 
-      <Dialog
-        open={Boolean(confirmReward)}
-        onOpenChange={(open) => !open && setConfirmReward(null)}
-      >
-        <DialogContent className="max-w-sm rounded-[28px] border-[3px] border-foreground">
+      <Dialog open={Boolean(confirmItem)} onOpenChange={(open) => !open && setConfirmItem(null)}>
+        <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="font-display text-3xl">Usar este mimo agora?</DialogTitle>
+            <DialogTitle className="font-display text-2xl">Usar esta Fofoquinha?</DialogTitle>
             <DialogDescription>
-              O código expira rapidamente. Gere somente quando estiver perto da equipe.
+              Gere o código somente quando estiver perto da equipe. Ele expira rapidamente.
             </DialogDescription>
           </DialogHeader>
-          {confirmReward?.campaigns && (
-            <div className="ticket-card checker-texture p-4 text-foreground">
-              <p className="font-display text-2xl leading-none">{confirmReward.campaigns.name}</p>
-              <p className="mt-2 text-sm font-black">
-                {campaignBenefitLabel(confirmReward.campaigns)}
-              </p>
-              {confirmReward.campaigns.product_name && (
-                <p className="mt-1 text-xs font-semibold opacity-70">
-                  Produto: {confirmReward.campaigns.product_name}
-                </p>
-              )}
-            </div>
-          )}
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setConfirmReward(null)}>
+          {confirmItem && <RewardSummary item={confirmItem} />}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmItem(null)}>
               Agora não
             </Button>
             <Button
+              disabled={generating}
               onClick={() => {
-                if (!confirmReward) return;
-                const rewardId = confirmReward.id;
-                setConfirmReward(null);
-                void generateRewardCode(rewardId);
+                if (!confirmItem) return;
+                const item = confirmItem;
+                setConfirmItem(null);
+                void generateCode(item);
               }}
             >
-              <Sparkles className="h-4 w-4" /> Gerar código
+              <Sparkles className="h-4 w-4" /> {generating ? "Gerando…" : "Gerar código"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(token)} onOpenChange={(open) => !open && setToken(null)}>
+        <DialogContent className="max-w-sm rounded-3xl text-center">
+          <DialogHeader>
+            <DialogTitle className="font-display text-3xl">Mostre para a equipe</DialogTitle>
+            <DialogDescription>{tokenItem?.name}</DialogDescription>
+          </DialogHeader>
+          {token && (
+            <div>
+              <SecureQr value={token.token} size={220} />
+              <p className="mt-4 font-display text-4xl tracking-[.12em]">{token.short_code}</p>
+              <p className="mt-2 flex items-center justify-center gap-1 text-xs font-bold text-muted-foreground">
+                <LockKeyhole className="h-3.5 w-3.5" /> Código temporário e de uso único
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </AppShell>
   );
 }
 
-function normalizedStatus(reward: RewardRow, timestamp = Date.now()): Tab {
-  if (reward.status === "redeemed") return "redeemed";
-  if (reward.status === "expired" || reward.status === "revoked") return "expired";
-  if (reward.expires_at && new Date(reward.expires_at).getTime() <= timestamp) return "expired";
-  return "available";
+function TabButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: typeof Gift;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl px-2 py-2 text-[10px] font-black ${active ? "border-2 border-foreground bg-background shadow-[2px_2px_0_var(--foreground)]" : "text-muted-foreground"}`}
+    >
+      <Icon className="mx-auto mb-1 h-4 w-4" /> {label} <span className="opacity-60">{count}</span>
+    </button>
+  );
+}
+
+function RewardCard({ item, onUse }: { item: Fofoquinha; onUse: () => void }) {
+  return (
+    <article className="ticket-card checker-texture p-5 text-foreground">
+      <span className="cut-label bg-white">liberada pra você</span>
+      <h2 className="mt-5 font-display text-4xl leading-none">{item.name}</h2>
+      <p className="mt-3 font-poster text-xl">{campaignBenefitLabel(item)}</p>
+      {item.description && (
+        <p className="mt-2 text-sm font-semibold opacity-70">{item.description}</p>
+      )}
+      {item.reward_expires_at && (
+        <p className="mt-4 text-xs font-black">
+          Válida até {formatDateTime(item.reward_expires_at)}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={onUse}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+      >
+        Usar minha Fofoquinha <Gift className="h-4 w-4" />
+      </button>
+    </article>
+  );
+}
+
+function MissionCard({ item }: { item: Fofoquinha }) {
+  const progress = Math.min(
+    100,
+    Math.round((item.progress_value / Math.max(item.trigger_target, 1)) * 100),
+  );
+  return (
+    <article className="sticker-card bg-card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="section-kicker text-muted-foreground">Missão do clube</p>
+          <h2 className="mt-1 font-display text-3xl leading-none">{item.name}</h2>
+        </div>
+        <Target className="h-7 w-7 shrink-0 text-primary" />
+      </div>
+      {item.description && (
+        <p className="mt-3 text-sm font-semibold text-muted-foreground">{item.description}</p>
+      )}
+      <p className="mt-3 font-poster text-base">Recompensa: {campaignBenefitLabel(item)}</p>
+      <div className="mt-4">
+        <div className="mb-1.5 flex items-center justify-between text-xs font-black">
+          <span>
+            {item.progress_value} de {item.trigger_target}
+          </span>
+          <span>{progress}%</span>
+        </div>
+        <div className="h-4 overflow-hidden rounded-full border-2 border-foreground bg-muted">
+          <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+      {item.public_rules && (
+        <p className="mt-4 text-xs font-semibold text-muted-foreground">{item.public_rules}</p>
+      )}
+    </article>
+  );
+}
+
+function RewardSummary({ item }: { item: Fofoquinha }) {
+  return (
+    <div className="ticket-card checker-texture p-4 text-left text-foreground">
+      <p className="font-display text-2xl leading-none">{item.name}</p>
+      <p className="mt-2 text-sm font-black">{campaignBenefitLabel(item)}</p>
+    </div>
+  );
+}
+
+function Empty({ icon: Icon, title, copy }: { icon: typeof Gift; title: string; copy: string }) {
+  return (
+    <section className="sticker-card bg-card p-6 text-center">
+      <Icon className="mx-auto h-8 w-8 text-primary" />
+      <h2 className="mt-3 font-display text-3xl leading-none">{title}</h2>
+      <p className="mt-3 text-sm font-semibold text-muted-foreground">{copy}</p>
+    </section>
+  );
 }

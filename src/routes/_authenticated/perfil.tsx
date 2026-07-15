@@ -61,6 +61,10 @@ type ProfileRow = {
   show_event_preferences: boolean;
   member_since: string;
   active_title_id: string | null;
+  gender_identity: string | null;
+  gender_custom: string | null;
+  pronouns: string | null;
+  show_gender: boolean;
 };
 
 type PreferencesRow = {
@@ -71,6 +75,7 @@ type PreferencesRow = {
   notify_in_app: boolean;
   notify_email: boolean;
   notify_whatsapp: boolean;
+  notify_push: boolean;
 };
 
 type BadgeRow = {
@@ -105,6 +110,7 @@ const emptyPrefs: PreferencesRow = {
   notify_in_app: true,
   notify_email: false,
   notify_whatsapp: false,
+  notify_push: false,
 };
 
 function Perfil() {
@@ -140,14 +146,14 @@ function Perfil() {
       supabase
         .from("profiles")
         .select(
-          "avatar_url,display_name,username,city,neighborhood,bio,how_found_us,birth_date,whatsapp,phone_verified_at,is_public,show_city,show_checkin_count,show_event_preferences,member_since,active_title_id",
+          "avatar_url,display_name,username,city,neighborhood,bio,how_found_us,birth_date,whatsapp,phone_verified_at,is_public,show_city,show_checkin_count,show_event_preferences,member_since,active_title_id,gender_identity,gender_custom,pronouns,show_gender",
         )
         .eq("id", user.id)
         .maybeSingle(),
       supabase
         .from("user_preferences")
         .select(
-          "event_categories,drink_preferences,food_preferences,marketing_opt_in,notify_in_app,notify_email,notify_whatsapp",
+          "event_categories,drink_preferences,food_preferences,marketing_opt_in,notify_in_app,notify_email,notify_whatsapp,notify_push",
         )
         .eq("user_id", user.id)
         .maybeSingle(),
@@ -243,6 +249,13 @@ function Perfil() {
             show_checkin_count: profile.show_checkin_count,
             show_event_preferences: profile.show_event_preferences,
             active_title_id: profile.active_title_id,
+            gender_identity: profile.gender_identity,
+            gender_custom:
+              profile.gender_identity === "prefiro_descrever"
+                ? profile.gender_custom?.trim() || null
+                : null,
+            pronouns: profile.pronouns?.trim() || null,
+            show_gender: profile.show_gender,
           })
           .eq("id", user.id),
         supabase.rpc("set_my_preferences", {
@@ -352,7 +365,7 @@ function Perfil() {
     <AppShell>
       <ScreenHeader
         eyebrow="Sua carteirinha"
-        title="Perfil"
+        title="Carteirinha"
         tone="brick"
         action={
           <button
@@ -613,6 +626,53 @@ function Perfil() {
                     onChange={(value) => setProfile({ ...profile, neighborhood: value })}
                   />
                 </div>
+
+                <section className="rounded-2xl border-2 border-foreground/15 bg-muted/60 p-4">
+                  <div>
+                    <p className="font-black">Identidade e tratamento</p>
+                    <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                      Campos opcionais e inclusivos. Não interferem nos 100% da carteirinha.
+                    </p>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-black">
+                        Como você se identifica?
+                      </span>
+                      <select
+                        value={profile.gender_identity ?? ""}
+                        onChange={(event) =>
+                          setProfile({ ...profile, gender_identity: event.target.value || null })
+                        }
+                        className={inputCls}
+                      >
+                        <option value="">Não informado</option>
+                        <option value="mulher">Mulher</option>
+                        <option value="homem">Homem</option>
+                        <option value="nao_binaria">Pessoa não binária</option>
+                        <option value="outra">Outra identidade</option>
+                        <option value="prefiro_descrever">Prefiro me descrever</option>
+                        <option value="prefiro_nao_informar">Prefiro não informar</option>
+                      </select>
+                    </label>
+                    <TextField
+                      label="Pronomes (opcional)"
+                      value={profile.pronouns ?? ""}
+                      onChange={(value) => setProfile({ ...profile, pronouns: value })}
+                      placeholder="ela/dela, ele/dele, elu/delu…"
+                    />
+                  </div>
+                  {profile.gender_identity === "prefiro_descrever" && (
+                    <div className="mt-3">
+                      <TextField
+                        label="Como prefere se descrever?"
+                        value={profile.gender_custom ?? ""}
+                        onChange={(value) => setProfile({ ...profile, gender_custom: value })}
+                        placeholder="Escreva do seu jeito"
+                      />
+                    </div>
+                  )}
+                </section>
                 <TextField
                   dataProfileKey="origin"
                   label="Como conheceu o Bafafá?"
@@ -703,6 +763,11 @@ function Perfil() {
                       setProfile({ ...profile, show_event_preferences: checked })
                     }
                   />
+                  <Toggle
+                    label="Mostrar identidade de gênero no perfil público"
+                    checked={profile.show_gender}
+                    onChange={(checked) => setProfile({ ...profile, show_gender: checked })}
+                  />
                   <div className="my-2 h-px bg-foreground/10" />
                   <Toggle
                     label="Receber avisos dentro do app"
@@ -727,10 +792,7 @@ function Perfil() {
             )}
           </form>
 
-          <Link
-            to="/seguranca"
-            className="sticker-card flex items-center gap-3 bg-card p-4"
-          >
+          <Link to="/seguranca" className="sticker-card flex items-center gap-3 bg-card p-4">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground bg-primary text-primary-foreground shadow-[2px_3px_0_var(--foreground)]">
               <LockKeyhole className="h-5 w-5" />
             </div>
