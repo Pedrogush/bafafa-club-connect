@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { AdminPanel } from "@/components/admin/admin-panel";
+import { MfaGate } from "@/components/auth/mfa-security";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminRoute,
@@ -44,5 +45,9 @@ function AdminRoute() {
     );
   }
 
-  return <AdminPanel currentUserId={user.id} />;
+  return (
+    <MfaGate label="administração do Bafafá">
+      <AdminPanel currentUserId={user.id} />
+    </MfaGate>
+  );
 }

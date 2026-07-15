@@ -177,3 +177,7 @@ Ela consolida o menor privilégio no banco:
 
 Após a instalação, execute `docs/VERIFICAR_SEGURANCA_V15.sql` e siga
 `docs/TESTE_SEGURANCA_V15.md`.
+
+## Segurança de autenticação — V16
+
+Contas `admin`, `moderador` e `equipe` exigem MFA por aplicativo autenticador. A configuração fica em **Perfil → Segurança da conta**. O cadastro suporta confirmação de e-mail e CAPTCHA Turnstile sem depender de uma sessão imediata. Consulte `docs/CONFIGURAR_AUTENTICACAO_V16.md` e `docs/TESTE_AUTENTICACAO_V16.md`.

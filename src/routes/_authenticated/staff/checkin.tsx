@@ -20,6 +20,7 @@ import { QrScanner } from "@/components/operations/qr-scanner";
 import { useAuth, hasRole } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime } from "@/lib/bafafa";
+import { MfaGate } from "@/components/auth/mfa-security";
 
 type EventRow = { id: string; name: string; starts_at: string; status: string };
 type Result = {
@@ -174,7 +175,8 @@ function StaffCheckin() {
   }
 
   return (
-    <div className="app-canvas mx-auto min-h-screen max-w-xl bg-background px-4 py-6 sm:px-6">
+    <MfaGate label="validação operacional">
+      <div className="app-canvas mx-auto min-h-screen max-w-xl bg-background px-4 py-6 sm:px-6">
       <header className="flex items-center justify-between">
         <Wordmark variant="short" />
         <div className="flex gap-2">
@@ -412,6 +414,7 @@ function StaffCheckin() {
           </div>
         </section>
       )}
-    </div>
+      </div>
+    </MfaGate>
   );
 }

@@ -4,7 +4,9 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Wordmark } from "@/components/brand/wordmark";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { TurnstileChallenge, useAuthCaptcha } from "@/components/auth/turnstile";
+import { friendlyAuthError, isPrivilegedRole, validatePassword } from "@/lib/auth-security";
 
 type Mode = "signin" | "signup" | "reset";
 
@@ -26,7 +28,8 @@ const signupSchema = z
   .object({
     display_name: z.string().trim().min(2, "Diz teu nome, Bafafã.").max(80),
     email: z.string().trim().email("E-mail inválido.").max(255),
-    password: z.string().min(8, "Mínimo 8 caracteres."),
+    password: z.string(),
+    password_confirm: z.string(),
     birth_date: z.string().min(10, "Data de nascimento obrigatória."),
     accept_terms: z.literal(true, { errorMap: () => ({ message: "Precisa aceitar os termos." }) }),
     accept_privacy: z.literal(true, {
@@ -34,6 +37,14 @@ const signupSchema = z
     }),
     is_over_18: z.literal(true, { errorMap: () => ({ message: "Só maiores de 18 anos." }) }),
     marketing_opt_in: z.boolean().optional().default(false),
+  })
+  .refine((value) => validatePassword(value.password).valid, {
+    message: "A senha não atende aos requisitos de segurança.",
+    path: ["password"],
+  })
+  .refine((value) => value.password === value.password_confirm, {
+    message: "As senhas precisam ser iguais.",
+    path: ["password_confirm"],
   })
   .refine(
     (value) => {
@@ -113,6 +124,8 @@ const inputCls =
 function SignupForm({ onDone }: { onDone: () => void }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const captcha = useAuthCaptcha();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -122,6 +135,7 @@ function SignupForm({ onDone }: { onDone: () => void }) {
       display_name: fd.get("display_name") as string,
       email: fd.get("email") as string,
       password: fd.get("password") as string,
+      password_confirm: fd.get("password_confirm") as string,
       birth_date: fd.get("birth_date") as string,
       accept_terms: fd.get("accept_terms") === "on",
       accept_privacy: fd.get("accept_privacy") === "on",
@@ -137,38 +151,34 @@ function SignupForm({ onDone }: { onDone: () => void }) {
     }
 
     const data = parsed.data;
+    if (captcha.required && !captcha.token) {
+      setErrors({ captcha: "Confirme o desafio de segurança." });
+      return;
+    }
     setLoading(true);
     const { data: signUp, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/inicio`,
+        captchaToken: captcha.token ?? undefined,
         data: {
           display_name: data.display_name,
           birth_date: data.birth_date,
           is_over_18: true,
+          accept_terms: true,
+          accept_privacy: true,
+          accept_community: true,
+          marketing_opt_in: data.marketing_opt_in,
+          consent_version: "1.0",
         },
       },
     });
     setLoading(false);
+    captcha.reset();
     if (error) {
-      toast.error(error.message.includes("already") ? "E-mail já cadastrado." : error.message);
+      toast.error(friendlyAuthError(error.message));
       return;
-    }
-
-    if (signUp.user) {
-      const consents = [
-        { kind: "termos", accepted: true },
-        { kind: "privacidade", accepted: true },
-        { kind: "comunidade", accepted: true },
-        { kind: "maioridade", accepted: true },
-        { kind: "marketing", accepted: data.marketing_opt_in },
-      ].map((consent) => ({ ...consent, user_id: signUp.user!.id }));
-      await supabase.from("user_consents").insert(consents);
-      await supabase.from("user_preferences").upsert({
-        user_id: signUp.user.id,
-        marketing_opt_in: data.marketing_opt_in,
-      });
     }
 
     toast.success("Cadastro criado! Se pedir confirmação por e-mail, dá uma olhadinha lá.");
@@ -205,9 +215,21 @@ function SignupForm({ onDone }: { onDone: () => void }) {
           placeholder="voce@email.com"
         />
       </Field>
-      <Field label="Senha" hint="Pelo menos 8 caracteres." error={errors.password}>
-        <input name="password" type="password" required className={inputCls} />
-      </Field>
+      <PasswordField
+        label="Senha"
+        name="password"
+        show={showPassword}
+        onToggle={() => setShowPassword((value) => !value)}
+        hint="Use 10+ caracteres, com letra e número."
+        error={errors.password}
+      />
+      <PasswordField
+        label="Confirmar senha"
+        name="password_confirm"
+        show={showPassword}
+        onToggle={() => setShowPassword((value) => !value)}
+        error={errors.password_confirm}
+      />
       <Field label="Nascimento" error={errors.birth_date}>
         <input name="birth_date" type="date" required className={inputCls} />
       </Field>
@@ -234,6 +256,9 @@ function SignupForm({ onDone }: { onDone: () => void }) {
         />
       </div>
 
+      <TurnstileChallenge onToken={captcha.onToken} resetKey={captcha.resetKey} />
+      {errors.captcha && <p className="text-xs font-semibold text-destructive">{errors.captcha}</p>}
+
       <button
         type="submit"
         disabled={loading}
@@ -259,27 +284,40 @@ function Consent({ name, label, error }: { name: string; label: string; error?: 
 
 function SigninForm({ onForgot }: { onForgot: () => void }) {
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const captcha = useAuthCaptcha();
   const navigate = useNavigate();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: (fd.get("email") as string).trim(),
-      password: fd.get("password") as string,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(
-        error.message.toLowerCase().includes("invalid")
-          ? "E-mail ou senha não bateram."
-          : error.message,
-      );
+    if (captcha.required && !captcha.token) {
+      toast.error("Confirme o desafio de segurança.");
       return;
     }
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: (fd.get("email") as string).trim(),
+      password: fd.get("password") as string,
+      options: { captchaToken: captcha.token ?? undefined },
+    });
+    setLoading(false);
+    captcha.reset();
+    if (error) {
+      toast.error(friendlyAuthError(error.message));
+      return;
+    }
+    const userId = data.user?.id;
+    let needsSecurity = false;
+    if (userId) {
+      const [{ data: roles }, { data: aal }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ]);
+      needsSecurity = isPrivilegedRole((roles ?? []).map((row) => row.role)) && aal?.currentLevel !== "aal2";
+    }
     toast.success("Bem-vindo, Bafafã!");
-    navigate({ to: "/inicio" });
+    navigate({ to: needsSecurity ? "/seguranca" : "/inicio" });
   }
 
   return (
@@ -287,9 +325,13 @@ function SigninForm({ onForgot }: { onForgot: () => void }) {
       <Field label="E-mail">
         <input name="email" type="email" required className={inputCls} />
       </Field>
-      <Field label="Senha">
-        <input name="password" type="password" required className={inputCls} />
-      </Field>
+      <PasswordField
+        label="Senha"
+        name="password"
+        show={showPassword}
+        onToggle={() => setShowPassword((value) => !value)}
+      />
+      <TurnstileChallenge onToken={captcha.onToken} resetKey={captcha.resetKey} />
       <button
         type="submit"
         disabled={loading}
@@ -308,18 +350,54 @@ function SigninForm({ onForgot }: { onForgot: () => void }) {
   );
 }
 
+function PasswordField({
+  label,
+  name,
+  show,
+  onToggle,
+  hint,
+  error,
+}: {
+  label: string;
+  name: string;
+  show: boolean;
+  onToggle: () => void;
+  hint?: string;
+  error?: string;
+}) {
+  return (
+    <Field label={label} hint={hint} error={error}>
+      <div className="relative">
+        <input name={name} type={show ? "text" : "password"} required className={`${inputCls} pr-12`} />
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={show ? "Ocultar senha" : "Mostrar senha"}
+          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </Field>
+  );
+}
+
 function ResetForm({ onDone }: { onDone: () => void }) {
   const [loading, setLoading] = useState(false);
+  const captcha = useAuthCaptcha();
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = (fd.get("email") as string).trim();
+    if (captcha.required && !captcha.token) return toast.error("Confirme o desafio de segurança.");
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
+      captchaToken: captcha.token ?? undefined,
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    captcha.reset();
+    if (error) return toast.error(friendlyAuthError(error.message));
     toast.success("Se o e-mail existir, você vai receber um link em instantes.");
     onDone();
   }
@@ -331,6 +409,7 @@ function ResetForm({ onDone }: { onDone: () => void }) {
       <Field label="E-mail">
         <input name="email" type="email" required className={inputCls} />
       </Field>
+      <TurnstileChallenge onToken={captcha.onToken} resetKey={captcha.resetKey} />
       <button
         type="submit"
         disabled={loading}

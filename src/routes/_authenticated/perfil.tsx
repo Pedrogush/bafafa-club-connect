@@ -244,7 +244,17 @@ function Perfil() {
             active_title_id: profile.active_title_id,
           })
           .eq("id", user.id),
-        supabase.from("user_preferences").upsert({ user_id: user.id, ...prefs }),
+        supabase.rpc("set_my_preferences", {
+          _event_categories: prefs.event_categories,
+          _drink_preferences: prefs.drink_preferences,
+          _food_preferences: prefs.food_preferences,
+          _notify_in_app: prefs.notify_in_app,
+          _notify_email: prefs.notify_email,
+          _notify_whatsapp: prefs.notify_whatsapp,
+          _notify_push: prefs.notify_push,
+          _marketing_opt_in: prefs.marketing_opt_in,
+          _consent_version: "1.0",
+        }),
       ]);
 
       if (profileError || prefsError) {
@@ -258,13 +268,6 @@ function Perfil() {
 
       setProfile({ ...profile, avatar_url: avatarUrl });
       setAvatarSelection(undefined);
-
-      await supabase.from("user_consents").insert({
-        user_id: user.id,
-        kind: "marketing",
-        accepted: prefs.marketing_opt_in,
-        version: "1.0",
-      });
 
       const [badgesResult, titlesResult, completenessResult] = await Promise.all([
         supabase
@@ -722,6 +725,22 @@ function Perfil() {
               </>
             )}
           </form>
+
+          <Link
+            to="/seguranca"
+            className="sticker-card flex items-center gap-3 bg-card p-4"
+          >
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground bg-primary text-primary-foreground shadow-[2px_3px_0_var(--foreground)]">
+              <LockKeyhole className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-black">Segurança da conta</p>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                Senha, sessões e autenticação em duas etapas.
+              </p>
+            </div>
+            <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+          </Link>
 
           <section className="sticker-card bg-card p-4">
             <div className="flex items-center gap-3">

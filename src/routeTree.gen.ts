@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u/$username'
+import { Route as AuthenticatedSegurancaRouteImport } from './routes/_authenticated/seguranca'
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated/reservas'
 import { Route as AuthenticatedResenhaRouteImport } from './routes/_authenticated/resenha'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
@@ -49,6 +50,11 @@ const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSegurancaRoute = AuthenticatedSegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReservasRoute = AuthenticatedReservasRouteImport.update({
   id: '/reservas',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/resenha': typeof AuthenticatedResenhaRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/resenha': typeof AuthenticatedResenhaRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/resenha': typeof AuthenticatedResenhaRoute
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
+  '/_authenticated/seguranca': typeof AuthenticatedSegurancaRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/resenha'
     | '/reservas'
+    | '/seguranca'
     | '/u/$username'
     | '/staff/checkin'
   fileRoutesByTo: FileRoutesByTo
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/resenha'
     | '/reservas'
+    | '/seguranca'
     | '/u/$username'
     | '/staff/checkin'
   id:
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perfil'
     | '/_authenticated/resenha'
     | '/_authenticated/reservas'
+    | '/_authenticated/seguranca'
     | '/u/$username'
     | '/_authenticated/staff/checkin'
   fileRoutesById: FileRoutesById
@@ -260,6 +272,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/u/$username'
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/seguranca': {
+      id: '/_authenticated/seguranca'
+      path: '/seguranca'
+      fullPath: '/seguranca'
+      preLoaderRoute: typeof AuthenticatedSegurancaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reservas': {
       id: '/_authenticated/reservas'
@@ -352,6 +371,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedResenhaRoute: typeof AuthenticatedResenhaRoute
   AuthenticatedReservasRoute: typeof AuthenticatedReservasRoute
+  AuthenticatedSegurancaRoute: typeof AuthenticatedSegurancaRoute
   AuthenticatedStaffCheckinRoute: typeof AuthenticatedStaffCheckinRoute
 }
 
@@ -366,6 +386,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedResenhaRoute: AuthenticatedResenhaRoute,
   AuthenticatedReservasRoute: AuthenticatedReservasRoute,
+  AuthenticatedSegurancaRoute: AuthenticatedSegurancaRoute,
   AuthenticatedStaffCheckinRoute: AuthenticatedStaffCheckinRoute,
 }
 

@@ -1222,6 +1222,21 @@ export type Database = {
         Args: { _body: string; _event_id: string; _reply_to?: string | null };
         Returns: string;
       };
+      set_my_preferences: {
+        Args: {
+          _event_categories?: string[];
+          _drink_preferences?: string[];
+          _food_preferences?: string[];
+          _notify_in_app?: boolean;
+          _notify_email?: boolean;
+          _notify_whatsapp?: boolean;
+          _notify_push?: boolean;
+          _marketing_opt_in?: boolean;
+          _consent_version?: string;
+        };
+        Returns: undefined;
+      };
+      my_auth_security_status: { Args: never; Returns: Json };
       set_event_chat_block: {
         Args: { _blocked: boolean; _blocked_user_id: string };
         Returns: undefined;
