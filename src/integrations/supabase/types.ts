@@ -1065,6 +1065,105 @@ export type Database = {
         ];
       };
     };
+      security_controls: {
+        Row: {
+          category: string;
+          completed: boolean;
+          control_key: string;
+          created_at: string;
+          description: string;
+          evidence: string | null;
+          label: string;
+          notes: string | null;
+          required: boolean;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          category: string;
+          completed?: boolean;
+          control_key: string;
+          created_at?: string;
+          description: string;
+          evidence?: string | null;
+          label: string;
+          notes?: string | null;
+          required?: boolean;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string;
+          completed?: boolean;
+          control_key?: string;
+          created_at?: string;
+          description?: string;
+          evidence?: string | null;
+          label?: string;
+          notes?: string | null;
+          required?: boolean;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      security_events: {
+        Row: {
+          actor_id: string | null;
+          category: string;
+          created_at: string;
+          details: Json;
+          entity: string | null;
+          entity_id: string | null;
+          event_key: string;
+          id: string;
+          occurred_at: string;
+          resolution_note: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          severity: string;
+          target_user_id: string | null;
+          title: string;
+        };
+        Insert: {
+          actor_id?: string | null;
+          category: string;
+          created_at?: string;
+          details?: Json;
+          entity?: string | null;
+          entity_id?: string | null;
+          event_key: string;
+          id?: string;
+          occurred_at?: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity: string;
+          target_user_id?: string | null;
+          title: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          category?: string;
+          created_at?: string;
+          details?: Json;
+          entity?: string | null;
+          entity_id?: string | null;
+          event_key?: string;
+          id?: string;
+          occurred_at?: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity?: string;
+          target_user_id?: string | null;
+          title?: string;
+        };
+        Relationships: [];
+      };
     Views: {
       public_profiles: {
         Row: {
@@ -1104,6 +1203,21 @@ export type Database = {
       };
     };
     Functions: {
+      admin_prune_security_events: { Args: { _days?: number }; Returns: number };
+      admin_resolve_security_event: {
+        Args: { _event_id: string; _resolution_note?: string | null };
+        Returns: undefined;
+      };
+      admin_security_snapshot: { Args: never; Returns: Json };
+      admin_set_security_control: {
+        Args: {
+          _completed: boolean;
+          _control_key: string;
+          _evidence?: string | null;
+          _notes?: string | null;
+        };
+        Returns: undefined;
+      };
       admin_profile_completion_overview: {
         Args: never;
         Returns: {

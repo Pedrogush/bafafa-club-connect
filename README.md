@@ -206,3 +206,7 @@ Execute `docs/BAFAFA_APLICACAO_NAVEGADOR_V17_SETUP.sql`, depois
 Enquanto o aplicativo estiver em piloto, `robots.txt` e `X-Robots-Tag` mantêm o conteúdo fora dos buscadores. Essa configuração deve ser revisada antes de um lançamento público.
 
 A V17 também adiciona `.github/workflows/security.yml`: cada Pull Request compila o projeto e executa `bun audit --prod --audit-level=high`. Não faça merge com esse workflow vermelho.
+
+## Segurança e continuidade (V18)
+
+A aba **Administração → Segurança** reúne eventos de acesso, exportações, contas privilegiadas e um checklist das configurações externas. Os procedimentos de backup, restauração e resposta a incidentes estão em `docs/INFRAESTRUTURA_CONTINUIDADE_V18.md` e `docs/RESPOSTA_A_INCIDENTES_V18.md`.

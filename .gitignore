@@ -35,3 +35,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Local infrastructure state and backups
+.vercel/
+backups/
+*.backup

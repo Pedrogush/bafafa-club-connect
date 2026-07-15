@@ -55,6 +55,7 @@ import { campaignBenefitLabel, formatDateTime } from "@/lib/bafafa";
 import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { ManagementDashboard } from "@/components/admin/management-dashboard";
+import { SecurityDashboard } from "@/components/admin/security-dashboard";
 
 export type AdminSection =
   | "overview"
@@ -65,6 +66,7 @@ export type AdminSection =
   | "checkins"
   | "chat"
   | "team"
+  | "security"
   | "audit";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -128,6 +130,7 @@ const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart
   { key: "checkins", label: "Check-ins", icon: CheckCircle2 },
   { key: "chat", label: "Resenha", icon: MessageCircleMore },
   { key: "team", label: "Equipe", icon: UserCog },
+  { key: "security", label: "Segurança", icon: ShieldCheck },
   { key: "audit", label: "Auditoria", icon: ClipboardList },
 ];
 
@@ -341,6 +344,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
                 onChanged={() => void loadData(true)}
               />
             )}
+            {section === "security" && <SecurityDashboard />}
             {section === "audit" && <AuditManager data={data} />}
           </>
         )}

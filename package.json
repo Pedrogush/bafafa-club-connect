@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "security:headers": "node scripts/check-security-headers.mjs"
+    "security:headers": "node scripts/check-security-headers.mjs",
+    "security:secrets": "node scripts/check-repository-secrets.mjs",
+    "security:verify": "bun run security:secrets && bun run lint && bun run build && bun audit --prod --audit-level=high",
+    "backup:supabase": "powershell -ExecutionPolicy Bypass -File scripts/backup-supabase.ps1",
+    "backup:verify": "powershell -ExecutionPolicy Bypass -File scripts/verify-backup.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
