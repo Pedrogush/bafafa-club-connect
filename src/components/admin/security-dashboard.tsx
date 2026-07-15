@@ -240,7 +240,11 @@ export function SecurityDashboard() {
                     item.ok ? "bg-primary/15 text-primary" : "bg-destructive/10 text-destructive"
                   }`}
                 >
-                  {item.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                  {item.ok ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                  )}
                   {item.ok ? "OK" : "Revisar"}
                 </span>
               </div>
@@ -253,7 +257,10 @@ export function SecurityDashboard() {
           <h2 className="mt-1 font-display text-2xl">Contas sensíveis</h2>
           <div className="mt-4 max-h-80 space-y-2 overflow-y-auto pr-1">
             {(snapshot?.privileged_users ?? []).map((user) => (
-              <div key={`${user.user_id}-${user.role}`} className="rounded-2xl border border-input p-3">
+              <div
+                key={`${user.user_id}-${user.role}`}
+                className="rounded-2xl border border-input p-3"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black">{user.display_name || "Usuário"}</p>
@@ -269,9 +276,7 @@ export function SecurityDashboard() {
                   <span className="inline-flex items-center gap-1">
                     <KeyRound className="h-3.5 w-3.5" /> {user.verified_mfa_factors} fator(es) MFA
                   </span>
-                  <span>
-                    Último acesso: {formatDate(user.last_sign_in_at)}
-                  </span>
+                  <span>Último acesso: {formatDate(user.last_sign_in_at)}</span>
                 </div>
               </div>
             ))}
@@ -308,7 +313,9 @@ export function SecurityDashboard() {
             <div
               key={control.control_key}
               className={`rounded-2xl border-2 p-4 ${
-                control.completed ? "border-primary/35 bg-primary/5" : "border-foreground/15 bg-card"
+                control.completed
+                  ? "border-primary/35 bg-primary/5"
+                  : "border-foreground/15 bg-card"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -334,7 +341,9 @@ export function SecurityDashboard() {
               )}
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className="text-[11px] text-muted-foreground">
-                  {control.reviewed_at ? `Revisto em ${formatDate(control.reviewed_at)}` : "Ainda não revisto"}
+                  {control.reviewed_at
+                    ? `Revisto em ${formatDate(control.reviewed_at)}`
+                    : "Ainda não revisto"}
                 </span>
                 <Button
                   size="sm"
@@ -377,7 +386,9 @@ export function SecurityDashboard() {
                       {event.category}
                     </span>
                     {event.resolved_at && (
-                      <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold">Resolvido</span>
+                      <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold">
+                        Resolvido
+                      </span>
                     )}
                   </div>
                   <p className="mt-2 font-black">{event.title}</p>
@@ -475,7 +486,11 @@ function SeverityPill({ severity }: { severity: SecurityEvent["severity"] }) {
     high: "Alto",
     critical: "Crítico",
   }[severity];
-  return <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${classes}`}>{label}</span>;
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${classes}`}>
+      {label}
+    </span>
+  );
 }
 
 function formatDate(value: string | null) {

@@ -14,10 +14,10 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u/$username'
+import { Route as AuthenticatedSegurancaRouteImport } from './routes/_authenticated/seguranca'
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated/reservas'
 import { Route as AuthenticatedResenhaRouteImport } from './routes/_authenticated/resenha'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
-import { Route as AuthenticatedSegurancaRouteImport } from './routes/_authenticated/seguranca'
 import { Route as AuthenticatedMimosRouteImport } from './routes/_authenticated/mimos'
 import { Route as AuthenticatedInicioRouteImport } from './routes/_authenticated/inicio'
 import { Route as AuthenticatedFofoquinhasRouteImport } from './routes/_authenticated/fofoquinhas'
@@ -51,6 +51,11 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSegurancaRoute = AuthenticatedSegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReservasRoute = AuthenticatedReservasRouteImport.update({
   id: '/reservas',
   path: '/reservas',
@@ -64,11 +69,6 @@ const AuthenticatedResenhaRoute = AuthenticatedResenhaRouteImport.update({
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSegurancaRoute = AuthenticatedSegurancaRouteImport.update({
-  id: '/seguranca',
-  path: '/seguranca',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMimosRoute = AuthenticatedMimosRouteImport.update({
@@ -126,9 +126,9 @@ export interface FileRoutesByFullPath {
   '/inicio': typeof AuthenticatedInicioRoute
   '/mimos': typeof AuthenticatedMimosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
-  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/resenha': typeof AuthenticatedResenhaRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -144,9 +144,9 @@ export interface FileRoutesByTo {
   '/inicio': typeof AuthenticatedInicioRoute
   '/mimos': typeof AuthenticatedMimosRoute
   '/perfil': typeof AuthenticatedPerfilRoute
-  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/resenha': typeof AuthenticatedResenhaRoute
   '/reservas': typeof AuthenticatedReservasRoute
+  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -164,9 +164,9 @@ export interface FileRoutesById {
   '/_authenticated/inicio': typeof AuthenticatedInicioRoute
   '/_authenticated/mimos': typeof AuthenticatedMimosRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
-  '/_authenticated/seguranca': typeof AuthenticatedSegurancaRoute
   '/_authenticated/resenha': typeof AuthenticatedResenhaRoute
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
+  '/_authenticated/seguranca': typeof AuthenticatedSegurancaRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -184,9 +184,9 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/mimos'
     | '/perfil'
-    | '/seguranca'
     | '/resenha'
     | '/reservas'
+    | '/seguranca'
     | '/u/$username'
     | '/staff/checkin'
   fileRoutesByTo: FileRoutesByTo
@@ -202,9 +202,9 @@ export interface FileRouteTypes {
     | '/inicio'
     | '/mimos'
     | '/perfil'
-    | '/seguranca'
     | '/resenha'
     | '/reservas'
+    | '/seguranca'
     | '/u/$username'
     | '/staff/checkin'
   id:
@@ -221,9 +221,9 @@ export interface FileRouteTypes {
     | '/_authenticated/inicio'
     | '/_authenticated/mimos'
     | '/_authenticated/perfil'
-    | '/_authenticated/seguranca'
     | '/_authenticated/resenha'
     | '/_authenticated/reservas'
+    | '/_authenticated/seguranca'
     | '/u/$username'
     | '/_authenticated/staff/checkin'
   fileRoutesById: FileRoutesById
@@ -273,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/seguranca': {
+      id: '/_authenticated/seguranca'
+      path: '/seguranca'
+      fullPath: '/seguranca'
+      preLoaderRoute: typeof AuthenticatedSegurancaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reservas': {
       id: '/_authenticated/reservas'
       path: '/reservas'
@@ -292,13 +299,6 @@ declare module '@tanstack/react-router' {
       path: '/perfil'
       fullPath: '/perfil'
       preLoaderRoute: typeof AuthenticatedPerfilRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/seguranca': {
-      id: '/_authenticated/seguranca'
-      path: '/seguranca'
-      fullPath: '/seguranca'
-      preLoaderRoute: typeof AuthenticatedSegurancaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/mimos': {
@@ -369,9 +369,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInicioRoute: typeof AuthenticatedInicioRoute
   AuthenticatedMimosRoute: typeof AuthenticatedMimosRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
-  AuthenticatedSegurancaRoute: typeof AuthenticatedSegurancaRoute
   AuthenticatedResenhaRoute: typeof AuthenticatedResenhaRoute
   AuthenticatedReservasRoute: typeof AuthenticatedReservasRoute
+  AuthenticatedSegurancaRoute: typeof AuthenticatedSegurancaRoute
   AuthenticatedStaffCheckinRoute: typeof AuthenticatedStaffCheckinRoute
 }
 
@@ -384,9 +384,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInicioRoute: AuthenticatedInicioRoute,
   AuthenticatedMimosRoute: AuthenticatedMimosRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
-  AuthenticatedSegurancaRoute: AuthenticatedSegurancaRoute,
   AuthenticatedResenhaRoute: AuthenticatedResenhaRoute,
   AuthenticatedReservasRoute: AuthenticatedReservasRoute,
+  AuthenticatedSegurancaRoute: AuthenticatedSegurancaRoute,
   AuthenticatedStaffCheckinRoute: AuthenticatedStaffCheckinRoute,
 }
 

@@ -54,7 +54,9 @@ function normalizeFactors(data: unknown): MfaFactor[] {
     phone?: MfaFactor[];
   } | null;
   const values = candidate?.all ?? [...(candidate?.totp ?? []), ...(candidate?.phone ?? [])];
-  return values.filter((factor, index, array) => array.findIndex((item) => item.id === factor.id) === index);
+  return values.filter(
+    (factor, index, array) => array.findIndex((item) => item.id === factor.id) === index,
+  );
 }
 
 export function useMfaSecurity() {
@@ -87,12 +89,23 @@ export function useMfaSecurity() {
   return { ...state, refresh };
 }
 
-export function MfaGate({ children, label = "área protegida" }: { children: ReactNode; label?: string }) {
+export function MfaGate({
+  children,
+  label = "área protegida",
+}: {
+  children: ReactNode;
+  label?: string;
+}) {
   const security = useMfaSecurity();
   const verifiedFactors = security.factors.filter((factor) => factor.status === "verified");
 
   if (security.loading) {
-    return <MfaFrame><Loader2 className="h-6 w-6 animate-spin" /><p>Confirmando a segurança da sessão…</p></MfaFrame>;
+    return (
+      <MfaFrame>
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <p>Confirmando a segurança da sessão…</p>
+      </MfaFrame>
+    );
   }
 
   if (security.error) {
@@ -116,14 +129,17 @@ export function MfaGate({ children, label = "área protegida" }: { children: Rea
       <p className="section-kicker">Proteção obrigatória</p>
       <h1 className="font-display text-3xl">Mais uma confirmação antes de entrar.</h1>
       <p className="text-sm leading-relaxed text-muted-foreground">
-        A {label} trata dados e operações sensíveis. Administradores e equipe precisam confirmar o código do aplicativo autenticador.
+        A {label} trata dados e operações sensíveis. Administradores e equipe precisam confirmar o
+        código do aplicativo autenticador.
       </p>
       {verifiedFactors.length > 0 ? (
         <MfaChallenge factor={verifiedFactors[0]} onSuccess={security.refresh} />
       ) : (
         <MfaEnrollment required onSuccess={security.refresh} />
       )}
-      <Link to="/inicio" className="text-sm font-black underline underline-offset-4">Voltar ao aplicativo</Link>
+      <Link to="/inicio" className="text-sm font-black underline underline-offset-4">
+        Voltar ao aplicativo
+      </Link>
     </MfaFrame>
   );
 }
@@ -139,7 +155,8 @@ export function MfaSecurityCenter() {
 
   const statusLabel = useMemo(() => {
     if (security.currentLevel === "aal2") return "Sessão com proteção reforçada";
-    if (verifiedFactors.length > 0) return "Segundo fator cadastrado, mas ainda não confirmado nesta sessão";
+    if (verifiedFactors.length > 0)
+      return "Segundo fator cadastrado, mas ainda não confirmado nesta sessão";
     return "Segundo fator ainda não configurado";
   }, [security.currentLevel, verifiedFactors.length]);
 
@@ -194,7 +211,13 @@ export function MfaSecurityCenter() {
     toast.success("Enviamos um link de troca de senha para seu e-mail.");
   }
 
-  if (security.loading) return <MfaFrame><Loader2 className="h-6 w-6 animate-spin" /><p>Carregando segurança da conta…</p></MfaFrame>;
+  if (security.loading)
+    return (
+      <MfaFrame>
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <p>Carregando segurança da conta…</p>
+      </MfaFrame>
+    );
 
   return (
     <div className="space-y-5">
@@ -233,10 +256,15 @@ export function MfaSecurityCenter() {
           </div>
           <div className="mt-4 space-y-3">
             {verifiedFactors.map((factor) => (
-              <div key={factor.id} className="flex items-center gap-3 rounded-2xl border-2 border-foreground/10 bg-muted/40 p-3">
+              <div
+                key={factor.id}
+                className="flex items-center gap-3 rounded-2xl border-2 border-foreground/10 bg-muted/40 p-3"
+              >
                 <Smartphone className="h-5 w-5 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-black">{factor.friendly_name || "Aplicativo autenticador"}</p>
+                  <p className="truncate font-black">
+                    {factor.friendly_name || "Aplicativo autenticador"}
+                  </p>
                   <p className="text-xs text-muted-foreground">TOTP · ativo</p>
                 </div>
                 <button
@@ -259,16 +287,34 @@ export function MfaSecurityCenter() {
       )}
 
       <section className="sticker-card bg-card p-5">
-        <div className="flex items-center gap-2"><KeyRound className="h-5 w-5" /><h2 className="font-display text-2xl">Senha e sessões</h2></div>
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-5 w-5" />
+          <h2 className="font-display text-2xl">Senha e sessões</h2>
+        </div>
         <div className="mt-4 grid gap-3">
           <TurnstileChallenge onToken={captcha.onToken} resetKey={captcha.resetKey} />
-          <button type="button" disabled={working || (captcha.required && !captcha.token)} onClick={() => void requestPasswordChange()} className={secondaryButton}>
+          <button
+            type="button"
+            disabled={working || (captcha.required && !captcha.token)}
+            onClick={() => void requestPasswordChange()}
+            className={secondaryButton}
+          >
             <KeyRound className="h-4 w-4" /> Enviar link para trocar a senha
           </button>
-          <button type="button" disabled={working} onClick={() => void signOutOtherSessions()} className={secondaryButton}>
+          <button
+            type="button"
+            disabled={working}
+            onClick={() => void signOutOtherSessions()}
+            className={secondaryButton}
+          >
             <LogOut className="h-4 w-4" /> Encerrar sessões em outros aparelhos
           </button>
-          <button type="button" disabled={working} onClick={() => void signOutEverywhere()} className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-destructive bg-destructive/10 px-4 py-3 text-sm font-black text-destructive">
+          <button
+            type="button"
+            disabled={working}
+            onClick={() => void signOutEverywhere()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-destructive bg-destructive/10 px-4 py-3 text-sm font-black text-destructive"
+          >
             <LogOut className="h-4 w-4" /> Sair de todos os aparelhos
           </button>
         </div>
@@ -313,7 +359,10 @@ function MfaEnrollment({
   async function verify() {
     if (!factorId || code.replace(/\D/g, "").length !== 6) return;
     setLoading(true);
-    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: code.replace(/\D/g, "") });
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
+      code: code.replace(/\D/g, ""),
+    });
     setLoading(false);
     if (error) return toast.error("Código incorreto ou vencido. Confira o autenticador.");
     toast.success("Proteção em duas etapas ativada.");
@@ -326,7 +375,12 @@ function MfaEnrollment({
 
   return (
     <section className="sticker-card bg-card p-5">
-      <div className="flex items-center gap-2"><LockKeyhole className="h-5 w-5 text-primary" /><h2 className="font-display text-2xl">{additional ? "Adicionar outro autenticador" : "Ativar aplicativo autenticador"}</h2></div>
+      <div className="flex items-center gap-2">
+        <LockKeyhole className="h-5 w-5 text-primary" />
+        <h2 className="font-display text-2xl">
+          {additional ? "Adicionar outro autenticador" : "Ativar aplicativo autenticador"}
+        </h2>
+      </div>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {additional
           ? "Um segundo autenticador reduz o risco de perder o acesso à conta. "
@@ -336,26 +390,69 @@ function MfaEnrollment({
         Use Google Authenticator, Microsoft Authenticator, 1Password ou outro aplicativo TOTP.
       </p>
       {!factorId ? (
-        <button type="button" disabled={loading} onClick={() => void start()} className={`${primaryButton} mt-4`}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />} {additional ? "Adicionar autenticador" : "Configurar agora"}
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => void start()}
+          className={`${primaryButton} mt-4`}
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Smartphone className="h-4 w-4" />
+          )}{" "}
+          {additional ? "Adicionar autenticador" : "Configurar agora"}
         </button>
       ) : (
         <div className="mt-4 space-y-4">
-          {qrSource && <div className="mx-auto max-w-64 rounded-2xl border-2 border-foreground/15 bg-white p-4"><img src={qrSource} alt="QR Code para configurar autenticação em duas etapas" className="mx-auto w-full" /></div>}
+          {qrSource && (
+            <div className="mx-auto max-w-64 rounded-2xl border-2 border-foreground/15 bg-white p-4">
+              <img
+                src={qrSource}
+                alt="QR Code para configurar autenticação em duas etapas"
+                className="mx-auto w-full"
+              />
+            </div>
+          )}
           {secret && (
             <div className="rounded-2xl bg-muted p-3 text-xs">
               <p className="font-black">Não consegue ler o QR?</p>
               <div className="mt-2 flex items-center gap-2">
-                <code className="min-w-0 flex-1 break-all rounded-lg bg-background p-2 font-mono">{secret}</code>
-                <button type="button" aria-label="Copiar segredo" onClick={() => void navigator.clipboard.writeText(secret).then(() => toast.success("Código copiado."))} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-foreground/20"><Copy className="h-4 w-4" /></button>
+                <code className="min-w-0 flex-1 break-all rounded-lg bg-background p-2 font-mono">
+                  {secret}
+                </code>
+                <button
+                  type="button"
+                  aria-label="Copiar segredo"
+                  onClick={() =>
+                    void navigator.clipboard
+                      .writeText(secret)
+                      .then(() => toast.success("Código copiado."))
+                  }
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-foreground/20"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
               </div>
             </div>
           )}
           <label className="block">
             <span className="mb-1 block text-sm font-black">Código de 6 dígitos</span>
-            <input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className={codeInput} placeholder="000000" />
+            <input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              className={codeInput}
+              placeholder="000000"
+            />
           </label>
-          <button type="button" disabled={loading || code.length !== 6} onClick={() => void verify()} className={primaryButton}>
+          <button
+            type="button"
+            disabled={loading || code.length !== 6}
+            onClick={() => void verify()}
+            className={primaryButton}
+          >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />} Ativar proteção
           </button>
         </div>
@@ -364,7 +461,13 @@ function MfaEnrollment({
   );
 }
 
-function MfaChallenge({ factor, onSuccess }: { factor: MfaFactor; onSuccess: () => Promise<void> | void }) {
+function MfaChallenge({
+  factor,
+  onSuccess,
+}: {
+  factor: MfaFactor;
+  onSuccess: () => Promise<void> | void;
+}) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -380,10 +483,31 @@ function MfaChallenge({ factor, onSuccess }: { factor: MfaFactor; onSuccess: () 
 
   return (
     <section className="sticker-card bg-card p-5 text-left">
-      <div className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" /><h2 className="font-display text-2xl">Digite o código do autenticador</h2></div>
-      <p className="mt-2 text-sm text-muted-foreground">Abra seu aplicativo autenticador e informe o código atual.</p>
-      <input inputMode="numeric" autoComplete="one-time-code" autoFocus value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} onKeyDown={(event) => { if (event.key === "Enter") void verify(); }} className={`${codeInput} mt-4`} placeholder="000000" />
-      <button type="button" disabled={loading || code.length !== 6} onClick={() => void verify()} className={`${primaryButton} mt-3`}>
+      <div className="flex items-center gap-2">
+        <Smartphone className="h-5 w-5 text-primary" />
+        <h2 className="font-display text-2xl">Digite o código do autenticador</h2>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Abra seu aplicativo autenticador e informe o código atual.
+      </p>
+      <input
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        autoFocus
+        value={code}
+        onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") void verify();
+        }}
+        className={`${codeInput} mt-4`}
+        placeholder="000000"
+      />
+      <button
+        type="button"
+        disabled={loading || code.length !== 6}
+        onClick={() => void verify()}
+        className={`${primaryButton} mt-3`}
+      >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />} Confirmar
       </button>
     </section>
@@ -391,9 +515,16 @@ function MfaChallenge({ factor, onSuccess }: { factor: MfaFactor; onSuccess: () 
 }
 
 function MfaFrame({ children }: { children: ReactNode }) {
-  return <div className="app-canvas grid min-h-screen place-items-center px-5 py-10"><div className="w-full max-w-md space-y-4 text-center">{children}</div></div>;
+  return (
+    <div className="app-canvas grid min-h-screen place-items-center px-5 py-10">
+      <div className="w-full max-w-md space-y-4 text-center">{children}</div>
+    </div>
+  );
 }
 
-const primaryButton = "inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-50";
-const secondaryButton = "inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground/20 bg-background px-4 py-3 text-sm font-black disabled:opacity-50";
-const codeInput = "w-full rounded-2xl border-2 border-foreground/20 bg-background px-4 py-3 text-center font-mono text-2xl font-black tracking-[0.35em] outline-none focus:border-primary focus:ring-4 focus:ring-primary/15";
+const primaryButton =
+  "inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-50";
+const secondaryButton =
+  "inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground/20 bg-background px-4 py-3 text-sm font-black disabled:opacity-50";
+const codeInput =
+  "w-full rounded-2xl border-2 border-foreground/20 bg-background px-4 py-3 text-center font-mono text-2xl font-black tracking-[0.35em] outline-none focus:border-primary focus:ring-4 focus:ring-primary/15";

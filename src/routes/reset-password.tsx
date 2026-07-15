@@ -91,7 +91,8 @@ function ResetPassword() {
             <ShieldAlert className="mx-auto h-10 w-10 text-destructive" />
             <h1 className="mt-3 font-display text-3xl">Esse link já perdeu a validade.</h1>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Por segurança, a troca de senha só fica disponível quando você chega por um link de recuperação válido.
+              Por segurança, a troca de senha só fica disponível quando você chega por um link de
+              recuperação válido.
             </p>
             <Link
               to="/auth"
@@ -109,7 +110,8 @@ function ResetPassword() {
               <p className="section-kicker text-muted-foreground">Recuperação segura</p>
               <h1 className="mt-1 font-display text-3xl">Nova senha, novo bafafá.</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Use pelo menos 10 caracteres, com letra e número. Depois da troca, as outras sessões serão encerradas.
+                Use pelo menos 10 caracteres, com letra e número. Depois da troca, as outras sessões
+                serão encerradas.
               </p>
             </div>
             <PasswordInput

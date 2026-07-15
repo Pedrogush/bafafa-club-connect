@@ -2,10 +2,28 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
-const ignoredDirs = new Set([".git", "node_modules", ".vercel", ".output", "dist", "backups", "docs"]);
+const ignoredDirs = new Set([
+  ".git",
+  "node_modules",
+  ".vercel",
+  ".output",
+  "dist",
+  "backups",
+  "docs",
+]);
 const allowedEnvFiles = new Set([".env.example"]);
 const textExtensions = new Set([
-  ".js", ".mjs", ".cjs", ".ts", ".tsx", ".json", ".yml", ".yaml", ".toml", ".sql", ".md",
+  ".js",
+  ".mjs",
+  ".cjs",
+  ".ts",
+  ".tsx",
+  ".json",
+  ".yml",
+  ".yaml",
+  ".toml",
+  ".sql",
+  ".md",
 ]);
 
 const patterns = [
@@ -16,7 +34,8 @@ const patterns = [
   { name: "chave privada", regex: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g },
   {
     name: "service role atribuída em variável",
-    regex: /SUPABASE_(?:SERVICE_ROLE|SECRET)_KEY\s*=\s*["'](?!SEU_|YOUR_|\$\{)[A-Za-z0-9._-]{20,}["']/gi,
+    regex:
+      /SUPABASE_(?:SERVICE_ROLE|SECRET)_KEY\s*=\s*["'](?!SEU_|YOUR_|\$\{)[A-Za-z0-9._-]{20,}["']/gi,
   },
   {
     name: "URL Postgres com senha embutida",

@@ -71,21 +71,23 @@ function AuthPage() {
         </div>
         <div className="poster-card checker-texture mt-6 p-4 text-center text-foreground">
           <p className="section-kicker">Cerveja gelada e batucada</p>
-          <h1 className="mt-2 font-display text-4xl leading-none">Seu lugar na roda começa aqui.</h1>
+          <h1 className="mt-2 font-display text-4xl leading-none">
+            Seu lugar na roda começa aqui.
+          </h1>
         </div>
         <div className="mt-6 flex rounded-2xl border-2 border-foreground bg-card p-1 text-sm font-black shadow-[3px_4px_0_var(--foreground)]">
-        {(["signin", "signup"] as Mode[]).map((m) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            className={`flex-1 rounded-full px-3 py-2 transition ${
-              mode === m ? "bg-lagoa text-foreground" : "text-muted-foreground"
-            }`}
-          >
-            {m === "signin" ? "Entrar" : "Criar cadastro"}
-          </button>
-        ))}
-      </div>
+          {(["signin", "signup"] as Mode[]).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`flex-1 rounded-full px-3 py-2 transition ${
+                mode === m ? "bg-lagoa text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {m === "signin" ? "Entrar" : "Criar cadastro"}
+            </button>
+          ))}
+        </div>
 
         <div className="sticker-card mt-6 bg-card p-5">
           {mode === "signup" && <SignupForm onDone={() => setMode("signin")} />}
@@ -314,7 +316,8 @@ function SigninForm({ onForgot }: { onForgot: () => void }) {
         supabase.from("user_roles").select("role").eq("user_id", userId),
         supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
       ]);
-      needsSecurity = isPrivilegedRole((roles ?? []).map((row) => row.role)) && aal?.currentLevel !== "aal2";
+      needsSecurity =
+        isPrivilegedRole((roles ?? []).map((row) => row.role)) && aal?.currentLevel !== "aal2";
     }
     toast.success("Bem-vindo, Bafafã!");
     navigate({ to: needsSecurity ? "/seguranca" : "/inicio" });
@@ -368,7 +371,12 @@ function PasswordField({
   return (
     <Field label={label} hint={hint} error={error}>
       <div className="relative">
-        <input name={name} type={show ? "text" : "password"} required className={`${inputCls} pr-12`} />
+        <input
+          name={name}
+          type={show ? "text" : "password"}
+          required
+          className={`${inputCls} pr-12`}
+        />
         <button
           type="button"
           onClick={onToggle}

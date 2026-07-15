@@ -14,9 +14,43 @@ type GooglePlaceResult = {
   longitude: number;
 };
 
+type GoogleMapsBrowserApi = {
+  maps?: {
+    places?: {
+      Autocomplete: new (
+        input: HTMLInputElement,
+        options?: {
+          componentRestrictions?: {
+            country: string;
+          };
+          fields?: string[];
+        },
+      ) => {
+        addListener: (
+          eventName: "place_changed",
+          callback: () => void,
+        ) => {
+          remove: () => void;
+        };
+        getPlace: () => {
+          name?: string;
+          formatted_address?: string;
+          place_id?: string;
+          geometry?: {
+            location?: {
+              lat: () => number;
+              lng: () => number;
+            };
+          };
+        };
+      };
+    };
+  };
+};
+
 declare global {
   interface Window {
-    google?: any;
+    google?: GoogleMapsBrowserApi;
     __bafafaGoogleMapsLoader?: Promise<void>;
   }
 }
