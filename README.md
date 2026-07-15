@@ -156,3 +156,24 @@ Antes de testar, execute uma vez `docs/EXPERIENCIA_V9_BLOCO1_SETUP.sql`. A sala 
 ## V10 — Bloco 2: operação
 
 Esta versão acrescenta leitura de QR pela câmera, QR local no cliente, validador com retorno visual/sonoro, eventos em rascunho/publicados, prévia, duplicação, fechamento imediato do check-in, campanhas pausáveis, métricas de mimos e histórico de resgates. Consulte `docs/TESTE_OPERACAO_V10_BLOCO2.md`.
+
+## V15 — Segurança Base
+
+Antes do piloto com clientes reais, aplique a migration:
+
+```text
+supabase/migrations/20260718120000_security_base_v15.sql
+```
+
+Ela consolida o menor privilégio no banco:
+
+- tabela bruta de perfis visível somente ao próprio usuário e administradores;
+- perfil público entregue pela RPC segura `get_public_profile`;
+- clientes editam apenas colunas autorizadas do próprio perfil;
+- auditoria sem escrita direta pelo navegador;
+- equipe valida check-ins e mimos por RPC, sem acesso bruto às tabelas completas;
+- funções auxiliares do chat não consultam presença ou bloqueios de terceiros;
+- criação de objetos no schema `public` removida dos papéis de cliente.
+
+Após a instalação, execute `docs/VERIFICAR_SEGURANCA_V15.sql` e siga
+`docs/TESTE_SEGURANCA_V15.md`.
