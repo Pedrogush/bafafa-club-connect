@@ -21,10 +21,13 @@ import {
   Send,
   ShieldCheck,
   Trash2,
+  UserRound,
+  UserRoundX,
   UsersRound,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BlockedUsersDialog } from "@/components/chat/blocked-users-dialog";
 import { AppShell } from "@/components/layout/app-shell";
 import { NameWithBadges, type BafafaBadgeDefinition } from "@/components/profile/bafafa-badge";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
@@ -103,6 +106,7 @@ function Resenha() {
   const [reportReason, setReportReason] = useState("outro");
   const [reportDetails, setReportDetails] = useState("");
   const [newMessages, setNewMessages] = useState(0);
+  const [blockedUsersOpen, setBlockedUsersOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
   const feedRef = useRef<HTMLDivElement | null>(null);
   const feedEndRef = useRef<HTMLDivElement | null>(null);
@@ -308,15 +312,26 @@ function Resenha() {
             <p className="section-kicker text-muted-foreground">Só entra quem fez check-in</p>
             <h1 className="mt-1 font-display text-3xl leading-none">Resenha</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => void refreshChat()}
-            disabled={refreshing || !selectedId}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground disabled:opacity-50"
-            aria-label="Atualizar Resenha"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setBlockedUsersOpen(true)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground"
+              aria-label="Gerenciar pessoas bloqueadas"
+              title="Pessoas bloqueadas"
+            >
+              <UserRoundX className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void refreshChat()}
+              disabled={refreshing || !selectedId}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground disabled:opacity-50"
+              aria-label="Atualizar Resenha"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -426,27 +441,61 @@ function Resenha() {
                         }`}
                       >
                         <div className="flex items-start gap-2">
-                          {!message.is_mine && (
-                            <div className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full border border-foreground/20 bg-primary text-[10px] font-black text-white">
-                              {message.author_avatar_url ? (
-                                <img
-                                  src={message.author_avatar_url}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                (message.author_name[0]?.toUpperCase() ?? "B")
-                              )}
-                            </div>
-                          )}
+                          {!message.is_mine &&
+                            (message.author_username ? (
+                              <Link
+                                to="/u/$username"
+                                params={{ username: message.author_username }}
+                                className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full border border-foreground/20 bg-primary text-[10px] font-black text-white transition-transform hover:scale-105"
+                                aria-label={`Abrir perfil de ${message.author_name}`}
+                              >
+                                {message.author_avatar_url ? (
+                                  <img
+                                    src={message.author_avatar_url}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  (message.author_name[0]?.toUpperCase() ?? "B")
+                                )}
+                              </Link>
+                            ) : (
+                              <div className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full border border-foreground/20 bg-primary text-[10px] font-black text-white">
+                                {message.author_avatar_url ? (
+                                  <img
+                                    src={message.author_avatar_url}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  (message.author_name[0]?.toUpperCase() ?? "B")
+                                )}
+                              </div>
+                            ))}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <NameWithBadges
-                                name={message.is_mine ? "Você" : message.author_name}
-                                badges={message.author_badges}
-                                maxBadges={2}
-                                className="min-w-0 flex-1 text-[12px] font-black"
-                              />
+                              {message.author_username ? (
+                                <Link
+                                  to="/u/$username"
+                                  params={{ username: message.author_username }}
+                                  className="min-w-0 flex-1 rounded-md outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary"
+                                  aria-label={`Abrir perfil de ${message.author_name}`}
+                                >
+                                  <NameWithBadges
+                                    name={message.is_mine ? "Você" : message.author_name}
+                                    badges={message.author_badges}
+                                    maxBadges={2}
+                                    className="min-w-0 text-[12px] font-black"
+                                  />
+                                </Link>
+                              ) : (
+                                <NameWithBadges
+                                  name={message.is_mine ? "Você" : message.author_name}
+                                  badges={message.author_badges}
+                                  maxBadges={2}
+                                  className="min-w-0 flex-1 text-[12px] font-black"
+                                />
+                              )}
                               <time className="shrink-0 text-[9px] font-bold text-muted-foreground">
                                 {formatMessageTime(message.created_at)}
                               </time>
@@ -483,6 +532,17 @@ function Resenha() {
                               )}
                               {!message.is_mine && (
                                 <>
+                                  {message.author_username && (
+                                    <Link
+                                      to="/u/$username"
+                                      params={{ username: message.author_username }}
+                                      className="grid h-7 w-7 place-items-center rounded-full hover:bg-background hover:text-foreground"
+                                      aria-label={`Ver perfil de ${message.author_name}`}
+                                      title="Ver perfil"
+                                    >
+                                      <UserRound className="h-3.5 w-3.5" />
+                                    </Link>
+                                  )}
                                   <MessageAction
                                     label="Denunciar"
                                     onClick={() => setReporting(message)}
@@ -568,6 +628,8 @@ function Resenha() {
           )}
         </div>
       )}
+
+      <BlockedUsersDialog open={blockedUsersOpen} onOpenChange={setBlockedUsersOpen} />
 
       <Dialog open={Boolean(reporting)} onOpenChange={(open) => !open && setReporting(null)}>
         <DialogContent className="rounded-3xl">

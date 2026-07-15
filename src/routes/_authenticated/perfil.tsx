@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type HTMLInputTypeAttribute } from "react";
+import { BlockedUsersDialog } from "@/components/chat/blocked-users-dialog";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,7 @@ import {
   Sparkles,
   Trophy,
   UserRound,
+  UserRoundX,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
@@ -53,6 +55,9 @@ type ProfileRow = {
   whatsapp: string | null;
   phone_verified_at: string | null;
   is_public: boolean;
+  show_city: boolean;
+  show_checkin_count: boolean;
+  show_event_preferences: boolean;
   member_since: string;
   active_title_id: string | null;
 };
@@ -116,6 +121,7 @@ function Perfil() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [avatarSelection, setAvatarSelection] = useState<File | null | undefined>(undefined);
+  const [blockedUsersOpen, setBlockedUsersOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -133,7 +139,7 @@ function Perfil() {
       supabase
         .from("profiles")
         .select(
-          "avatar_url,display_name,username,city,neighborhood,bio,how_found_us,birth_date,whatsapp,phone_verified_at,is_public,member_since,active_title_id",
+          "avatar_url,display_name,username,city,neighborhood,bio,how_found_us,birth_date,whatsapp,phone_verified_at,is_public,show_city,show_checkin_count,show_event_preferences,member_since,active_title_id",
         )
         .eq("id", user.id)
         .maybeSingle(),
@@ -232,6 +238,9 @@ function Perfil() {
             how_found_us: profile.how_found_us?.trim() || null,
             birth_date: profile.birth_date || null,
             is_public: profile.is_public,
+            show_city: profile.show_city,
+            show_checkin_count: profile.show_checkin_count,
+            show_event_preferences: profile.show_event_preferences,
             active_title_id: profile.active_title_id,
           })
           .eq("id", user.id),
@@ -662,11 +671,35 @@ function Perfil() {
                 )}
 
                 <div className="space-y-3 rounded-2xl border-2 border-foreground/15 bg-muted p-4 text-sm">
+                  <div>
+                    <p className="font-black">Privacidade do perfil público</p>
+                    <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                      Você escolhe quais informações sociais aparecem para outros Bafafãs.
+                    </p>
+                  </div>
                   <Toggle
                     label="Perfil visível para outros Bafafãs"
                     checked={profile.is_public}
                     onChange={(checked) => setProfile({ ...profile, is_public: checked })}
                   />
+                  <Toggle
+                    label="Mostrar minha cidade"
+                    checked={profile.show_city}
+                    onChange={(checked) => setProfile({ ...profile, show_city: checked })}
+                  />
+                  <Toggle
+                    label="Mostrar quantidade de check-ins"
+                    checked={profile.show_checkin_count}
+                    onChange={(checked) => setProfile({ ...profile, show_checkin_count: checked })}
+                  />
+                  <Toggle
+                    label="Mostrar meus tipos de evento preferidos"
+                    checked={profile.show_event_preferences}
+                    onChange={(checked) =>
+                      setProfile({ ...profile, show_event_preferences: checked })
+                    }
+                  />
+                  <div className="my-2 h-px bg-foreground/10" />
                   <Toggle
                     label="Receber avisos dentro do app"
                     checked={prefs.notify_in_app}
@@ -690,16 +723,38 @@ function Perfil() {
             )}
           </form>
 
+          <section className="sticker-card bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground bg-samba text-samba-foreground shadow-[2px_3px_0_var(--foreground)]">
+                <UserRoundX className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-black">Pessoas bloqueadas</p>
+                <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                  Reveja e desfaça bloqueios feitos na Resenha.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBlockedUsersOpen(true)}
+                className="shrink-0 rounded-full border-2 border-foreground bg-background px-3 py-2 text-xs font-black shadow-[2px_2px_0_var(--foreground)]"
+              >
+                Gerenciar
+              </button>
+            </div>
+          </section>
+
           <section className="card-festa p-4 text-sm text-muted-foreground">
             <p className="flex items-center gap-2 font-black text-foreground">
               <LockKeyhole className="h-4 w-4" /> Dados privados
             </p>
             <p className="mt-2">
-              Telefone, nascimento, preferências, check-ins e histórico de mimos não aparecem no
-              perfil público.
+              Telefone, nascimento, bairro, histórico de mimos e detalhes de presença nunca aparecem
+              no perfil público.
             </p>
             <p className="mt-2 flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5" /> Cidade só aparece quando você autoriza no perfil.
+              <MapPin className="h-3.5 w-3.5" /> Cidade, total de check-ins e preferências só
+              aparecem quando você autoriza.
             </p>
             <p className="mt-2 flex items-center gap-1.5">
               <CalendarCheck2 className="h-3.5 w-3.5" /> Telefone verificado:{" "}
@@ -708,6 +763,8 @@ function Perfil() {
           </section>
         </div>
       )}
+
+      <BlockedUsersDialog open={blockedUsersOpen} onOpenChange={setBlockedUsersOpen} />
     </AppShell>
   );
 }

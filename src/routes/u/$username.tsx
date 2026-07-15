@@ -1,10 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { CalendarDays, LockKeyhole, MapPin, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  BadgeCheck,
+  CalendarDays,
+  CalendarHeart,
+  LockKeyhole,
+  MapPin,
+  MessageCircleMore,
+  Music2,
+  TicketCheck,
+} from "lucide-react";
 import { Wordmark } from "@/components/brand/wordmark";
 import {
   BadgeSticker,
   NameWithBadges,
+  dedupeBadgeDefinitions,
   type BafafaBadgeDefinition,
 } from "@/components/profile/bafafa-badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +29,9 @@ type PublicProfile = {
   member_since: string;
   active_title: string | null;
   badges: BafafaBadgeDefinition[];
+  badge_count: number;
+  checkin_count: number | null;
+  event_preferences: string[];
 };
 
 export const Route = createFileRoute("/u/$username")({
@@ -32,15 +45,18 @@ function PublicProfilePage() {
 
   useEffect(() => {
     let mounted = true;
-    supabase.rpc("get_public_profile", { _username: username }).then(({ data }) => {
+    setLoading(true);
+    void supabase.rpc("get_public_profile", { _username: username }).then(({ data }) => {
       if (!mounted) return;
-      setProfile((data as PublicProfile | null) ?? null);
+      setProfile((data as unknown as PublicProfile | null) ?? null);
       setLoading(false);
     });
     return () => {
       mounted = false;
     };
   }, [username]);
+
+  const badges = useMemo(() => dedupeBadgeDefinitions(profile?.badges ?? []), [profile?.badges]);
 
   return (
     <div className="app-canvas min-h-screen px-4 py-6">
@@ -63,59 +79,128 @@ function PublicProfilePage() {
           <section className="poster-card checker-texture p-6 text-foreground">
             <span className="cut-label bg-white">perfil fechado</span>
             <LockKeyhole className="mt-5 h-8 w-8" />
-            <h1 className="mt-3 font-display text-4xl leading-none">Essa figurinha não está no álbum público.</h1>
+            <h1 className="mt-3 font-display text-4xl leading-none">
+              Essa figurinha não está no álbum público.
+            </h1>
             <p className="mt-3 text-sm font-semibold opacity-70">
               O perfil pode estar privado, sem nome de usuário ou ter mudado de endereço.
             </p>
           </section>
         ) : (
-          <div className="space-y-5">
-            <section className="poster-card overflow-hidden bg-card">
-              <div className="brick-texture h-28 border-b-[3px] border-foreground" />
-              <div className="relative px-5 pb-6">
-                <div className="-mt-14 grid h-28 w-28 place-items-center overflow-hidden rounded-full border-[4px] border-foreground bg-primary font-display text-5xl text-primary-foreground shadow-[4px_5px_0_var(--foreground)]">
+          <div className="space-y-4">
+            <section className="overflow-hidden rounded-[2rem] border-2 border-foreground/20 bg-card shadow-[0_7px_0_rgba(20,16,40,0.13)]">
+              <div className="brick-texture h-24 border-b-2 border-foreground/15" />
+              <div className="relative px-5 pb-5">
+                <div className="-mt-12 grid h-24 w-24 place-items-center overflow-hidden rounded-full border-[4px] border-foreground bg-primary font-display text-4xl text-primary-foreground shadow-[3px_4px_0_var(--foreground)]">
                   {profile.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    profile.display_name[0]?.toUpperCase() ?? "B"
+                    (profile.display_name[0]?.toUpperCase() ?? "B")
                   )}
                 </div>
-                <div className="mt-5">
+
+                <div className="mt-4">
                   <NameWithBadges
                     name={profile.display_name}
-                    badges={profile.badges ?? []}
-                    className="font-poster text-3xl"
+                    badges={badges}
+                    className="font-poster text-2xl"
+                    maxBadges={3}
                   />
-                  <p className="mt-1 text-sm font-bold text-muted-foreground">@{profile.username}</p>
+                  <p className="mt-1 text-sm font-bold text-muted-foreground">
+                    @{profile.username}
+                  </p>
                   {profile.active_title && (
-                    <span className="cut-label mt-3 bg-foreground text-background">
+                    <span className="mt-3 inline-flex rounded-full bg-foreground px-3 py-1 text-[10px] font-black uppercase tracking-wide text-background">
                       {profile.active_title}
                     </span>
                   )}
-                  {profile.bio && <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>}
-                  <div className="mt-5 flex flex-wrap gap-3 text-xs font-bold text-muted-foreground">
+                  {profile.bio && (
+                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                      {profile.bio}
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-muted-foreground">
                     {profile.city && (
                       <span className="flex items-center gap-1.5">
                         <MapPin className="h-3.5 w-3.5 text-brick" /> {profile.city}
                       </span>
                     )}
                     <span className="flex items-center gap-1.5">
-                      <CalendarDays className="h-3.5 w-3.5 text-primary" /> No clube desde {new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric" }).format(new Date(profile.member_since))}
+                      <CalendarDays className="h-3.5 w-3.5 text-primary" /> No clube desde{" "}
+                      {new Intl.DateTimeFormat("pt-BR", {
+                        month: "short",
+                        year: "numeric",
+                      }).format(new Date(profile.member_since))}
                     </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-3 divide-x divide-foreground/10 rounded-2xl bg-muted/45 py-3 text-center">
+                  <div>
+                    <p className="text-xl font-black leading-none">
+                      {profile.checkin_count ?? "—"}
+                    </p>
+                    <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
+                      check-ins
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-black leading-none">
+                      {profile.badge_count ?? badges.length}
+                    </p>
+                    <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
+                      selos
+                    </p>
+                  </div>
+                  <div>
+                    <Music2 className="mx-auto h-5 w-5 text-samba" />
+                    <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
+                      Bafafã
+                    </p>
                   </div>
                 </div>
               </div>
             </section>
 
-            <section className="sticker-card bg-card p-5">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-samba" />
-                <h2 className="font-display text-2xl">Selos à mostra</h2>
+            {profile.event_preferences?.length > 0 && (
+              <section className="sticker-card bg-card p-4">
+                <div className="flex items-center gap-2">
+                  <CalendarHeart className="h-5 w-5 text-brick" />
+                  <div>
+                    <p className="section-kicker text-muted-foreground">Rolês preferidos</p>
+                    <h2 className="font-display text-xl">Onde essa pessoa aparece</h2>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {profile.event_preferences.map((preference) => (
+                    <span
+                      key={preference}
+                      className="rounded-full border-2 border-foreground/15 bg-background px-3 py-1.5 text-xs font-black"
+                    >
+                      {preference}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="sticker-card bg-card p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="h-5 w-5 text-samba" />
+                  <div>
+                    <p className="section-kicker text-muted-foreground">Coleção pública</p>
+                    <h2 className="font-display text-xl">Selos à mostra</h2>
+                  </div>
+                </div>
+                <span className="rounded-full bg-lagoa px-3 py-1 text-[10px] font-black uppercase">
+                  {badges.length}
+                </span>
               </div>
-              {profile.badges?.length ? (
-                <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3">
-                  {profile.badges.map((badge) => (
-                    <BadgeSticker key={`${badge.slug}-${badge.name}`} badge={badge} />
+              {badges.length ? (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {badges.map((badge) => (
+                    <BadgeSticker key={badge.slug || badge.name} badge={badge} />
                   ))}
                 </div>
               ) : (
@@ -123,6 +208,24 @@ function PublicProfilePage() {
                   Essa pessoa ainda está começando a coleção.
                 </p>
               )}
+            </section>
+
+            <section className="rounded-3xl border-2 border-foreground/15 bg-foreground p-5 text-background">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-mango text-foreground">
+                  <MessageCircleMore className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-display text-xl">Encontrou na Resenha?</p>
+                  <p className="mt-1 text-xs font-semibold opacity-70">
+                    Nome, título e selos ajudam a reconhecer os Bafafãs sem revelar dados privados.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-[11px] font-bold opacity-70">
+                <TicketCheck className="h-4 w-4" /> Só quem faz check-in participa da conversa do
+                evento.
+              </div>
             </section>
           </div>
         )}

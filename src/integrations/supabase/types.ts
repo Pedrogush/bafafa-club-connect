@@ -591,6 +591,8 @@ export type Database = {
           phone_verified_at: string | null;
           show_birth_month: boolean;
           show_city: boolean;
+          show_checkin_count: boolean;
+          show_event_preferences: boolean;
           updated_at: string;
           username: string | null;
           whatsapp: string | null;
@@ -614,6 +616,8 @@ export type Database = {
           phone_verified_at?: string | null;
           show_birth_month?: boolean;
           show_city?: boolean;
+          show_checkin_count?: boolean;
+          show_event_preferences?: boolean;
           updated_at?: string;
           username?: string | null;
           whatsapp?: string | null;
@@ -637,6 +641,8 @@ export type Database = {
           phone_verified_at?: string | null;
           show_birth_month?: boolean;
           show_city?: boolean;
+          show_checkin_count?: boolean;
+          show_event_preferences?: boolean;
           updated_at?: string;
           username?: string | null;
           whatsapp?: string | null;
@@ -1193,6 +1199,17 @@ export type Database = {
           starts_at: string;
         }[];
       };
+      my_event_chat_blocks: {
+        Args: never;
+        Returns: {
+          avatar_url: string | null;
+          blocked_at: string;
+          blocked_user_id: string;
+          display_name: string;
+          is_public: boolean;
+          username: string | null;
+        }[];
+      };
       my_profile_completion_details: { Args: never; Returns: Json };
       my_profile_completeness: { Args: never; Returns: number };
       profile_completion_details: { Args: { _user_id: string }; Returns: Json };
@@ -1220,7 +1237,13 @@ export type Database = {
       payment_source: "demo" | "stripe" | "manual" | "pix";
       plan_code: "gratuito" | "carteirinha_mensal" | "carteirinha_anual";
       subscription_status:
-        "teste" | "ativa" | "pendente" | "vencida" | "cancelada" | "inadimplente" | "em_carencia";
+        | "teste"
+        | "ativa"
+        | "pendente"
+        | "vencida"
+        | "cancelada"
+        | "inadimplente"
+        | "em_carencia";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1236,12 +1259,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1261,12 +1284,13 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1285,12 +1309,13 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1309,12 +1334,13 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1325,12 +1351,13 @@ export type Enums<
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
