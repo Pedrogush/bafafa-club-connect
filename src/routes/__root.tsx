@@ -11,7 +11,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+import { reportClientError } from "../lib/client-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { markPasswordRecovery } from "@/lib/auth-security";
 
@@ -38,10 +38,9 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    reportClientError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (
@@ -85,6 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Clube oficial do Bafafá Bar em Natal/RN. Check-in em eventos, mimos, selos e títulos.",
       },
       { name: "theme-color", content: "#fff8e9" },
+      { name: "robots", content: "noindex,nofollow,noarchive,nosnippet" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Bafafá" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
@@ -105,13 +105,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         property: "og:image",
-        content:
-          "/brand/logo-bafafa.png",
+        content: "/brand/logo-bafafa.png",
       },
       {
         name: "twitter:image",
-        content:
-          "/brand/logo-bafafa.png",
+        content: "/brand/logo-bafafa.png",
       },
     ],
     links: [
@@ -156,7 +154,12 @@ function RootComponent() {
       if (event === "PASSWORD_RECOVERY" && session?.user) {
         markPasswordRecovery(session.user.id);
       }
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED" || event === "MFA_CHALLENGE_VERIFIED") {
+      if (
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "USER_UPDATED" ||
+        event === "MFA_CHALLENGE_VERIFIED"
+      ) {
         router.invalidate();
         if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       }

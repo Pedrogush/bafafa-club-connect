@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "@/lib/public-error";
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +9,7 @@ export function ImageUploadField({
   label,
   currentUrl,
   onChange,
-  description = "JPG, PNG, WEBP ou GIF. Até 10 MB.",
+  description = "JPG, PNG ou WEBP. O app otimiza e remove metadados. Até 8 MB.",
   round = false,
 }: {
   id: string;
@@ -36,7 +37,7 @@ export function ImageUploadField({
     try {
       validateImageFile(file);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Imagem inválida.");
+      toast.error(publicErrorMessage(error, "Imagem inválida."));
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
@@ -76,7 +77,7 @@ export function ImageUploadField({
             ref={inputRef}
             id={id}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp"
             className="sr-only"
             onChange={(event) => selectFile(event.target.files?.[0])}
           />

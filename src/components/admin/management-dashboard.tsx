@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "@/lib/public-error";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -113,7 +114,7 @@ export function ManagementDashboard({
       .order("created_at", { ascending: false });
     setPilotLoading(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(publicErrorMessage(error));
       return;
     }
     const next = rows ?? [];
@@ -334,7 +335,7 @@ export function ManagementDashboard({
       _to: toDate.toISOString(),
     });
     setExporting(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     const rows = jsonToRows(result);
     downloadCsv(rows, `bafafa-${kind}-${new Date().toISOString().slice(0, 10)}.csv`);
     toast.success(`${rows.length} linha(s) exportada(s).`);
@@ -379,7 +380,7 @@ export function ManagementDashboard({
       ? await supabase.from("pilot_runs").update(payload).eq("id", pilotDraft.id).select().single()
       : await supabase.from("pilot_runs").insert(payload).select().single();
     setPilotSaving(false);
-    if (result.error) return toast.error(result.error.message);
+    if (result.error) return toast.error(publicErrorMessage(result.error));
     toast.success("Configuração do piloto salva.");
     if (result.data) setPilotDraft(pilotToDraft(result.data));
     await loadPilots();
@@ -409,7 +410,7 @@ export function ManagementDashboard({
       .select()
       .single();
     setPilotSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     if (updated) setPilotDraft(pilotToDraft(updated));
     toast.success(status === "running" ? "Piloto iniciado." : "Status do piloto atualizado.");
     await loadPilots();

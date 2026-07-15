@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "@/lib/public-error";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type HTMLInputTypeAttribute } from "react";
 import { BlockedUsersDialog } from "@/components/chat/blocked-users-dialog";
@@ -290,7 +291,7 @@ function Perfil() {
       setCompletionDetails(parseProfileCompletion(completenessResult.data));
       toast.success("Perfil salvinho.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
+      toast.error(publicErrorMessage(error, "Não foi possível salvar."));
     } finally {
       setSaving(false);
     }

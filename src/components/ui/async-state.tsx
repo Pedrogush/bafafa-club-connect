@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "@/lib/public-error";
 import { AlertCircle, LoaderCircle } from "lucide-react";
 
 export function LoadingCard({ label = "Carregando o Bafafá…" }: { label?: string }) {
@@ -15,7 +16,9 @@ export function ErrorCard({ message }: { message: string }) {
       <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
       <div>
         <p className="font-display text-base">Deu ruim nessa parte.</p>
-        <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {publicErrorMessage(message, "Não foi possível carregar essa parte. Tente novamente.")}
+        </p>
       </div>
     </div>
   );

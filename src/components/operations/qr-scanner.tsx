@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "@/lib/public-error";
 import { BrowserQRCodeReader, type IScannerControls } from "@zxing/browser";
 import { Camera, CameraOff, Loader2, ScanLine } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -65,10 +66,13 @@ export function QrScanner({ active, busy = false, onScan, onError }: QrScannerPr
         },
       );
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível abrir a câmera. Confira a permissão do navegador.";
+      const browserMessage =
+        error instanceof DOMException && error.name === "NotAllowedError"
+          ? "Permissão da câmera negada. Libere a câmera nas configurações do navegador ou use o código manual."
+          : error instanceof DOMException && error.name === "NotFoundError"
+            ? "Nenhuma câmera foi encontrada neste aparelho. Use o código manual."
+            : "Não foi possível abrir a câmera. Confira a permissão do navegador.";
+      const message = publicErrorMessage(error, browserMessage);
       setCameraError(message);
       onError?.(message);
     } finally {

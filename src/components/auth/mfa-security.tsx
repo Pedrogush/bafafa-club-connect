@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "@/lib/public-error";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import {
@@ -67,7 +68,7 @@ export function useMfaSecurity() {
     ]);
     const error = aalResult.error ?? factorsResult.error;
     if (error) {
-      setState({ ...initialState, loading: false, error: error.message });
+      setState({ ...initialState, loading: false, error: publicErrorMessage(error) });
       return;
     }
     setState({
@@ -155,7 +156,7 @@ export function MfaSecurityCenter() {
     setWorking(true);
     const { error } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
     setWorking(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success("Autenticador removido.");
     await security.refresh();
   }
@@ -164,7 +165,7 @@ export function MfaSecurityCenter() {
     setWorking(true);
     const { error } = await supabase.auth.signOut({ scope: "others" });
     setWorking(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success("As outras sessões foram encerradas.");
   }
 
@@ -173,7 +174,7 @@ export function MfaSecurityCenter() {
     setWorking(true);
     const { error } = await supabase.auth.signOut({ scope: "global" });
     setWorking(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     router.navigate({ to: "/auth", search: { mode: "signin" }, replace: true });
   }
 
@@ -303,7 +304,7 @@ function MfaEnrollment({
       friendlyName: `${additional ? "Bafafá adicional" : "Bafafá"} ${new Date().toLocaleDateString("pt-BR")}`,
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     setFactorId(data.id);
     setQrCode(data.totp.qr_code);
     setSecret(data.totp.secret);

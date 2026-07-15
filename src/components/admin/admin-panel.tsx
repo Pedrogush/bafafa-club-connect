@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "@/lib/public-error";
 import {
   useCallback,
   useEffect,
@@ -502,7 +503,7 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
     };
     const { error } = await supabase.from("events").update(payload).eq("id", event.id);
     setWorkingId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success(
       status === "published"
         ? "Evento publicado."
@@ -519,7 +520,7 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
       _event_id: event.id,
     });
     setWorkingId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success("Cópia criada como rascunho, com campanhas pausadas.");
     onChanged();
     if (data) {
@@ -539,7 +540,7 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
     setWorkingId(event.id);
     const { error } = await supabase.rpc("close_event_checkin", { _event_id: event.id });
     setWorkingId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success("Check-in encerrado agora.");
     onChanged();
   }
@@ -568,11 +569,11 @@ function EventsManager({ events, onChanged }: { events: EventRow[]; onChanged: (
         .from("events")
         .update({ status: "cancelled", checkin_enabled: false, chat_enabled: false })
         .eq("id", event.id);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(publicErrorMessage(error));
       toast.success("Evento cancelado para preservar o histórico.");
     } else {
       const { error } = await supabase.from("events").delete().eq("id", event.id);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error(publicErrorMessage(error));
       toast.success("Evento excluído.");
     }
     onChanged();
@@ -844,7 +845,7 @@ function EventDialog({
       onOpenChange(false);
       onSaved();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o evento.");
+      toast.error(publicErrorMessage(error, "Não foi possível salvar o evento."));
     } finally {
       setSaving(false);
     }
@@ -1087,7 +1088,7 @@ function CampaignsManager({
     setWorkingId(campaign.id);
     const { error } = await supabase.from("campaigns").update({ status }).eq("id", campaign.id);
     setWorkingId(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success(
       status === "paused"
         ? "Campanha pausada."
@@ -1106,7 +1107,7 @@ function CampaignsManager({
       return;
     }
     const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success("Campanha excluída.");
     onChanged();
   }
@@ -1362,7 +1363,7 @@ function CampaignDialog({
       ? await supabase.from("campaigns").update(payload).eq("id", campaign.id)
       : await supabase.from("campaigns").insert(payload);
     setSaving(false);
-    if (result.error) return toast.error(result.error.message);
+    if (result.error) return toast.error(publicErrorMessage(result.error));
     toast.success(campaign ? "Campanha atualizada." : "Campanha criada.");
     onOpenChange(false);
     onSaved();
@@ -1675,7 +1676,7 @@ function ClientsManager({ data, onChanged }: { data: AdminData; onChanged: () =>
       _enabled: enabled,
     });
     setBusyFounder(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success(enabled ? "Selo Sócio Fundador concedido." : "Selo Sócio Fundador removido.");
     onChanged();
   }
@@ -1920,7 +1921,7 @@ function ChatModerationManager({ data, onChanged }: { data: AdminData; onChanged
       _restore: restore,
       _reason: reason ?? null,
     });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(publicErrorMessage(error));
     toast.success(restore ? "Mensagem restaurada." : "Mensagem ocultada da Resenha.");
     onChanged();
   }
@@ -2069,7 +2070,7 @@ function TeamManager({
       ? await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role)
       : await supabase.from("user_roles").insert({ user_id: userId, role });
     setBusyUser(null);
-    if (result.error) return toast.error(result.error.message);
+    if (result.error) return toast.error(publicErrorMessage(result.error));
     toast.success(hasCurrentRole ? "Acesso removido." : "Acesso concedido.");
     onChanged();
   }

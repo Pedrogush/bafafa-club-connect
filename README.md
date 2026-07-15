@@ -181,3 +181,28 @@ Após a instalação, execute `docs/VERIFICAR_SEGURANCA_V15.sql` e siga
 ## Segurança de autenticação — V16
 
 Contas `admin`, `moderador` e `equipe` exigem MFA por aplicativo autenticador. A configuração fica em **Perfil → Segurança da conta**. O cadastro suporta confirmação de e-mail e CAPTCHA Turnstile sem depender de uma sessão imediata. Consulte `docs/CONFIGURAR_AUTENTICACAO_V16.md` e `docs/TESTE_AUTENTICACAO_V16.md`.
+
+## V17 — Segurança da aplicação, navegador e uploads
+
+Esta versão adiciona uma camada de defesa no frontend e na hospedagem:
+
+- cabeçalhos HTTP de segurança e CSP na Vercel e no servidor;
+- bloqueio de iframe/clickjacking, `nosniff`, HSTS, Referrer-Policy e Permissions-Policy;
+- páginas e respostas autenticadas com `Cache-Control: no-store`;
+- aplicativo do piloto bloqueado para indexação por buscadores;
+- source maps de produção desativados;
+- erros técnicos convertidos em mensagens públicas genéricas;
+- telemetria da Lovable desativada no build de produção;
+- GIF e SVG removidos dos uploads;
+- verificação de assinatura real do arquivo, limite de dimensões e conversão para WEBP;
+- redimensionamento e remoção de metadados EXIF pelo reprocessamento da imagem;
+- buckets com limite de 1,5 MB para avatar e 3 MB para evento;
+- banco impedindo URLs externas em fotos novas de perfil e evento.
+
+Execute `docs/BAFAFA_APLICACAO_NAVEGADOR_V17_SETUP.sql`, depois
+`docs/VERIFICAR_APLICACAO_NAVEGADOR_V17.sql` e siga
+`docs/TESTE_APLICACAO_NAVEGADOR_V17.md`.
+
+Enquanto o aplicativo estiver em piloto, `robots.txt` e `X-Robots-Tag` mantêm o conteúdo fora dos buscadores. Essa configuração deve ser revisada antes de um lançamento público.
+
+A V17 também adiciona `.github/workflows/security.yml`: cada Pull Request compila o projeto e executa `bun audit --prod --audit-level=high`. Não faça merge com esse workflow vermelho.
