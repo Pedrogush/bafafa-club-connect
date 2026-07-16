@@ -53,6 +53,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { campaignBenefitLabel, formatDateTime } from "@/lib/bafafa";
+import { effectiveEventStatus, withEffectiveEventStatus } from "@/lib/event-status";
 import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { ManagementDashboard } from "@/components/admin/management-dashboard";
@@ -157,6 +158,8 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
     else setLoading(true);
     setError(null);
 
+    await supabase.rpc("sync_event_statuses");
+
     const [
       events,
       venues,
@@ -237,7 +240,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       toast.error("Não foi possível carregar o painel.");
     } else {
       setData({
-        events: events.data ?? [],
+        events: (events.data ?? []).map((event) => withEffectiveEventStatus(event)),
         venues: venues.data ?? [],
         campaigns: campaigns.data ?? [],
         feedPosts: feedPosts.data ?? [],
@@ -473,7 +476,7 @@ function Overview({ data }: { data: AdminData }) {
                         {formatDateTime(event.starts_at)} · {event.attraction || event.category}
                       </p>
                     </div>
-                    <StatusPill status={event.status} />
+                    <StatusPill status={effectiveEventStatus(event)} />
                   </div>
                 </div>
               ))
@@ -524,22 +527,31 @@ function EventsManager({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const filtered = events.filter((event) => {
     const matchesSearch = `${event.name} ${event.category} ${event.attraction ?? ""}`
       .toLowerCase()
       .includes(search.toLowerCase());
-    return matchesSearch && (statusFilter === "all" || event.status === statusFilter);
+    const automaticStatus = effectiveEventStatus(event, now);
+    return matchesSearch && (statusFilter === "all" || automaticStatus === statusFilter);
   });
 
   async function updateStatus(event: EventRow, status: string) {
     setWorkingId(event.id);
+    const nowIso = new Date().toISOString();
     const payload: EventUpdate = {
       status,
       ...(status === "ended"
         ? {
-            checkin_closes_at: event.checkin_closes_at ?? new Date().toISOString(),
-            chat_closes_at: event.chat_closes_at ?? new Date().toISOString(),
+            ends_at: nowIso,
+            checkin_closes_at: event.checkin_closes_at ?? nowIso,
+            chat_closes_at: event.chat_closes_at ?? nowIso,
           }
         : {}),
     };
@@ -646,8 +658,7 @@ function EventsManager({
         >
           <option value="all">Todos os status</option>
           <option value="draft">Rascunhos</option>
-          <option value="published">Publicados</option>
-          <option value="scheduled">Agendados antigos</option>
+          <option value="scheduled">Agendados</option>
           <option value="ongoing">Rolando agora</option>
           <option value="ended">Encerrados</option>
           <option value="cancelled">Cancelados</option>
@@ -683,7 +694,7 @@ function EventsManager({
                         {event.attraction ? ` · ${event.attraction}` : ""}
                       </p>
                     </div>
-                    <StatusPill status={event.status} />
+                    <StatusPill status={effectiveEventStatus(event, now)} />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs">
                     <span
@@ -743,27 +754,24 @@ function EventsManager({
                         <Play className="h-4 w-4" /> Publicar
                       </Button>
                     )}
-                    {["published", "scheduled"].includes(event.status) && (
-                      <Button
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => void updateStatus(event, "ongoing")}
-                      >
-                        <Play className="h-4 w-4" /> Começou
-                      </Button>
+                    {!["draft", "cancelled"].includes(effectiveEventStatus(event, now)) && (
+                      <span className="inline-flex items-center rounded-md bg-primary/10 px-3 py-2 text-xs font-bold text-primary">
+                        Status automático pela data
+                      </span>
                     )}
-                    {event.status === "ongoing" && (
+                    {effectiveEventStatus(event, now) === "ongoing" && (
                       <Button
+                        variant="outline"
                         size="sm"
                         disabled={busy}
                         onClick={() => void updateStatus(event, "ended")}
                       >
-                        <CheckCircle2 className="h-4 w-4" /> Encerrar evento
+                        <TimerOff className="h-4 w-4" /> Encerrar agora
                       </Button>
                     )}
                     {event.checkin_enabled &&
                       !checkinClosed &&
-                      !["ended", "cancelled"].includes(event.status) && (
+                      !["ended", "cancelled"].includes(effectiveEventStatus(event, now)) && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1159,14 +1167,14 @@ function EventDialog({
                 id="event-status"
                 name="status"
                 defaultValue={
-                  event?.status === "scheduled" ? "published" : (event?.status ?? "draft")
+                  event && ["scheduled", "published", "ongoing", "ended"].includes(event.status)
+                    ? "published"
+                    : (event?.status ?? "draft")
                 }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="draft">Rascunho</option>
-                <option value="published">Publicado</option>
-                <option value="ongoing">Rolando agora</option>
-                <option value="ended">Encerrado</option>
+                <option value="published">Publicado — status muda automaticamente pela data</option>
                 <option value="cancelled">Cancelado</option>
               </select>
             </div>
@@ -2115,13 +2123,14 @@ function CampaignDialog({
               <div className="pr-4">
                 <p className="font-bold">Contar somente presenças confirmadas pela equipe</p>
                 <p className="text-xs text-muted-foreground">
-                  Recomendado quando a recompensa tem valor financeiro. O check-in por localização
-                  continua liberando a Resenha, mas só o QR confirmado conta para esta vantagem.
+                  {campaignKind === "milestone"
+                    ? "Desativado, todos os check-ins que aparecem no perfil contam. Ative apenas se quiser exigir confirmação da equipe por QR."
+                    : "Ative para liberar a vantagem somente depois que a equipe confirmar a presença por QR."}
                 </p>
               </div>
               <Switch
                 name="requires_staff_validation"
-                defaultChecked={campaign?.requires_staff_validation ?? true}
+                defaultChecked={campaign?.requires_staff_validation ?? campaignKind === "global"}
               />
             </label>
           )}
@@ -2132,7 +2141,7 @@ function CampaignDialog({
             </div>
             <Switch
               name="requires_min_profile"
-              defaultChecked={campaign?.requires_min_profile ?? true}
+              defaultChecked={campaign?.requires_min_profile ?? campaignKind !== "milestone"}
             />
           </label>
           <DialogFooter>

@@ -15,6 +15,7 @@ import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { supabase } from "@/integrations/supabase/client";
 import { campaignBenefitLabel, formatEventDate, formatEventTime } from "@/lib/bafafa";
+import { withEffectiveEventStatus } from "@/lib/event-status";
 import { useAuth } from "@/hooks/use-auth";
 
 type CampaignPreview = {
@@ -56,36 +57,50 @@ function Eventos() {
   const [error, setError] = useState<string | null>(null);
   const [checkedEventIds, setCheckedEventIds] = useState<Set<string>>(new Set());
   const [showPast, setShowPast] = useState(false);
+  const [clock, setClock] = useState(Date.now());
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      supabase
-        .from("events")
-        .select(
-          "id,name,description,category,attraction,image_url,starts_at,ends_at,checkin_enabled,status,chat_enabled,campaigns(id,name,benefit_type,discount_percent,fixed_off_cents,product_name)",
-        )
-        .in("status", ["scheduled", "published", "ongoing", "ended"])
-        .order("starts_at", { ascending: true }),
-      user
-        ? supabase.from("checkins").select("event_id").eq("user_id", user.id)
-        : Promise.resolve({ data: [], error: null }),
-    ]).then(([eventsResult, checkinsResult]) => {
+
+    async function loadEvents() {
+      await supabase.rpc("sync_event_statuses");
+      const [eventsResult, checkinsResult] = await Promise.all([
+        supabase
+          .from("events")
+          .select(
+            "id,name,description,category,attraction,image_url,starts_at,ends_at,checkin_enabled,status,chat_enabled,campaigns(id,name,benefit_type,discount_percent,fixed_off_cents,product_name)",
+          )
+          .in("status", ["scheduled", "published", "ongoing", "ended"])
+          .order("starts_at", { ascending: true }),
+        user
+          ? supabase.from("checkins").select("event_id").eq("user_id", user.id)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
       if (!mounted) return;
       const queryError = eventsResult.error ?? checkinsResult.error;
       if (queryError) setError(queryError.message);
       else {
-        setEvents((eventsResult.data ?? []) as EventRow[]);
+        setEvents(
+          ((eventsResult.data ?? []) as EventRow[]).map((event) => withEffectiveEventStatus(event)),
+        );
         setCheckedEventIds(new Set((checkinsResult.data ?? []).map((row) => row.event_id)));
       }
       setLoading(false);
-    });
+    }
+
+    void loadEvents();
     return () => {
       mounted = false;
     };
   }, [user]);
 
-  const now = Date.now();
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const now = clock;
   const current = useMemo(
     () =>
       events.filter((event) => {

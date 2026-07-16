@@ -17,6 +17,7 @@ import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { campaignBenefitLabel, formatEventDate, formatEventTime } from "@/lib/bafafa";
+import { withEffectiveEventStatus } from "@/lib/event-status";
 import {
   nextProfileTask,
   parseProfileCompletion,
@@ -94,11 +95,13 @@ function Inicio() {
   const [data, setData] = useState<HomeData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [clock, setClock] = useState(Date.now());
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     setError(null);
+    await supabase.rpc("sync_event_statuses");
     const [profile, completion, promotions, events, posts] = await Promise.all([
       supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
       supabase.rpc("my_profile_completion_details"),
@@ -134,7 +137,9 @@ function Inicio() {
           "Bafafã",
         completion: parseProfileCompletion(completion.data),
         promotions: (promotions.data ?? []) as Promo[],
-        events: (events.data ?? []) as EventFeed[],
+        events: ((events.data ?? []) as EventFeed[]).map((event) =>
+          withEffectiveEventStatus(event),
+        ),
         posts: (posts.data ?? []) as FeedPost[],
       });
     }
@@ -142,8 +147,12 @@ function Inicio() {
   }, [user]);
 
   useEffect(() => void load(), [load]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-  const now = Date.now();
+  const now = clock;
   const currentEvent = useMemo(
     () =>
       data.events.find((event) => {

@@ -64,6 +64,7 @@ function Checkin() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    await supabase.rpc("sync_event_statuses");
     const { data, error: queryError } = await supabase
       .from("events")
       .select(

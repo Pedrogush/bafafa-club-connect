@@ -1529,6 +1529,7 @@ export type Database = {
       my_profile_completeness: { Args: never; Returns: number };
       profile_completion_details: { Args: { _user_id: string }; Returns: Json };
       refresh_my_reward_statuses: { Args: never; Returns: number };
+      sync_event_statuses: { Args: never; Returns: number };
       report_event_chat_message: {
         Args: { _details?: string | null; _message_id: string; _reason: string };
         Returns: undefined;

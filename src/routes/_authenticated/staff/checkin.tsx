@@ -64,6 +64,7 @@ function StaffCheckin() {
 
   const loadEvents = useCallback(async () => {
     if (!allowed) return;
+    await supabase.rpc("sync_event_statuses");
     const { data, error } = await supabase
       .from("events")
       .select("id,name,starts_at,status")
