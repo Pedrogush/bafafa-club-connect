@@ -1,4 +1,4 @@
--- Bafafá Connect V19.3
+-- Bafafá Connect V19.3.1 — correção do conflito em user_rewards
 -- 1) Status automático de eventos pela data/hora.
 -- 2) Marcos de check-in passam a contar, por padrão, os mesmos check-ins exibidos no perfil.
 
@@ -220,9 +220,12 @@ BEGIN
       v_expiration := least(v_expiration, v_campaign.ends_at);
     END IF;
 
+    -- A tabela user_rewards permite mais de uma recompensa por campanha quando
+    -- per_user_limit > 1. Por isso não existe uma restrição UNIQUE em
+    -- (user_id, campaign_id). A trava transacional e as contagens acima evitam
+    -- concessões concorrentes acima dos limites definidos na campanha.
     INSERT INTO public.user_rewards(user_id, campaign_id, event_id, expires_at)
-    VALUES (_user_id, v_campaign.id, NULL, v_expiration)
-    ON CONFLICT (user_id, campaign_id) DO NOTHING;
+    VALUES (_user_id, v_campaign.id, NULL, v_expiration);
 
     GET DIAGNOSTICS v_rows = ROW_COUNT;
     v_granted := v_granted + v_rows;
