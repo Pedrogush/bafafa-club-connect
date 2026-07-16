@@ -17,11 +17,13 @@ import {
   CustomerJourneySection,
   type CustomerJourney,
 } from "@/components/customer/customer-journey";
+import { FofocometroCard } from "@/components/customer/fofocometro-card";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { campaignBenefitLabel, formatEventDate, formatEventTime } from "@/lib/bafafa";
 import { withEffectiveEventStatus } from "@/lib/event-status";
+import { selectFofocometroGoal, type FofocometroGoal } from "@/lib/fofocometro";
 import {
   nextProfileTask,
   parseProfileCompletion,
@@ -76,6 +78,7 @@ type FeedPost = {
   starts_at: string;
   is_pinned: boolean;
   priority: number;
+  placement: "top" | "after_promotions" | "after_current_event" | "after_events" | "bottom";
 };
 
 type HomeData = {
@@ -84,6 +87,7 @@ type HomeData = {
   promotions: Promo[];
   events: EventFeed[];
   posts: FeedPost[];
+  goals: FofocometroGoal[];
   journey: CustomerJourney | null;
 };
 
@@ -93,6 +97,7 @@ const EMPTY: HomeData = {
   promotions: [],
   events: [],
   posts: [],
+  goals: [],
   journey: null,
 };
 
@@ -108,7 +113,7 @@ function Inicio() {
     setLoading(true);
     setError(null);
     await supabase.rpc("sync_event_statuses");
-    const [profile, completion, promotions, events, posts, journey] = await Promise.all([
+    const [profile, completion, promotions, events, posts, goals, journey] = await Promise.all([
       supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
       supabase.rpc("my_profile_completion_details"),
       supabase.rpc("my_fofoquinhas"),
@@ -122,38 +127,48 @@ function Inicio() {
         .limit(20),
       supabase
         .from("feed_posts")
-        .select("id,post_type,title,body,image_url,starts_at,is_pinned,priority")
+        .select("id,post_type,title,body,image_url,starts_at,is_pinned,priority,placement")
         .eq("status", "published")
         .lte("starts_at", new Date().toISOString())
         .order("is_pinned", { ascending: false })
         .order("priority", { ascending: false })
         .order("starts_at", { ascending: false })
-        .limit(10),
+        .limit(20),
+      supabase
+        .from("collective_goals")
+        .select(
+          "id,event_id,campaign_id,name,stage_order,target_count,current_count,status,starts_at,completed_at,reward_description",
+        )
+        .in("status", ["scheduled", "active", "completed"])
+        .order("stage_order", { ascending: true }),
       supabase.rpc("my_event_journey"),
     ]);
 
-    const firstError =
-      profile.error ??
-      completion.error ??
-      promotions.error ??
-      events.error ??
-      posts.error ??
-      journey.error;
-    if (firstError) {
-      setError(firstError.message);
+    const publicModulesFailed = Boolean(events.error && posts.error && promotions.error);
+    if (publicModulesFailed) {
+      setError(
+        events.error?.message ??
+          posts.error?.message ??
+          promotions.error?.message ??
+          "Não foi possível carregar o feed.",
+      );
     } else {
+      if (journey.error)
+        console.warn("Jornada indisponível, mantendo o feed público:", journey.error.message);
+      if (goals.error) console.warn("Fofocômetro indisponível:", goals.error.message);
       setData({
         displayName:
           profile.data?.display_name ??
           (user.user_metadata?.display_name as string | undefined) ??
           "Bafafã",
-        completion: parseProfileCompletion(completion.data),
-        promotions: (promotions.data ?? []) as Promo[],
-        events: ((events.data ?? []) as EventFeed[]).map((event) =>
-          withEffectiveEventStatus(event),
-        ),
-        posts: (posts.data ?? []) as FeedPost[],
-        journey: (journey.data as CustomerJourney | null) ?? null,
+        completion: completion.error ? EMPTY.completion : parseProfileCompletion(completion.data),
+        promotions: promotions.error ? [] : ((promotions.data ?? []) as Promo[]),
+        events: events.error
+          ? []
+          : ((events.data ?? []) as EventFeed[]).map((event) => withEffectiveEventStatus(event)),
+        posts: posts.error ? [] : ((posts.data ?? []) as FeedPost[]),
+        goals: goals.error ? [] : ((goals.data ?? []) as FofocometroGoal[]),
+        journey: journey.error ? null : ((journey.data as CustomerJourney | null) ?? null),
       });
     }
     setLoading(false);
@@ -162,6 +177,26 @@ function Inicio() {
   useEffect(() => void load(), [load]);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const refreshGoals = async () => {
+      const { data: goals, error: goalsError } = await supabase
+        .from("collective_goals")
+        .select(
+          "id,event_id,campaign_id,name,stage_order,target_count,current_count,status,starts_at,completed_at,reward_description",
+        )
+        .in("status", ["scheduled", "active", "completed"])
+        .order("stage_order", { ascending: true });
+      if (!goalsError) {
+        setData((current) => ({
+          ...current,
+          goals: (goals ?? []) as FofocometroGoal[],
+        }));
+      }
+    };
+    const timer = window.setInterval(() => void refreshGoals(), 12_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -186,6 +221,20 @@ function Inicio() {
   );
   const nextEvent = futureEvents[0] ?? null;
   const moreEvents = futureEvents.slice(1, 4);
+  const currentGoal = useMemo(
+    () => (currentEvent ? selectFofocometroGoal(data.goals, currentEvent.id) : null),
+    [currentEvent, data.goals],
+  );
+  const postsByPlacement = useMemo(
+    () => ({
+      top: data.posts.filter((post) => post.placement === "top"),
+      afterPromotions: data.posts.filter((post) => post.placement === "after_promotions"),
+      afterCurrentEvent: data.posts.filter((post) => post.placement === "after_current_event"),
+      afterEvents: data.posts.filter((post) => post.placement === "after_events"),
+      bottom: data.posts.filter((post) => post.placement === "bottom"),
+    }),
+    [data.posts],
+  );
   const firstName = data.displayName.split(" ")[0] || "Bafafã";
   const nextTask = nextProfileTask(data.completion);
 
@@ -232,6 +281,8 @@ function Inicio() {
             onReviewed={() => void load()}
           />
 
+          <FeedPostsSection posts={postsByPlacement.top} />
+
           {data.promotions.length > 0 && (
             <section className="space-y-3">
               <FeedSectionTitle icon={Megaphone} title="Fofoquinhas no ar" badge="tá valendo" />
@@ -246,12 +297,29 @@ function Inicio() {
             </section>
           )}
 
+          <FeedPostsSection posts={postsByPlacement.afterPromotions} />
+
           {currentEvent && (
             <section className="space-y-3">
               <FeedSectionTitle icon={Sparkles} title="Rolando agora" badge="é hoje" />
-              <EventFeedCard event={currentEvent} current />
+              <EventFeedCard
+                event={currentEvent}
+                current
+                checkedIn={Boolean(
+                  data.journey?.checked_in && data.journey.event?.id === currentEvent.id,
+                )}
+              />
             </section>
           )}
+
+          {currentGoal && (
+            <section className="space-y-3">
+              <FeedSectionTitle icon={Megaphone} title="Meta da galera" badge="ao vivo" />
+              <FofocometroCard goal={currentGoal} />
+            </section>
+          )}
+
+          <FeedPostsSection posts={postsByPlacement.afterCurrentEvent} />
 
           {nextEvent && (
             <section className="space-y-3">
@@ -274,6 +342,8 @@ function Inicio() {
             </section>
           )}
 
+          <FeedPostsSection posts={postsByPlacement.afterEvents} />
+
           {data.completion.percentage < 100 && nextTask && (
             <Link to="/perfil" className="sticker-card flex items-center gap-3 bg-card p-4">
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-foreground bg-mango shadow-[2px_3px_0_var(--foreground)]">
@@ -291,37 +361,7 @@ function Inicio() {
             </Link>
           )}
 
-          {data.posts.length > 0 && (
-            <section className="space-y-4 pb-3">
-              <FeedSectionTitle icon={MessageCircleMore} title="Direto do Bafafá" />
-              {data.posts.map((post) => (
-                <article key={post.id} className="sticker-card overflow-hidden bg-card">
-                  {post.image_url && (
-                    <img
-                      src={post.image_url}
-                      alt=""
-                      className="aspect-[16/9] w-full object-cover"
-                    />
-                  )}
-                  <div className="p-5">
-                    <span className="cut-label bg-lagoa text-foreground">
-                      {post.post_type === "photo"
-                        ? "álbum"
-                        : post.post_type === "notice"
-                          ? "aviso"
-                          : "novidade"}
-                    </span>
-                    <h2 className="mt-4 font-display text-3xl leading-none">{post.title}</h2>
-                    {post.body && (
-                      <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                        {post.body}
-                      </p>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </section>
-          )}
+          <FeedPostsSection posts={postsByPlacement.bottom} />
 
           {!currentEvent &&
             !nextEvent &&
@@ -340,6 +380,39 @@ function Inicio() {
         </main>
       )}
     </AppShell>
+  );
+}
+
+function FeedPostsSection({ posts }: { posts: FeedPost[] }) {
+  if (posts.length === 0) return null;
+  return (
+    <section className="space-y-4">
+      <FeedSectionTitle icon={MessageCircleMore} title="Direto do Bafafá" />
+      {posts.map((post) => (
+        <article key={post.id} className="sticker-card overflow-hidden bg-card">
+          {post.image_url && (
+            <img src={post.image_url} alt="" className="aspect-[16/9] w-full object-cover" />
+          )}
+          <div className="p-5">
+            <span className="cut-label bg-lagoa text-foreground">
+              {post.post_type === "photo"
+                ? "álbum"
+                : post.post_type === "notice"
+                  ? "aviso"
+                  : post.post_type === "behind_scenes"
+                    ? "bastidor"
+                    : "novidade"}
+            </span>
+            <h2 className="mt-4 font-display text-3xl leading-none">{post.title}</h2>
+            {post.body && (
+              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                {post.body}
+              </p>
+            )}
+          </div>
+        </article>
+      ))}
+    </section>
   );
 }
 
@@ -413,7 +486,15 @@ function PromotionCard({ promo, featured }: { promo: Promo; featured?: boolean }
   );
 }
 
-function EventFeedCard({ event, current = false }: { event: EventFeed; current?: boolean }) {
+function EventFeedCard({
+  event,
+  current = false,
+  checkedIn = false,
+}: {
+  event: EventFeed;
+  current?: boolean;
+  checkedIn?: boolean;
+}) {
   return (
     <article className="poster-card overflow-hidden bg-foreground text-background">
       <div className="relative min-h-[280px]">
@@ -451,7 +532,7 @@ function EventFeedCard({ event, current = false }: { event: EventFeed; current?:
         >
           Ver evento <ArrowRight className="h-4 w-4" />
         </Link>
-        {event.checkin_enabled && (
+        {current && event.checkin_enabled && !checkedIn && (
           <Link
             to="/checkin"
             search={{ event: event.id }}
@@ -459,6 +540,11 @@ function EventFeedCard({ event, current = false }: { event: EventFeed; current?:
           >
             Já tô no Bafafá <MapPin className="h-4 w-4" />
           </Link>
+        )}
+        {current && checkedIn && (
+          <div className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-primary/30 bg-primary/10 px-4 py-3 text-sm font-black text-primary">
+            Presença confirmada ✓
+          </div>
         )}
       </div>
     </article>

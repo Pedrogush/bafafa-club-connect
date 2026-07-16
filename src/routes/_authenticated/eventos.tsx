@@ -12,11 +12,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AppShell, ScreenHeader } from "@/components/layout/app-shell";
+import { FofocometroCard } from "@/components/customer/fofocometro-card";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { supabase } from "@/integrations/supabase/client";
 import { campaignBenefitLabel, formatEventDate, formatEventTime } from "@/lib/bafafa";
 import { withEffectiveEventStatus } from "@/lib/event-status";
 import { useAuth } from "@/hooks/use-auth";
+import { selectFofocometroGoal, type FofocometroGoal } from "@/lib/fofocometro";
 
 type CampaignPreview = {
   id: string;
@@ -57,6 +59,7 @@ function Eventos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkedEventIds, setCheckedEventIds] = useState<Set<string>>(new Set());
+  const [goals, setGoals] = useState<FofocometroGoal[]>([]);
   const [showPast, setShowPast] = useState(false);
   const [clock, setClock] = useState(Date.now());
 
@@ -65,7 +68,7 @@ function Eventos() {
 
     async function loadEvents() {
       await supabase.rpc("sync_event_statuses");
-      const [eventsResult, checkinsResult] = await Promise.all([
+      const [eventsResult, checkinsResult, goalsResult] = await Promise.all([
         supabase
           .from("events")
           .select(
@@ -76,6 +79,13 @@ function Eventos() {
         user
           ? supabase.from("checkins").select("event_id").eq("user_id", user.id)
           : Promise.resolve({ data: [], error: null }),
+        supabase
+          .from("collective_goals")
+          .select(
+            "id,event_id,campaign_id,name,stage_order,target_count,current_count,status,starts_at,completed_at,reward_description",
+          )
+          .in("status", ["scheduled", "active", "completed"])
+          .order("stage_order", { ascending: true }),
       ]);
 
       if (!mounted) return;
@@ -86,6 +96,7 @@ function Eventos() {
           ((eventsResult.data ?? []) as EventRow[]).map((event) => withEffectiveEventStatus(event)),
         );
         setCheckedEventIds(new Set((checkinsResult.data ?? []).map((row) => row.event_id)));
+        setGoals(goalsResult.error ? [] : ((goalsResult.data ?? []) as FofocometroGoal[]));
       }
       setLoading(false);
     }
@@ -98,6 +109,21 @@ function Eventos() {
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const refreshGoals = async () => {
+      const { data: goalRows, error: goalsError } = await supabase
+        .from("collective_goals")
+        .select(
+          "id,event_id,campaign_id,name,stage_order,target_count,current_count,status,starts_at,completed_at,reward_description",
+        )
+        .in("status", ["scheduled", "active", "completed"])
+        .order("stage_order", { ascending: true });
+      if (!goalsError) setGoals((goalRows ?? []) as FofocometroGoal[]);
+    };
+    const timer = window.setInterval(() => void refreshGoals(), 12_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -158,6 +184,7 @@ function Eventos() {
                   current
                   checkedIn={checkedEventIds.has(event.id)}
                   initiallyExpanded={search.event === event.id}
+                  goal={selectFofocometroGoal(goals, event.id)}
                 />
               ))}
             </section>
@@ -182,6 +209,7 @@ function Eventos() {
                   featured={current.length === 0 && index === 0}
                   checkedIn={checkedEventIds.has(event.id)}
                   initiallyExpanded={search.event === event.id}
+                  goal={selectFofocometroGoal(goals, event.id)}
                 />
               ))
             )}
@@ -242,12 +270,14 @@ function EventCard({
   current = false,
   checkedIn,
   initiallyExpanded,
+  goal,
 }: {
   event: EventRow;
   featured?: boolean;
   current?: boolean;
   checkedIn: boolean;
   initiallyExpanded: boolean;
+  goal: FofocometroGoal | null;
 }) {
   const [expanded, setExpanded] = useState(initiallyExpanded || featured);
   const campaign = event.campaigns?.[0];
@@ -299,6 +329,7 @@ function EventCard({
             {event.description && (
               <p className="text-sm leading-relaxed text-muted-foreground">{event.description}</p>
             )}
+            {goal && <FofocometroCard goal={goal} compact />}
             {campaign && (
               <div className="ticket-card checker-texture p-4 text-foreground">
                 <div className="flex items-start gap-3">

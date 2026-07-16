@@ -2771,6 +2771,33 @@ function AuditManager({ data }: { data: AdminData }) {
   );
 }
 
+const FEED_PLACEMENTS = [
+  "top",
+  "after_promotions",
+  "after_current_event",
+  "after_events",
+  "bottom",
+] as const;
+
+type FeedPlacement = (typeof FEED_PLACEMENTS)[number];
+
+function feedPlacementValue(value: FormDataEntryValue | null): FeedPlacement {
+  return FEED_PLACEMENTS.includes(value as FeedPlacement)
+    ? (value as FeedPlacement)
+    : "after_events";
+}
+
+function feedPlacementLabel(value: string): string {
+  const labels: Record<FeedPlacement, string> = {
+    top: "No topo",
+    after_promotions: "Depois das Fofoquinhas",
+    after_current_event: "Depois do evento de hoje",
+    after_events: "Depois dos eventos",
+    bottom: "No final do feed",
+  };
+  return labels[feedPlacementValue(value)];
+}
+
 function FeedContentManager({
   posts,
   currentUserId,
@@ -2821,7 +2848,8 @@ function FeedContentManager({
         starts_at: toIso(textValue(form, "starts_at")),
         ends_at: nullableIso(form, "ends_at"),
         is_pinned: form.get("is_pinned") === "on",
-        priority: numberValue(form, "priority", 0),
+        placement: feedPlacementValue(form.get("placement")),
+        priority: editing?.priority ?? 0,
         status,
         created_by: currentUserId,
         published_at:
@@ -2885,9 +2913,10 @@ function FeedContentManager({
                 {post.body && (
                   <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{post.body}</p>
                 )}
-                <p className="mt-3 text-xs font-bold text-muted-foreground">
-                  Entra no feed: {formatDateTime(post.starts_at)}
-                </p>
+                <div className="mt-3 space-y-1 text-xs font-bold text-muted-foreground">
+                  <p>Entra no feed: {formatDateTime(post.starts_at)}</p>
+                  <p>Posição: {feedPlacementLabel(post.placement)}</p>
+                </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button
                     variant="outline"
@@ -2917,7 +2946,7 @@ function FeedContentManager({
               {editing ? "Editar publicação" : "Nova publicação"}
             </DialogTitle>
             <DialogDescription>
-              Conteúdo entra depois das promoções e dos eventos prioritários.
+              Escolha em linguagem simples onde a publicação aparece no feed do cliente.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="space-y-5">
@@ -2957,14 +2986,25 @@ function FeedContentManager({
                 </select>
               </div>
               <Field label="Título" name="title" defaultValue={editing?.title} required />
-              <Field
-                label="Prioridade"
-                name="priority"
-                type="number"
-                min="-100"
-                max="1000"
-                defaultValue={editing?.priority ?? 0}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="feed-placement">Onde aparece no feed</Label>
+                <select
+                  id="feed-placement"
+                  name="placement"
+                  defaultValue={editing?.placement ?? "after_events"}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="top">Colocar no topo</option>
+                  <option value="after_promotions">Depois das Fofoquinhas</option>
+                  <option value="after_current_event">Depois do evento de hoje</option>
+                  <option value="after_events">Depois dos eventos</option>
+                  <option value="bottom">No final do feed</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  As ações da visita, como check-in e benefício liberado, continuam protegidas para
+                  não se perderem.
+                </p>
+              </div>
               <Field
                 label="Início"
                 name="starts_at"
@@ -2984,9 +3024,9 @@ function FeedContentManager({
             <TextField label="Texto" name="body" defaultValue={editing?.body} />
             <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
               <div>
-                <p className="font-bold">Fixar entre as publicações</p>
+                <p className="font-bold">Mostrar primeiro nesta posição</p>
                 <p className="text-xs text-muted-foreground">
-                  Prioriza este conteúdo dentro da seção editorial.
+                  Útil quando houver duas ou mais publicações no mesmo lugar do feed.
                 </p>
               </div>
               <Switch name="is_pinned" defaultChecked={editing?.is_pinned ?? false} />
