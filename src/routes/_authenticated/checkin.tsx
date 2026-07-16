@@ -20,6 +20,7 @@ import { SecureQr } from "@/components/operations/secure-qr";
 import { supabase } from "@/integrations/supabase/client";
 import { formatEventDate, formatEventTime } from "@/lib/bafafa";
 import { publicErrorMessage } from "@/lib/public-error";
+import { geolocationErrorMessage, getBestGeolocationPosition } from "@/lib/geolocation";
 import { useAuth } from "@/hooks/use-auth";
 
 type EventRow = {
@@ -33,6 +34,7 @@ type EventRow = {
   geolocation_checkin_enabled: boolean;
   geofence_radius_m: number;
   max_location_accuracy_m: number;
+  venue_address: string | null;
 };
 
 type TokenResult = { token: string; short_code: string; expires_at: string };
@@ -56,6 +58,8 @@ function Checkin() {
   const [token, setToken] = useState<TokenResult | null>(null);
   const [generating, setGenerating] = useState(false);
   const [resultCopy, setResultCopy] = useState<string | null>(null);
+  const [locationHint, setLocationHint] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -63,7 +67,7 @@ function Checkin() {
     const { data, error: queryError } = await supabase
       .from("events")
       .select(
-        "id,name,starts_at,checkin_opens_at,checkin_closes_at,status,chat_enabled,geolocation_checkin_enabled,geofence_radius_m,max_location_accuracy_m",
+        "id,name,starts_at,checkin_opens_at,checkin_closes_at,status,chat_enabled,geolocation_checkin_enabled,geofence_radius_m,max_location_accuracy_m,venue_address",
       )
       .eq("checkin_enabled", true)
       .in("status", ["scheduled", "published", "ongoing"])
@@ -100,68 +104,104 @@ function Checkin() {
   const phase = selected ? windowPhase(selected) : "closed";
 
   async function doGeolocationCheckin() {
-    if (!selected || phase !== "open") return;
-    if (!navigator.geolocation) {
-      toast.error("Este celular não oferece localização pelo navegador.");
-      return;
-    }
+    if (!selected || phase !== "open" || geolocating) return;
     setGeolocating(true);
     setResultCopy(null);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        const { data, error: rpcError } = await supabase.rpc("checkin_with_geolocation", {
-          _event_id: selected.id,
-          _latitude: latitude,
-          _longitude: longitude,
-          _accuracy_m: accuracy,
-        });
-        setGeolocating(false);
-        if (rpcError) {
-          toast.error(
-            publicErrorMessage(rpcError, "Não conseguimos confirmar que você está no Bafafá."),
+    setLocationHint("Buscando a melhor leitura de localização…");
+
+    try {
+      const position = await getBestGeolocationPosition({
+        targetAccuracyM: Math.min(selected.max_location_accuracy_m || 80, 80),
+        timeoutMs: 20_000,
+        onProgress: ({ accuracyM }) => {
+          const rounded = Math.round(accuracyM);
+          setLocationHint(
+            rounded <= selected.max_location_accuracy_m
+              ? `Localização encontrada com precisão aproximada de ${rounded} m.`
+              : `Precisão atual: ${rounded} m. Tentando melhorar o sinal…`,
           );
-          return;
-        }
-        const response = data as {
-          distance_m?: number;
-          rewards_granted?: number;
-          duplicate?: boolean;
-        } | null;
-        setConfirmed(true);
-        setResultCopy(
-          response?.duplicate
-            ? "Seu check-in já estava confirmado."
-            : `Presença confirmada${response?.distance_m ? ` a aproximadamente ${Math.round(response.distance_m)} m do ponto do evento` : ""}.`,
+        },
+      });
+
+      const { latitude, longitude, accuracy } = position.coords;
+      setLocationHint(
+        `Validando sua presença com precisão aproximada de ${Math.round(accuracy)} m…`,
+      );
+
+      const { data, error: rpcError } = await supabase.rpc("checkin_with_geolocation", {
+        _event_id: selected.id,
+        _latitude: latitude,
+        _longitude: longitude,
+        _accuracy_m: accuracy,
+      });
+
+      if (rpcError) {
+        const message = publicErrorMessage(
+          rpcError,
+          "Não conseguimos confirmar que você está no Bafafá.",
         );
-        toast.success("Check-in realizado!");
-      },
-      (geoError) => {
-        setGeolocating(false);
-        const message =
-          geoError.code === geoError.PERMISSION_DENIED
-            ? "Você precisa permitir a localização para usar o check-in rápido."
-            : geoError.code === geoError.TIMEOUT
-              ? "A localização demorou demais. Tente de novo em uma área mais aberta."
-              : "Não conseguimos obter sua localização com precisão.";
+        setLocationHint(message);
         toast.error(message);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-    );
+        return;
+      }
+
+      const response = data as {
+        distance_m?: number;
+        rewards_granted?: number;
+        duplicate?: boolean;
+      } | null;
+      setConfirmed(true);
+      setLocationHint(null);
+      setResultCopy(
+        response?.duplicate
+          ? "Seu check-in já estava confirmado."
+          : `Presença confirmada${response?.distance_m !== undefined ? ` a aproximadamente ${Math.round(response.distance_m)} m do ponto do evento` : ""}.`,
+      );
+      toast.success("Check-in realizado!");
+    } catch (geoError) {
+      const message = geolocationErrorMessage(geoError);
+      setLocationHint(message);
+      toast.error(message);
+    } finally {
+      setGeolocating(false);
+    }
   }
 
   async function generateQrFallback() {
-    if (!selected || phase !== "open") return;
+    if (!selected || phase !== "open" || generating) return;
     setGenerating(true);
-    const { data, error: rpcError } = await supabase.rpc("create_my_qr_token", {
-      _purpose: "checkin",
-      _ref_id: selected.id,
-    });
-    setGenerating(false);
-    if (rpcError) return toast.error(publicErrorMessage(rpcError));
-    const row = Array.isArray(data) ? data[0] : null;
-    if (!row) return toast.error("Não foi possível gerar o código.");
-    setToken(row as TokenResult);
+    setQrError(null);
+
+    try {
+      const { data, error: rpcError } = await supabase.rpc("create_my_qr_token", {
+        _purpose: "checkin",
+        _ref_id: selected.id,
+      });
+
+      if (rpcError) {
+        const message = publicErrorMessage(rpcError, "Não foi possível gerar o QR alternativo.");
+        setQrError(message);
+        toast.error(message);
+        return;
+      }
+
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row?.token || !row.short_code || !row.expires_at) {
+        const message = "Não foi possível gerar o código. Tente novamente.";
+        setQrError(message);
+        toast.error(message);
+        return;
+      }
+
+      setToken(row as TokenResult);
+    } catch (qrGenerationError) {
+      console.error("Erro ao gerar QR alternativo", qrGenerationError);
+      const message = "Não foi possível gerar o QR alternativo. Tente novamente.";
+      setQrError(message);
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
   }
 
   return (
@@ -207,6 +247,8 @@ function Checkin() {
                     setConfirmed(false);
                     setToken(null);
                     setResultCopy(null);
+                    setLocationHint(null);
+                    setQrError(null);
                   }}
                   className="mt-3 w-full rounded-xl border-2 border-foreground bg-surface px-4 py-3 font-black"
                 >
@@ -285,14 +327,24 @@ function Checkin() {
                       </button>
                     ) : (
                       <div className="mt-4 rounded-2xl bg-background p-4 text-center text-foreground">
-                        <SecureQr value={token.token} size={190} />
-                        <p className="mt-3 font-display text-4xl tracking-[.12em]">
-                          {token.short_code}
-                        </p>
+                        <SecureQr
+                          value={token.token}
+                          shortCode={token.short_code}
+                          expiresAt={token.expires_at}
+                          size={190}
+                        />
                         <p className="mt-1 text-xs font-bold text-muted-foreground">
                           Código temporário para confirmação operacional
                         </p>
                       </div>
+                    )}
+                    {qrError && (
+                      <p
+                        role="alert"
+                        className="mt-3 rounded-xl bg-white/15 p-3 text-xs font-bold text-white"
+                      >
+                        {qrError}
+                      </p>
                     )}
                   </div>
                 </section>
@@ -326,6 +378,11 @@ function Checkin() {
                         alternativa abaixo.
                       </p>
                     )}
+                    {locationHint && (
+                      <p className="mt-3 rounded-xl border border-foreground/15 bg-white/65 p-3 text-xs font-bold">
+                        {locationHint}
+                      </p>
+                    )}
                   </section>
 
                   <section className="sticker-card bg-card p-5">
@@ -350,10 +407,12 @@ function Checkin() {
                       </button>
                     ) : (
                       <div className="mt-4 text-center">
-                        <SecureQr value={token.token} size={210} />
-                        <p className="mt-3 font-display text-4xl tracking-[.12em]">
-                          {token.short_code}
-                        </p>
+                        <SecureQr
+                          value={token.token}
+                          shortCode={token.short_code}
+                          expiresAt={token.expires_at}
+                          size={210}
+                        />
                         <button
                           type="button"
                           onClick={() => void checkConfirmation()}
@@ -362,6 +421,14 @@ function Checkin() {
                           <CheckCircle2 className="h-4 w-4" /> Já validaram? Atualizar
                         </button>
                       </div>
+                    )}
+                    {qrError && (
+                      <p
+                        role="alert"
+                        className="mt-3 rounded-xl bg-destructive/10 p-3 text-xs font-bold text-destructive"
+                      >
+                        {qrError}
+                      </p>
                     )}
                   </section>
                 </>

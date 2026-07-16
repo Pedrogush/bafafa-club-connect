@@ -829,7 +829,7 @@ function EventDialog({
       : String(event.venue_longitude),
   );
   const [geofenceRadius, setGeofenceRadius] = useState(String(event?.geofence_radius_m ?? 80));
-  const [maxAccuracy, setMaxAccuracy] = useState(String(event?.max_location_accuracy_m ?? 80));
+  const [maxAccuracy, setMaxAccuracy] = useState(String(event?.max_location_accuracy_m ?? 250));
   const [venueDialogOpen, setVenueDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -854,7 +854,7 @@ function EventDialog({
         : String(event.venue_longitude),
     );
     setGeofenceRadius(String(event?.geofence_radius_m ?? 80));
-    setMaxAccuracy(String(event?.max_location_accuracy_m ?? 80));
+    setMaxAccuracy(String(event?.max_location_accuracy_m ?? 250));
   }, [open, event]);
 
   function applyVenue(venue: VenueRow | null) {
@@ -865,7 +865,7 @@ function EventDialog({
     setVenueLatitude(venue ? String(venue.latitude) : "");
     setVenueLongitude(venue ? String(venue.longitude) : "");
     setGeofenceRadius(String(venue?.default_geofence_radius_m ?? 80));
-    setMaxAccuracy(String(venue?.default_max_accuracy_m ?? 80));
+    setMaxAccuracy(String(venue?.default_max_accuracy_m ?? 250));
   }
 
   async function submit(formEvent: FormEvent<HTMLFormElement>) {
@@ -934,7 +934,7 @@ function EventDialog({
         venue_latitude: parsedVenueLatitude,
         venue_longitude: parsedVenueLongitude,
         geofence_radius_m: Math.max(Number(geofenceRadius) || 80, 20),
-        max_location_accuracy_m: Math.max(Number(maxAccuracy) || 80, 20),
+        max_location_accuracy_m: Math.max(Number(maxAccuracy) || 250, 20),
         chat_opens_at: chatOpensAt,
         chat_closes_at: chatClosesAt,
         chat_enabled: form.get("chat_enabled") === "on",
@@ -1243,7 +1243,7 @@ function VenueDialog({
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [radius, setRadius] = useState("80");
-  const [accuracy, setAccuracy] = useState("80");
+  const [accuracy, setAccuracy] = useState("250");
 
   useEffect(() => {
     if (!open) return;
@@ -1253,7 +1253,7 @@ function VenueDialog({
     setLatitude("");
     setLongitude("");
     setRadius("80");
-    setAccuracy("80");
+    setAccuracy("250");
   }, [open]);
 
   async function submitVenue(formEvent: FormEvent<HTMLFormElement>) {
@@ -1273,7 +1273,7 @@ function VenueDialog({
       latitude: parsedLatitude,
       longitude: parsedLongitude,
       default_geofence_radius_m: Math.max(Number(radius) || 80, 20),
-      default_max_accuracy_m: Math.max(Number(accuracy) || 80, 20),
+      default_max_accuracy_m: Math.max(Number(accuracy) || 250, 20),
       is_active: true,
     };
     const result = await supabase.from("venues").insert(payload).select("*").single();

@@ -121,18 +121,34 @@ function Fofoquinhas() {
   );
 
   async function generateCode(item: Fofoquinha) {
-    if (!item.reward_id) return;
+    if (!item.reward_id || generating) return;
     setGenerating(true);
-    const { data, error: rpcError } = await supabase.rpc("create_my_qr_token", {
-      _purpose: "redemption",
-      _ref_id: item.reward_id,
-    });
-    setGenerating(false);
-    if (rpcError) return toast.error(publicErrorMessage(rpcError));
-    const row = Array.isArray(data) ? data[0] : null;
-    if (!row) return toast.error("Não foi possível gerar o código.");
-    setToken(row as TokenResult);
-    setTokenItem(item);
+
+    try {
+      const { data, error: rpcError } = await supabase.rpc("create_my_qr_token", {
+        _purpose: "redemption",
+        _ref_id: item.reward_id,
+      });
+
+      if (rpcError) {
+        toast.error(publicErrorMessage(rpcError, "Não foi possível gerar o código."));
+        return;
+      }
+
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row?.token || !row.short_code || !row.expires_at) {
+        toast.error("Não foi possível gerar o código. Tente novamente.");
+        return;
+      }
+
+      setToken(row as TokenResult);
+      setTokenItem(item);
+    } catch (qrGenerationError) {
+      console.error("Erro ao gerar QR da Fofoquinha", qrGenerationError);
+      toast.error("Não foi possível gerar o código. Tente novamente.");
+    } finally {
+      setGenerating(false);
+    }
   }
 
   return (
@@ -298,7 +314,15 @@ function Fofoquinhas() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(token)} onOpenChange={(open) => !open && setToken(null)}>
+      <Dialog
+        open={Boolean(token)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setToken(null);
+            setTokenItem(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-sm rounded-3xl text-center">
           <DialogHeader>
             <DialogTitle className="font-display text-3xl">Mostre para a equipe</DialogTitle>
@@ -306,8 +330,12 @@ function Fofoquinhas() {
           </DialogHeader>
           {token && (
             <div>
-              <SecureQr value={token.token} size={220} />
-              <p className="mt-4 font-display text-4xl tracking-[.12em]">{token.short_code}</p>
+              <SecureQr
+                value={token.token}
+                shortCode={token.short_code}
+                expiresAt={token.expires_at}
+                size={220}
+              />
               <p className="mt-2 flex items-center justify-center gap-1 text-xs font-bold text-muted-foreground">
                 <LockKeyhole className="h-3.5 w-3.5" /> Código temporário e de uso único
               </p>

@@ -128,6 +128,7 @@ function SignupForm({ onDone }: { onDone: () => void }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const captcha = useAuthCaptcha();
+  const navigate = useNavigate();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -183,7 +184,13 @@ function SignupForm({ onDone }: { onDone: () => void }) {
       return;
     }
 
-    toast.success("Cadastro criado! Se pedir confirmação por e-mail, dá uma olhadinha lá.");
+    if (signUp.session) {
+      toast.success("Cadastro criado! Você já entrou no Clube.");
+      navigate({ to: "/inicio" });
+      return;
+    }
+
+    toast.success("Cadastro criado! Agora entre com seu e-mail e senha.");
     onDone();
   }
 
