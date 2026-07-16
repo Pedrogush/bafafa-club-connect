@@ -49,7 +49,7 @@ A seleção de equipe é uma escala operacional e não muda as permissões. As p
 
 ## 4. Metas
 
-Ao selecionar uma rodada salva, o filtro de evento muda para o evento do piloto. Confira o progresso de:
+Ao selecionar um ciclo salvo, o filtro de evento muda para o evento do piloto. Confira o progresso de:
 
 - cadastros;
 - check-ins;

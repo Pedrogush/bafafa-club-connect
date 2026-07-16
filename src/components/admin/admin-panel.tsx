@@ -27,6 +27,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ShoppingBag,
   ShieldCheck,
   TimerOff,
   Target,
@@ -58,11 +59,13 @@ import { removePublicImage, uploadPublicImage } from "@/lib/storage";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { ManagementDashboard } from "@/components/admin/management-dashboard";
 import { SecurityDashboard } from "@/components/admin/security-dashboard";
+import { CommercialDashboard } from "@/components/admin/commercial-dashboard";
 import { GoogleVenueSearch } from "@/components/admin/venue-picker";
 
 export type AdminSection =
   | "overview"
   | "management"
+  | "commercial"
   | "events"
   | "campaigns"
   | "content"
@@ -135,6 +138,7 @@ const EMPTY_DATA: AdminData = {
 const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart3 }> = [
   { key: "overview", label: "Visão geral", icon: BarChart3 },
   { key: "management", label: "Gestão e piloto", icon: Target },
+  { key: "commercial", label: "CRM e vendas", icon: ShoppingBag },
   { key: "events", label: "Eventos", icon: CalendarDays },
   { key: "campaigns", label: "Campanhas", icon: Gift },
   { key: "content", label: "Feed", icon: Newspaper },
@@ -338,6 +342,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
             {section === "management" && (
               <ManagementDashboard data={data} currentUserId={currentUserId} />
             )}
+            {section === "commercial" && <CommercialDashboard events={data.events} />}
             {section === "events" && (
               <EventsManager
                 events={data.events}
@@ -352,6 +357,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
                 rewards={data.rewards}
                 redemptions={data.redemptions}
                 profiles={data.profiles}
+                feedPosts={data.feedPosts}
                 onChanged={() => void loadData(true)}
               />
             )}

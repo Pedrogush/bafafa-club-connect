@@ -39,6 +39,7 @@ type EventRow = {
   checkin_enabled: boolean;
   status: string;
   chat_enabled: boolean;
+  venue_address: string | null;
   campaigns?: CampaignPreview[] | null;
 };
 
@@ -68,7 +69,7 @@ function Eventos() {
         supabase
           .from("events")
           .select(
-            "id,name,description,category,attraction,image_url,starts_at,ends_at,checkin_enabled,status,chat_enabled,campaigns(id,name,benefit_type,discount_percent,fixed_off_cents,product_name)",
+            "id,name,description,category,attraction,image_url,starts_at,ends_at,checkin_enabled,status,chat_enabled,venue_address,campaigns(id,name,benefit_type,discount_percent,fixed_off_cents,product_name)",
           )
           .in("status", ["scheduled", "published", "ongoing", "ended"])
           .order("starts_at", { ascending: true }),

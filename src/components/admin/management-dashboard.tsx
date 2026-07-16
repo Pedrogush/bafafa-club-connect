@@ -395,7 +395,7 @@ export function ManagementDashboard({
       return toast.error("Ative a campanha principal antes de iniciar o piloto.");
     }
     if (status === "running" && !window.confirm("Iniciar oficialmente o piloto agora?")) return;
-    if (status === "finished" && !window.confirm("Encerrar o piloto e congelar esta rodada?"))
+    if (status === "finished" && !window.confirm("Encerrar o piloto e congelar este ciclo?"))
       return;
     setPilotSaving(true);
     const { data: updated, error } = await supabase
@@ -707,7 +707,7 @@ export function ManagementDashboard({
       <section>
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="section-kicker text-muted-foreground">Preparação da primeira rodada</p>
+            <p className="section-kicker text-muted-foreground">Preparação do primeiro ciclo</p>
             <h2 className="mt-1 font-display text-4xl">Piloto</h2>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Defina metas, evento, campanha, equipe e instruções antes de colocar clientes reais no
@@ -753,7 +753,7 @@ export function ManagementDashboard({
           <div className="space-y-5">
             <div className="card-festa p-5">
               <div className="grid gap-4 md:grid-cols-2">
-                <FormField label="Nome da rodada">
+                <FormField label="Nome do ciclo">
                   <Input
                     value={pilotDraft.name}
                     onChange={(event) =>

@@ -214,6 +214,7 @@ function Checkin() {
         action={
           <Link
             to="/eventos"
+            search={{ event: selectedId || undefined }}
             aria-label="Voltar aos eventos"
             className="grid h-10 w-10 place-items-center rounded-full border-2 border-foreground bg-background text-foreground shadow-[2px_3px_0_var(--foreground)]"
           >
@@ -233,7 +234,11 @@ function Checkin() {
               <h2 className="mt-4 font-display text-4xl leading-none">
                 Nenhum check-in aberto agora.
               </h2>
-              <Link to="/eventos" className="mt-5 inline-flex items-center gap-2 font-black">
+              <Link
+                to="/eventos"
+                search={{ event: undefined }}
+                className="mt-5 inline-flex items-center gap-2 font-black"
+              >
                 Ver agenda <ArrowLeft className="h-4 w-4 rotate-180" />
               </Link>
             </section>

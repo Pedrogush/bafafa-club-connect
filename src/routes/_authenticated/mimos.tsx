@@ -50,6 +50,10 @@ type Fofoquinha = {
   ends_at: string | null;
   is_pinned: boolean;
   feed_priority: number;
+  public_title?: string | null;
+  public_copy?: string | null;
+  activation_expires_at?: string | null;
+  visit_scope?: string;
 };
 
 type HistoryRow = {
@@ -234,7 +238,9 @@ function Fofoquinhas() {
                     className="ticket-card checker-texture p-5 text-foreground"
                   >
                     <span className="cut-label bg-white">promoção aberta</span>
-                    <h2 className="mt-5 font-display text-3xl leading-none">{item.name}</h2>
+                    <h2 className="mt-5 font-display text-3xl leading-none">
+                      {item.public_title || item.name}
+                    </h2>
                     <p className="mt-3 font-poster text-lg">{campaignBenefitLabel(item)}</p>
                     {item.description && (
                       <p className="mt-2 text-sm font-semibold opacity-70">{item.description}</p>
@@ -291,7 +297,8 @@ function Fofoquinhas() {
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Usar esta Fofoquinha?</DialogTitle>
             <DialogDescription>
-              Gere o código somente quando estiver perto da equipe. Ele expira rapidamente.
+              Ative somente quando estiver perto da equipe. Depois da ativação, começa o prazo curto
+              de uso informado na Fofoquinha.
             </DialogDescription>
           </DialogHeader>
           {confirmItem && <RewardSummary item={confirmItem} />}
@@ -308,7 +315,7 @@ function Fofoquinhas() {
                 void generateCode(item);
               }}
             >
-              <Sparkles className="h-4 w-4" /> {generating ? "Gerando…" : "Gerar código"}
+              <Sparkles className="h-4 w-4" /> {generating ? "Ativando…" : "Ativar Fofoquinha"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -325,8 +332,10 @@ function Fofoquinhas() {
       >
         <DialogContent className="max-w-sm rounded-3xl text-center">
           <DialogHeader>
-            <DialogTitle className="font-display text-3xl">Mostre para a equipe</DialogTitle>
-            <DialogDescription>{tokenItem?.name}</DialogDescription>
+            <DialogTitle className="font-display text-3xl">Fofoquinha ativada</DialogTitle>
+            <DialogDescription>
+              Mostre este código para a equipe antes do prazo terminar.
+            </DialogDescription>
           </DialogHeader>
           {token && (
             <div>
@@ -375,10 +384,12 @@ function RewardCard({ item, onUse }: { item: Fofoquinha; onUse: () => void }) {
   return (
     <article className="ticket-card checker-texture p-5 text-foreground">
       <span className="cut-label bg-white">liberada pra você</span>
-      <h2 className="mt-5 font-display text-4xl leading-none">{item.name}</h2>
+      <h2 className="mt-5 font-display text-4xl leading-none">{item.public_title || item.name}</h2>
       <p className="mt-3 font-poster text-xl">{campaignBenefitLabel(item)}</p>
-      {item.description && (
-        <p className="mt-2 text-sm font-semibold opacity-70">{item.description}</p>
+      {(item.public_copy || item.description) && (
+        <p className="mt-2 text-sm font-semibold opacity-70">
+          {item.public_copy || item.description}
+        </p>
       )}
       {item.reward_expires_at && (
         <p className="mt-4 text-xs font-black">
@@ -406,7 +417,9 @@ function MissionCard({ item }: { item: Fofoquinha }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="section-kicker text-muted-foreground">Missão do clube</p>
-          <h2 className="mt-1 font-display text-3xl leading-none">{item.name}</h2>
+          <h2 className="mt-1 font-display text-3xl leading-none">
+            {item.public_title || item.name}
+          </h2>
         </div>
         <Target className="h-7 w-7 shrink-0 text-primary" />
       </div>
@@ -435,7 +448,7 @@ function MissionCard({ item }: { item: Fofoquinha }) {
 function RewardSummary({ item }: { item: Fofoquinha }) {
   return (
     <div className="ticket-card checker-texture p-4 text-left text-foreground">
-      <p className="font-display text-2xl leading-none">{item.name}</p>
+      <p className="font-display text-2xl leading-none">{item.public_title || item.name}</p>
       <p className="mt-2 text-sm font-black">{campaignBenefitLabel(item)}</p>
     </div>
   );

@@ -13,6 +13,10 @@ import {
   UserRound,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
+import {
+  CustomerJourneySection,
+  type CustomerJourney,
+} from "@/components/customer/customer-journey";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,6 +84,7 @@ type HomeData = {
   promotions: Promo[];
   events: EventFeed[];
   posts: FeedPost[];
+  journey: CustomerJourney | null;
 };
 
 const EMPTY: HomeData = {
@@ -88,6 +93,7 @@ const EMPTY: HomeData = {
   promotions: [],
   events: [],
   posts: [],
+  journey: null,
 };
 
 function Inicio() {
@@ -102,7 +108,7 @@ function Inicio() {
     setLoading(true);
     setError(null);
     await supabase.rpc("sync_event_statuses");
-    const [profile, completion, promotions, events, posts] = await Promise.all([
+    const [profile, completion, promotions, events, posts, journey] = await Promise.all([
       supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
       supabase.rpc("my_profile_completion_details"),
       supabase.rpc("my_fofoquinhas"),
@@ -123,10 +129,16 @@ function Inicio() {
         .order("priority", { ascending: false })
         .order("starts_at", { ascending: false })
         .limit(10),
+      supabase.rpc("my_event_journey"),
     ]);
 
     const firstError =
-      profile.error ?? completion.error ?? promotions.error ?? events.error ?? posts.error;
+      profile.error ??
+      completion.error ??
+      promotions.error ??
+      events.error ??
+      posts.error ??
+      journey.error;
     if (firstError) {
       setError(firstError.message);
     } else {
@@ -141,6 +153,7 @@ function Inicio() {
           withEffectiveEventStatus(event),
         ),
         posts: (posts.data ?? []) as FeedPost[],
+        journey: (journey.data as CustomerJourney | null) ?? null,
       });
     }
     setLoading(false);
@@ -213,13 +226,15 @@ function Inicio() {
         </div>
       ) : (
         <main className="space-y-7 px-5 pt-5">
+          <CustomerJourneySection
+            journey={data.journey}
+            promotions={data.promotions}
+            onReviewed={() => void load()}
+          />
+
           {data.promotions.length > 0 && (
             <section className="space-y-3">
-              <FeedSectionTitle
-                icon={Megaphone}
-                title="Promoções vigentes"
-                badge="primeiro no feed"
-              />
+              <FeedSectionTitle icon={Megaphone} title="Fofoquinhas no ar" badge="tá valendo" />
               {data.promotions.slice(0, 3).map((promo, index) => (
                 <PromotionCard key={promo.campaign_id} promo={promo} featured={index === 0} />
               ))}
@@ -253,7 +268,7 @@ function Inicio() {
                   <CompactEventCard key={event.id} event={event} />
                 ))}
               </div>
-              <Link to="/eventos" className="feed-more-link">
+              <Link to="/eventos" search={{ event: undefined }} className="feed-more-link">
                 Ver agenda completa <ArrowRight className="h-4 w-4" />
               </Link>
             </section>

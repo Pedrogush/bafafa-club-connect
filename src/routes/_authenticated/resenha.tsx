@@ -15,6 +15,7 @@ import {
   CalendarDays,
   Clock3,
   Flag,
+  HeartHandshake,
   MessageCircleMore,
   RefreshCw,
   Reply,
@@ -80,6 +81,27 @@ type ChatMessage = {
   is_mine: boolean;
 };
 
+type SalveItem = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  status: string;
+  opener: string | null;
+  created_at: string;
+  sender_name?: string;
+  recipient_name?: string;
+  thread_id?: string;
+};
+
+type PrivateChatMessage = {
+  id: string;
+  thread_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+  deleted_at: string | null;
+};
+
 const REPORT_REASONS = [
   ["spam", "Spam ou divulgação"],
   ["assedio", "Assédio ou insistência"],
@@ -89,7 +111,7 @@ const REPORT_REASONS = [
 ] as const;
 
 function Resenha() {
-  const { roles } = useAuth();
+  const { roles, user } = useAuth();
   const search = Route.useSearch();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -107,6 +129,19 @@ function Resenha() {
   const [reportDetails, setReportDetails] = useState("");
   const [newMessages, setNewMessages] = useState(0);
   const [blockedUsersOpen, setBlockedUsersOpen] = useState(false);
+  const [salveTarget, setSalveTarget] = useState<ChatMessage | null>(null);
+  const [salveOpener, setSalveOpener] = useState("");
+  const [salvesOpen, setSalvesOpen] = useState(false);
+  const [salves, setSalves] = useState<SalveItem[]>([]);
+  const [salvesLoading, setSalvesLoading] = useState(false);
+  const [privateThread, setPrivateThread] = useState<{ id: string; otherName: string } | null>(
+    null,
+  );
+  const [privateMessages, setPrivateMessages] = useState<PrivateChatMessage[]>([]);
+  const [privateDraft, setPrivateDraft] = useState("");
+  const [privateLoading, setPrivateLoading] = useState(false);
+  const [privateSending, setPrivateSending] = useState(false);
+
   const [now, setNow] = useState(Date.now());
   const feedRef = useRef<HTMLDivElement | null>(null);
   const feedEndRef = useRef<HTMLDivElement | null>(null);
@@ -304,6 +339,104 @@ function Resenha() {
     toast.success("Denúncia enviada para a moderação.");
   }
 
+  async function loadSalves() {
+    if (!selectedId || !user) return;
+    setSalvesLoading(true);
+    const { data, error: salveError } = await supabase
+      .from("salve_requests")
+      .select("id,sender_id,recipient_id,status,opener,created_at")
+      .eq("event_id", selectedId)
+      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+    if (salveError) {
+      setSalvesLoading(false);
+      return toast.error(salveError.message);
+    }
+
+    const rows = data ?? [];
+    const ids = [...new Set(rows.flatMap((item) => [item.sender_id, item.recipient_id]))];
+    const [{ data: people }, { data: threads }] = await Promise.all([
+      ids.length
+        ? supabase.from("profiles").select("id,display_name").in("id", ids)
+        : Promise.resolve({ data: [] as Array<{ id: string; display_name: string | null }> }),
+      supabase
+        .from("private_chat_threads")
+        .select("id,salve_request_id")
+        .eq("event_id", selectedId),
+    ]);
+    const names = new Map((people ?? []).map((item) => [item.id, item.display_name ?? "Bafafã"]));
+    const threadByRequest = new Map(
+      (threads ?? []).map((item) => [item.salve_request_id, item.id]),
+    );
+    setSalves(
+      rows.map((item) => ({
+        ...item,
+        sender_name: names.get(item.sender_id),
+        recipient_name: names.get(item.recipient_id),
+        thread_id: threadByRequest.get(item.id),
+      })),
+    );
+    setSalvesLoading(false);
+  }
+
+  async function sendSalve() {
+    if (!salveTarget || !selectedId) return;
+    const { error: salveError } = await supabase.rpc("send_salve_request", {
+      _event_id: selectedId,
+      _recipient_id: salveTarget.author_id,
+      _opener: salveOpener.trim() || null,
+    });
+    if (salveError) return toast.error(salveError.message);
+    setSalveTarget(null);
+    setSalveOpener("");
+    toast.success("Salve enviado. A conversa só abre se a pessoa der moral.");
+    await loadSalves();
+  }
+
+  async function respondSalve(requestId: string, accept: boolean) {
+    const { error: responseError } = await supabase.rpc("respond_salve_request", {
+      _request_id: requestId,
+      _accept: accept,
+    });
+    if (responseError) return toast.error(responseError.message);
+    toast.success(
+      accept ? "Você deu moral. A conversa foi liberada." : "Tudo certo. O pedido foi encerrado.",
+    );
+    await loadSalves();
+  }
+
+  async function openPrivateConversation(threadId: string, otherName: string) {
+    setPrivateThread({ id: threadId, otherName });
+    setPrivateDraft("");
+    setPrivateLoading(true);
+    const { data, error: messagesError } = await supabase
+      .from("private_chat_messages")
+      .select("id,thread_id,sender_id,body,created_at,deleted_at")
+      .eq("thread_id", threadId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true });
+    setPrivateLoading(false);
+    if (messagesError) {
+      setPrivateThread(null);
+      return toast.error(messagesError.message);
+    }
+    setPrivateMessages(data ?? []);
+  }
+
+  async function sendPrivateMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!privateThread || !privateDraft.trim() || privateSending) return;
+    setPrivateSending(true);
+    const { error: privateError } = await supabase.rpc("send_private_message", {
+      _thread_id: privateThread.id,
+      _body: privateDraft.trim(),
+    });
+    setPrivateSending(false);
+    if (privateError) return toast.error(privateError.message);
+    setPrivateDraft("");
+    await openPrivateConversation(privateThread.id, privateThread.otherName);
+  }
+
   return (
     <AppShell>
       <header className="border-b border-foreground/10 bg-card px-4 pb-3 pt-4">
@@ -313,6 +446,18 @@ function Resenha() {
             <h1 className="mt-1 font-display text-3xl leading-none">Resenha</h1>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSalvesOpen(true);
+                void loadSalves();
+              }}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground"
+              aria-label="Abrir salves"
+              title="Salves"
+            >
+              <HeartHandshake className="h-4 w-4" />
+            </button>
             <button
               type="button"
               onClick={() => setBlockedUsersOpen(true)}
@@ -335,7 +480,7 @@ function Resenha() {
         </div>
       </header>
 
-      {loading && <LoadingCard label="Abrindo a roda de conversa…" />}
+      {loading && <LoadingCard label="Abrindo a Resenha…" />}
       {error && !loading && (
         <div className="space-y-3">
           <ErrorCard message={error} />
@@ -365,6 +510,7 @@ function Resenha() {
               </p>
               <Link
                 to="/checkin"
+                search={{ event: undefined }}
                 className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
               >
                 Abrir meu check-in <ShieldCheck className="h-4 w-4" />
@@ -544,6 +690,15 @@ function Resenha() {
                                     </Link>
                                   )}
                                   <MessageAction
+                                    label="Mandar um salve"
+                                    onClick={() => {
+                                      setSalveTarget(message);
+                                      setSalveOpener("");
+                                    }}
+                                  >
+                                    <HeartHandshake className="h-3.5 w-3.5" />
+                                  </MessageAction>
+                                  <MessageAction
                                     label="Denunciar"
                                     onClick={() => setReporting(message)}
                                   >
@@ -674,6 +829,178 @@ function Resenha() {
               Enviar denúncia
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(salveTarget)} onOpenChange={(open) => !open && setSalveTarget(null)}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">
+              Mandar um salve para {salveTarget?.author_name}
+            </DialogTitle>
+            <DialogDescription>
+              A conversa só abre se a pessoa quiser. Sem pressão e sem exposição.
+            </DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label htmlFor="salve-opener">Quebra-gelo, opcional</Label>
+            <Textarea
+              id="salve-opener"
+              value={salveOpener}
+              onChange={(event) => setSalveOpener(event.target.value.slice(0, 180))}
+              placeholder="Ex.: curti seu gosto musical, bora trocar uma ideia?"
+              className="mt-2"
+            />
+            <p className="mt-2 text-xs font-bold text-muted-foreground">
+              Cantada pode. Desrespeito, não.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSalveTarget(null)}>
+              Agora não
+            </Button>
+            <Button onClick={() => void sendSalve()}>
+              <HeartHandshake className="h-4 w-4" /> Mandar salve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={salvesOpen} onOpenChange={setSalvesOpen}>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">Salves da noite</DialogTitle>
+            <DialogDescription>
+              Pedidos de conversa com consentimento dos dois lados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55vh] space-y-3 overflow-y-auto">
+            {salvesLoading ? (
+              <p className="py-8 text-center text-sm font-bold text-muted-foreground">
+                Buscando os salves…
+              </p>
+            ) : salves.length === 0 ? (
+              <p className="rounded-2xl bg-muted p-5 text-center text-sm font-semibold text-muted-foreground">
+                Nenhum salve por enquanto.
+              </p>
+            ) : (
+              salves.map((salve) => {
+                const incoming = salve.recipient_id === user?.id;
+                const otherName = incoming ? salve.sender_name : salve.recipient_name;
+                return (
+                  <article key={salve.id} className="rounded-2xl border border-input p-4">
+                    <p className="font-black">
+                      {incoming
+                        ? `${otherName ?? "Alguém"} te mandou um salve`
+                        : `Salve para ${otherName ?? "Bafafã"}`}
+                    </p>
+                    {salve.opener && (
+                      <p className="mt-2 rounded-xl bg-muted p-3 text-sm">{salve.opener}</p>
+                    )}
+                    <p className="mt-2 text-xs font-bold uppercase text-muted-foreground">
+                      {salve.status}
+                    </p>
+                    {incoming && salve.status === "pending" && (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => void respondSalve(salve.id, false)}
+                        >
+                          Agora não
+                        </Button>
+                        <Button onClick={() => void respondSalve(salve.id, true)}>Dar moral</Button>
+                      </div>
+                    )}
+                    {salve.status === "accepted" && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-black text-primary">
+                          Conversa liberada pelos dois.
+                        </p>
+                        {salve.thread_id && (
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              setSalvesOpen(false);
+                              void openPrivateConversation(salve.thread_id!, otherName ?? "Bafafã");
+                            }}
+                          >
+                            <MessageCircleMore className="h-4 w-4" /> Abrir conversa
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(privateThread)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPrivateThread(null);
+            setPrivateMessages([]);
+            setPrivateDraft("");
+          }
+        }}
+      >
+        <DialogContent className="flex max-h-[82vh] max-w-md flex-col rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">
+              Conversa com {privateThread?.otherName}
+            </DialogTitle>
+            <DialogDescription>Esse papo só abriu porque os dois deram moral.</DialogDescription>
+          </DialogHeader>
+          <div className="min-h-48 flex-1 space-y-2 overflow-y-auto rounded-2xl bg-muted p-3">
+            {privateLoading ? (
+              <p className="py-12 text-center text-sm font-bold text-muted-foreground">
+                Abrindo a conversa…
+              </p>
+            ) : privateMessages.length === 0 ? (
+              <p className="py-12 text-center text-sm font-semibold text-muted-foreground">
+                O primeiro salve já foi dado. Agora é com vocês.
+              </p>
+            ) : (
+              privateMessages.map((message) => {
+                const mine = message.sender_id === user?.id;
+                return (
+                  <article
+                    key={message.id}
+                    className={`max-w-[86%] rounded-2xl px-3 py-2.5 text-sm ${
+                      mine ? "ml-auto bg-primary text-primary-foreground" : "mr-auto bg-card"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                    <time
+                      className={`mt-1 block text-[9px] font-bold ${mine ? "opacity-70" : "text-muted-foreground"}`}
+                    >
+                      {formatMessageTime(message.created_at)}
+                    </time>
+                  </article>
+                );
+              })
+            )}
+          </div>
+          <form onSubmit={sendPrivateMessage} className="mt-3 flex items-end gap-2">
+            <Textarea
+              value={privateDraft}
+              onChange={(event) => setPrivateDraft(event.target.value.slice(0, 1000))}
+              placeholder="Manda a boa…"
+              rows={2}
+              className="min-h-12 flex-1 resize-none"
+            />
+            <Button
+              type="submit"
+              disabled={privateSending || !privateDraft.trim()}
+              className="h-12 w-12 shrink-0 rounded-full p-0"
+              aria-label="Enviar mensagem privada"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
     </AppShell>

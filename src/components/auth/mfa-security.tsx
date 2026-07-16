@@ -73,10 +73,11 @@ export function useMfaSecurity() {
       setState({ ...initialState, loading: false, error: publicErrorMessage(error) });
       return;
     }
+    const aalData = aalResult.data;
     setState({
       loading: false,
-      currentLevel: (aalResult.data.currentLevel as Aal) ?? "aal1",
-      nextLevel: (aalResult.data.nextLevel as Aal) ?? "aal1",
+      currentLevel: (aalData?.currentLevel as Aal | undefined) ?? "aal1",
+      nextLevel: (aalData?.nextLevel as Aal | undefined) ?? "aal1",
       factors: normalizeFactors(factorsResult.data),
       error: null,
     });

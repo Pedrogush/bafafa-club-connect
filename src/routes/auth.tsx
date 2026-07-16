@@ -4,9 +4,10 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Wordmark } from "@/components/brand/wordmark";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, MessageCircleMore, Phone, ShieldCheck } from "lucide-react";
 import { TurnstileChallenge, useAuthCaptcha } from "@/components/auth/turnstile";
 import { friendlyAuthError, isPrivilegedRole, validatePassword } from "@/lib/auth-security";
+import { formatPhoneBR, normalizePhoneE164BR } from "@/lib/commercial";
 
 type Mode = "signin" | "signup" | "reset";
 
@@ -59,6 +60,7 @@ const signupSchema = z
 function AuthPage() {
   const { mode: initialMode } = Route.useSearch();
   const [mode, setMode] = useState<Mode>(initialMode);
+  const [channel, setChannel] = useState<"phone" | "email">("phone");
   useEffect(() => setMode(initialMode), [initialMode]);
 
   return (
@@ -72,7 +74,7 @@ function AuthPage() {
         <div className="poster-card checker-texture mt-6 p-4 text-center text-foreground">
           <p className="section-kicker">Cerveja gelada e batucada</p>
           <h1 className="mt-2 font-display text-4xl leading-none">
-            Seu lugar na roda começa aqui.
+            Seu lugar na resenha começa aqui.
           </h1>
         </div>
         <div className="mt-6 flex rounded-2xl border-2 border-foreground bg-card p-1 text-sm font-black shadow-[3px_4px_0_var(--foreground)]">
@@ -89,13 +91,360 @@ function AuthPage() {
           ))}
         </div>
 
-        <div className="sticker-card mt-6 bg-card p-5">
-          {mode === "signup" && <SignupForm onDone={() => setMode("signin")} />}
-          {mode === "signin" && <SigninForm onForgot={() => setMode("reset")} />}
-          {mode === "reset" && <ResetForm onDone={() => setMode("signin")} />}
+        <div className="mt-4 grid grid-cols-2 rounded-2xl bg-muted p-1 text-xs font-black">
+          <button
+            type="button"
+            onClick={() => setChannel("phone")}
+            className={`inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 ${channel === "phone" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+          >
+            <MessageCircleMore className="h-4 w-4" /> Telefone
+          </button>
+          <button
+            type="button"
+            onClick={() => setChannel("email")}
+            className={`inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 ${channel === "email" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+          >
+            <Mail className="h-4 w-4" /> E-mail de teste
+          </button>
+        </div>
+
+        <div className="sticker-card mt-4 bg-card p-5">
+          {channel === "phone" && mode === "signup" && <PhoneSignupForm />}
+          {channel === "phone" && mode === "signin" && <PhoneSigninForm />}
+          {channel === "phone" && mode === "reset" && (
+            <div className="space-y-3 text-sm">
+              <p className="font-black">No acesso por telefone não existe senha.</p>
+              <p className="text-muted-foreground">Volte para Entrar e peça um novo código.</p>
+              <button
+                type="button"
+                className="w-full rounded-xl border-2 border-foreground px-4 py-3 font-black"
+                onClick={() => setMode("signin")}
+              >
+                Voltar
+              </button>
+            </div>
+          )}
+          {channel === "email" && mode === "signup" && (
+            <SignupForm onDone={() => setMode("signin")} />
+          )}
+          {channel === "email" && mode === "signin" && (
+            <SigninForm onForgot={() => setMode("reset")} />
+          )}
+          {channel === "email" && mode === "reset" && (
+            <ResetForm onDone={() => setMode("signin")} />
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+type PhoneStep = "phone" | "code";
+
+function PhoneSigninForm() {
+  const [step, setStep] = useState<PhoneStep>("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const captcha = useAuthCaptcha();
+  const navigate = useNavigate();
+
+  async function requestCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (captcha.required && !captcha.token) return toast.error("Confirme o desafio de segurança.");
+    const normalized = normalizePhoneE164BR(phone);
+    if (!/^\+55\d{10,11}$/.test(normalized)) return toast.error("Informe um telefone com DDD.");
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: normalized,
+      options: { shouldCreateUser: false, captchaToken: captcha.token ?? undefined },
+    });
+    setLoading(false);
+    captcha.reset();
+    if (error) {
+      const message = error.message.toLowerCase().includes("provider")
+        ? "O acesso por telefone ainda não foi ativado no Supabase. Use o e-mail de teste por enquanto."
+        : friendlyAuthError(error.message);
+      return toast.error(message);
+    }
+    setPhone(normalized);
+    setStep("code");
+    toast.success("Código enviado. Confira seu celular.");
+  }
+
+  async function verifyCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(code)) return toast.error("Digite os seis números do código.");
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: "sms" });
+    setLoading(false);
+    if (error) return toast.error(friendlyAuthError(error.message));
+    toast.success("Achamos você. Bora pro Bafas!");
+    navigate({ to: "/inicio" });
+  }
+
+  if (step === "code") {
+    return (
+      <form onSubmit={verifyCode} className="space-y-4">
+        <div className="rounded-2xl bg-lagoa/40 p-4 text-sm">
+          <p className="flex items-center gap-2 font-black">
+            <ShieldCheck className="h-4 w-4" /> Código de acesso
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            Enviamos para {formatPhoneBR(phone)}. O código vence em poucos minutos.
+          </p>
+        </div>
+        <Field label="Código de 6 números">
+          <input
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className={`${inputCls} text-center font-mono text-2xl tracking-[0.35em]`}
+            placeholder="000000"
+            autoFocus
+          />
+        </Field>
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />} Confirmar e entrar
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setStep("phone");
+            setCode("");
+          }}
+          className="w-full py-2 text-sm font-semibold text-muted-foreground"
+        >
+          Trocar telefone
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={requestCode} className="space-y-4">
+      <div className="rounded-2xl bg-mango/40 p-4 text-sm">
+        <p className="flex items-center gap-2 font-black">
+          <Phone className="h-4 w-4" /> Entre sem senha
+        </p>
+        <p className="mt-1 text-muted-foreground">
+          Você recebe um código por SMS. Quando o WhatsApp estiver habilitado, o mesmo fluxo poderá
+          usar o aplicativo.
+        </p>
+      </div>
+      <Field label="Telefone com DDD">
+        <input
+          value={formatPhoneBR(phone)}
+          onChange={(event) => setPhone(event.target.value)}
+          inputMode="tel"
+          autoComplete="tel"
+          required
+          className={inputCls}
+          placeholder="(84) 99999-9999"
+        />
+      </Field>
+      <TurnstileChallenge onToken={captcha.onToken} resetKey={captcha.resetKey} />
+      <button
+        type="submit"
+        disabled={loading}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />} Receber código
+      </button>
+    </form>
+  );
+}
+
+function PhoneSignupForm() {
+  const [step, setStep] = useState<PhoneStep>("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    birthDate: "",
+    marketing: true,
+  });
+  const [loading, setLoading] = useState(false);
+  const captcha = useAuthCaptcha();
+  const navigate = useNavigate();
+
+  async function requestCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalized = normalizePhoneE164BR(phone);
+    if (!/^\+55\d{10,11}$/.test(normalized)) return toast.error("Informe um telefone com DDD.");
+    if (formData.firstName.trim().length < 2) return toast.error("Diz teu nome pra gente.");
+    const birth = new Date(formData.birthDate);
+    const age = (Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    if (!Number.isFinite(age) || age < 18)
+      return toast.error("O clube é exclusivo para maiores de 18 anos.");
+    if (captcha.required && !captcha.token) return toast.error("Confirme o desafio de segurança.");
+    setLoading(true);
+    const displayName = [formData.firstName.trim(), formData.lastName.trim()]
+      .filter(Boolean)
+      .join(" ");
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: normalized,
+      options: {
+        shouldCreateUser: true,
+        captchaToken: captcha.token ?? undefined,
+        data: {
+          display_name: displayName,
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim() || null,
+          phone_e164: normalized,
+          whatsapp: normalized,
+          birth_date: formData.birthDate,
+          is_over_18: true,
+          accept_terms: true,
+          accept_privacy: true,
+          accept_community: true,
+          marketing_opt_in: formData.marketing,
+          consent_version: "2.0",
+        },
+      },
+    });
+    setLoading(false);
+    captcha.reset();
+    if (error) {
+      const message = error.message.toLowerCase().includes("provider")
+        ? "O acesso por telefone ainda não foi ativado no Supabase. Use o e-mail de teste por enquanto."
+        : friendlyAuthError(error.message);
+      return toast.error(message);
+    }
+    setPhone(normalized);
+    setStep("code");
+    toast.success("Código enviado. Falta só confirmar.");
+  }
+
+  async function verifyCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(code)) return toast.error("Digite os seis números do código.");
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: "sms" });
+    setLoading(false);
+    if (error) return toast.error(friendlyAuthError(error.message));
+    toast.success("Cadastro pronto. A primeira Fofoquinha está mais perto.");
+    navigate({ to: "/inicio" });
+  }
+
+  if (step === "code") {
+    return (
+      <form onSubmit={verifyCode} className="space-y-4">
+        <div className="rounded-2xl bg-lagoa/40 p-4 text-sm">
+          <p className="font-black">Confirme seu telefone</p>
+          <p className="mt-1 text-muted-foreground">
+            Digite o código enviado para {formatPhoneBR(phone)}.
+          </p>
+        </div>
+        <Field label="Código de 6 números">
+          <input
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            className={`${inputCls} text-center font-mono text-2xl tracking-[0.35em]`}
+            autoFocus
+          />
+        </Field>
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />} Confirmar cadastro
+        </button>
+        <button
+          type="button"
+          onClick={() => setStep("phone")}
+          className="w-full py-2 text-sm font-semibold text-muted-foreground"
+        >
+          Corrigir meus dados
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={requestCode} className="space-y-4">
+      <p className="text-sm font-semibold text-muted-foreground">
+        Só pedimos o necessário para reconhecer você, liberar benefícios e mandar novidades com sua
+        autorização.
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Nome">
+          <input
+            value={formData.firstName}
+            onChange={(event) =>
+              setFormData((current) => ({ ...current, firstName: event.target.value }))
+            }
+            required
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Sobrenome">
+          <input
+            value={formData.lastName}
+            onChange={(event) =>
+              setFormData((current) => ({ ...current, lastName: event.target.value }))
+            }
+            className={inputCls}
+          />
+        </Field>
+      </div>
+      <Field label="Telefone com DDD">
+        <input
+          value={formatPhoneBR(phone)}
+          onChange={(event) => setPhone(event.target.value)}
+          inputMode="tel"
+          autoComplete="tel"
+          required
+          className={inputCls}
+          placeholder="(84) 99999-9999"
+        />
+      </Field>
+      <Field label="Nascimento">
+        <input
+          value={formData.birthDate}
+          onChange={(event) =>
+            setFormData((current) => ({ ...current, birthDate: event.target.value }))
+          }
+          type="date"
+          required
+          className={inputCls}
+        />
+      </Field>
+      <div className="space-y-2 rounded-2xl bg-muted p-4 text-sm">
+        <p className="font-bold">
+          Ao continuar, você confirma que tem 18 anos e aceita os Termos, a Privacidade e as regras
+          da comunidade.
+        </p>
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={formData.marketing}
+            onChange={(event) =>
+              setFormData((current) => ({ ...current, marketing: event.target.checked }))
+            }
+            className="mt-1 h-4 w-4 accent-primary"
+          />
+          <span>Quero receber Fofoquinhas e novidades pelo telefone.</span>
+        </label>
+      </div>
+      <TurnstileChallenge onToken={captcha.onToken} resetKey={captcha.resetKey} />
+      <button
+        type="submit"
+        disabled={loading}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary py-3 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] disabled:opacity-60"
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />} Receber código e entrar
+      </button>
+    </form>
   );
 }
 

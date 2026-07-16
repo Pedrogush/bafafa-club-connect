@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UUsernameRouteImport } from './routes/u/$username'
+import { Route as FofocometroEventIdRouteImport } from './routes/fofocometro/$eventId'
 import { Route as AuthenticatedSegurancaRouteImport } from './routes/_authenticated/seguranca'
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated/reservas'
 import { Route as AuthenticatedResenhaRouteImport } from './routes/_authenticated/resenha'
@@ -49,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FofocometroEventIdRoute = FofocometroEventIdRouteImport.update({
+  id: '/fofocometro/$eventId',
+  path: '/fofocometro/$eventId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSegurancaRoute = AuthenticatedSegurancaRouteImport.update({
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/resenha': typeof AuthenticatedResenhaRoute
   '/reservas': typeof AuthenticatedReservasRoute
   '/seguranca': typeof AuthenticatedSegurancaRoute
+  '/fofocometro/$eventId': typeof FofocometroEventIdRoute
   '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/resenha': typeof AuthenticatedResenhaRoute
   '/reservas': typeof AuthenticatedReservasRoute
   '/seguranca': typeof AuthenticatedSegurancaRoute
+  '/fofocometro/$eventId': typeof FofocometroEventIdRoute
   '/u/$username': typeof UUsernameRoute
   '/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/_authenticated/resenha': typeof AuthenticatedResenhaRoute
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
   '/_authenticated/seguranca': typeof AuthenticatedSegurancaRoute
+  '/fofocometro/$eventId': typeof FofocometroEventIdRoute
   '/u/$username': typeof UUsernameRoute
   '/_authenticated/staff/checkin': typeof AuthenticatedStaffCheckinRoute
 }
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/resenha'
     | '/reservas'
     | '/seguranca'
+    | '/fofocometro/$eventId'
     | '/u/$username'
     | '/staff/checkin'
   fileRoutesByTo: FileRoutesByTo
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/resenha'
     | '/reservas'
     | '/seguranca'
+    | '/fofocometro/$eventId'
     | '/u/$username'
     | '/staff/checkin'
   id:
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/resenha'
     | '/_authenticated/reservas'
     | '/_authenticated/seguranca'
+    | '/fofocometro/$eventId'
     | '/u/$username'
     | '/_authenticated/staff/checkin'
   fileRoutesById: FileRoutesById
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  FofocometroEventIdRoute: typeof FofocometroEventIdRoute
   UUsernameRoute: typeof UUsernameRoute
 }
 
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       path: '/u/$username'
       fullPath: '/u/$username'
       preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fofocometro/$eventId': {
+      id: '/fofocometro/$eventId'
+      path: '/fofocometro/$eventId'
+      fullPath: '/fofocometro/$eventId'
+      preLoaderRoute: typeof FofocometroEventIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/seguranca': {
@@ -398,6 +418,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  FofocometroEventIdRoute: FofocometroEventIdRoute,
   UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport

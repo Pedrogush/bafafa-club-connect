@@ -109,11 +109,17 @@ export type Database = {
       };
       campaigns: {
         Row: {
+          activation_window_minutes: number;
+          audience_segment: string | null;
           benefit_type: string;
           campaign_kind: string;
+          counts_for_fofocometro: boolean;
+          counts_for_funnel: boolean;
           created_at: string;
           description: string | null;
           discount_max_cents: number | null;
+          discount_type: string | null;
+          discount_value: number | null;
           discount_percent: number | null;
           ends_at: string | null;
           event_id: string | null;
@@ -126,27 +132,43 @@ export type Database = {
           internal_rules: string | null;
           name: string;
           per_user_limit: number;
+          product_category: string | null;
+          product_id: string | null;
           product_name: string | null;
+          progression_rule: Json;
+          public_copy: string | null;
           public_rules: string | null;
+          public_title: string | null;
           required_badge_id: string | null;
           requires_checkin: boolean;
           requires_min_profile: boolean;
           requires_staff_validation: boolean;
+          redemption_window_minutes: number;
           reward_valid_hours: number;
+          stacking_allowed: boolean;
           starts_at: string;
           status: string;
           total_available: number | null;
           trigger_category: string | null;
           trigger_target: number;
           trigger_type: string;
+          eligible_quantity_mode: string;
           updated_at: string;
+          used_count: number;
+          visit_scope: string;
         };
         Insert: {
+          activation_window_minutes?: number;
+          audience_segment?: string | null;
           benefit_type: string;
           campaign_kind?: string;
+          counts_for_fofocometro?: boolean;
+          counts_for_funnel?: boolean;
           created_at?: string;
           description?: string | null;
           discount_max_cents?: number | null;
+          discount_type?: string | null;
+          discount_value?: number | null;
           discount_percent?: number | null;
           ends_at?: string | null;
           event_id?: string | null;
@@ -159,27 +181,43 @@ export type Database = {
           internal_rules?: string | null;
           name: string;
           per_user_limit?: number;
+          product_category?: string | null;
+          product_id?: string | null;
           product_name?: string | null;
+          progression_rule?: Json;
+          public_copy?: string | null;
           public_rules?: string | null;
+          public_title?: string | null;
           required_badge_id?: string | null;
           requires_checkin?: boolean;
           requires_min_profile?: boolean;
           requires_staff_validation?: boolean;
+          redemption_window_minutes?: number;
           reward_valid_hours?: number;
+          stacking_allowed?: boolean;
           starts_at?: string;
           status?: string;
           total_available?: number | null;
           trigger_category?: string | null;
           trigger_target?: number;
           trigger_type?: string;
+          eligible_quantity_mode?: string;
           updated_at?: string;
+          used_count?: number;
+          visit_scope?: string;
         };
         Update: {
+          activation_window_minutes?: number;
+          audience_segment?: string | null;
           benefit_type?: string;
           campaign_kind?: string;
+          counts_for_fofocometro?: boolean;
+          counts_for_funnel?: boolean;
           created_at?: string;
           description?: string | null;
           discount_max_cents?: number | null;
+          discount_type?: string | null;
+          discount_value?: number | null;
           discount_percent?: number | null;
           ends_at?: string | null;
           event_id?: string | null;
@@ -192,20 +230,30 @@ export type Database = {
           internal_rules?: string | null;
           name?: string;
           per_user_limit?: number;
+          product_category?: string | null;
+          product_id?: string | null;
           product_name?: string | null;
+          progression_rule?: Json;
+          public_copy?: string | null;
           public_rules?: string | null;
+          public_title?: string | null;
           required_badge_id?: string | null;
           requires_checkin?: boolean;
           requires_min_profile?: boolean;
           requires_staff_validation?: boolean;
+          redemption_window_minutes?: number;
           reward_valid_hours?: number;
+          stacking_allowed?: boolean;
           starts_at?: string;
           status?: string;
           total_available?: number | null;
           trigger_category?: string | null;
           trigger_target?: number;
           trigger_type?: string;
+          eligible_quantity_mode?: string;
           updated_at?: string;
+          used_count?: number;
+          visit_scope?: string;
         };
         Relationships: [
           {
@@ -691,17 +739,27 @@ export type Database = {
           created_at: string;
           deleted_at: string | null;
           display_name: string;
+          first_checkin_at: string | null;
+          first_name: string | null;
           gender_custom: string | null;
           gender_identity: string | null;
           how_found_us: string | null;
           id: string;
           is_over_18: boolean;
           is_public: boolean;
+          last_purchase_at: string | null;
+          last_reward_at: string | null;
+          last_review_at: string | null;
           last_seen_at: string | null;
+          last_checkin_at: string | null;
+          last_name: string | null;
+          lifetime_net_spend_cents: number;
           member_since: string;
           neighborhood: string | null;
+          phone_e164: string | null;
           phone_verified_at: string | null;
           pronouns: string | null;
+          current_segment: string;
           show_birth_month: boolean;
           show_city: boolean;
           show_checkin_count: boolean;
@@ -709,6 +767,7 @@ export type Database = {
           show_gender: boolean;
           updated_at: string;
           username: string | null;
+          visit_count: number;
           whatsapp: string | null;
         };
         Insert: {
@@ -720,17 +779,27 @@ export type Database = {
           created_at?: string;
           deleted_at?: string | null;
           display_name: string;
+          first_checkin_at?: string | null;
+          first_name?: string | null;
           gender_custom?: string | null;
           gender_identity?: string | null;
           how_found_us?: string | null;
           id: string;
           is_over_18?: boolean;
           is_public?: boolean;
+          last_purchase_at?: string | null;
+          last_reward_at?: string | null;
+          last_review_at?: string | null;
           last_seen_at?: string | null;
+          last_checkin_at?: string | null;
+          last_name?: string | null;
+          lifetime_net_spend_cents?: number;
           member_since?: string;
           neighborhood?: string | null;
+          phone_e164?: string | null;
           phone_verified_at?: string | null;
           pronouns?: string | null;
+          current_segment?: string;
           show_birth_month?: boolean;
           show_city?: boolean;
           show_checkin_count?: boolean;
@@ -738,6 +807,7 @@ export type Database = {
           show_gender?: boolean;
           updated_at?: string;
           username?: string | null;
+          visit_count?: number;
           whatsapp?: string | null;
         };
         Update: {
@@ -749,17 +819,27 @@ export type Database = {
           created_at?: string;
           deleted_at?: string | null;
           display_name?: string;
+          first_checkin_at?: string | null;
+          first_name?: string | null;
           gender_custom?: string | null;
           gender_identity?: string | null;
           how_found_us?: string | null;
           id?: string;
           is_over_18?: boolean;
           is_public?: boolean;
+          last_purchase_at?: string | null;
+          last_reward_at?: string | null;
+          last_review_at?: string | null;
           last_seen_at?: string | null;
+          last_checkin_at?: string | null;
+          last_name?: string | null;
+          lifetime_net_spend_cents?: number;
           member_since?: string;
           neighborhood?: string | null;
+          phone_e164?: string | null;
           phone_verified_at?: string | null;
           pronouns?: string | null;
+          current_segment?: string;
           show_birth_month?: boolean;
           show_city?: boolean;
           show_checkin_count?: boolean;
@@ -767,6 +847,7 @@ export type Database = {
           show_gender?: boolean;
           updated_at?: string;
           username?: string | null;
+          visit_count?: number;
           whatsapp?: string | null;
         };
         Relationships: [
@@ -778,6 +859,721 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      campaign_change_history: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          field_name: string;
+          old_value: Json | null;
+          new_value: Json | null;
+          reason: string | null;
+          changed_by: string | null;
+          changed_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          field_name: string;
+          old_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          changed_by?: string | null;
+          changed_at?: string;
+        };
+        Update: {
+          id?: string;
+          campaign_id?: string;
+          field_name?: string;
+          old_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          changed_by?: string | null;
+          changed_at?: string;
+        };
+        Relationships: [];
+      };
+      campaign_products: {
+        Row: { campaign_id: string; product_id: string; is_primary: boolean; created_at: string };
+        Insert: {
+          campaign_id: string;
+          product_id: string;
+          is_primary?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          campaign_id?: string;
+          product_id?: string;
+          is_primary?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      crm_segment_memberships: {
+        Row: {
+          id: string;
+          user_id: string;
+          segment_key: string;
+          active: boolean;
+          entered_at: string;
+          exited_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          segment_key: string;
+          active?: boolean;
+          entered_at?: string;
+          exited_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          segment_key?: string;
+          active?: boolean;
+          entered_at?: string;
+          exited_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      products: {
+        Row: {
+          id: string;
+          original_name: string;
+          normalized_name: string;
+          category: string;
+          current_sale_price_cents: number;
+          current_cost_cents: number;
+          active: boolean;
+          counts_for_funnel: boolean;
+          discount_eligible: boolean;
+          counts_for_fofocometro: boolean;
+          max_discount_cents: number | null;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          original_name: string;
+          normalized_name: string;
+          category?: string;
+          current_sale_price_cents?: number;
+          current_cost_cents?: number;
+          active?: boolean;
+          counts_for_funnel?: boolean;
+          discount_eligible?: boolean;
+          counts_for_fofocometro?: boolean;
+          max_discount_cents?: number | null;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          original_name?: string;
+          normalized_name?: string;
+          category?: string;
+          current_sale_price_cents?: number;
+          current_cost_cents?: number;
+          active?: boolean;
+          counts_for_funnel?: boolean;
+          discount_eligible?: boolean;
+          counts_for_fofocometro?: boolean;
+          max_discount_cents?: number | null;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_change_history: {
+        Row: {
+          id: string;
+          product_id: string;
+          field_name: string;
+          old_value: Json | null;
+          new_value: Json | null;
+          reason: string | null;
+          changed_by: string | null;
+          changed_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          field_name: string;
+          old_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          changed_by?: string | null;
+          changed_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string;
+          field_name?: string;
+          old_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          changed_by?: string | null;
+          changed_at?: string;
+        };
+        Relationships: [];
+      };
+      customer_event_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          event_id: string;
+          checkin_id: string | null;
+          entered_at: string;
+          exited_at: string | null;
+          gross_total_cents: number;
+          discount_total_cents: number;
+          net_total_cents: number;
+          funnel_net_total_cents: number;
+          cost_total_cents: number;
+          margin_total_cents: number;
+          current_stage: number;
+          last_purchase_at: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          event_id: string;
+          checkin_id?: string | null;
+          entered_at?: string;
+          exited_at?: string | null;
+          gross_total_cents?: number;
+          discount_total_cents?: number;
+          net_total_cents?: number;
+          funnel_net_total_cents?: number;
+          cost_total_cents?: number;
+          margin_total_cents?: number;
+          current_stage?: number;
+          last_purchase_at?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          event_id?: string;
+          checkin_id?: string | null;
+          entered_at?: string;
+          exited_at?: string | null;
+          gross_total_cents?: number;
+          discount_total_cents?: number;
+          net_total_cents?: number;
+          funnel_net_total_cents?: number;
+          cost_total_cents?: number;
+          margin_total_cents?: number;
+          current_stage?: number;
+          last_purchase_at?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      sales: {
+        Row: {
+          id: string;
+          user_id: string;
+          event_id: string;
+          session_id: string;
+          status: string;
+          source: string;
+          external_reference: string | null;
+          gross_total_cents: number;
+          discount_total_cents: number;
+          net_total_cents: number;
+          funnel_eligible_net_cents: number;
+          service_fee_cents: number;
+          tip_cents: number;
+          couvert_cents: number;
+          cost_total_cents: number;
+          margin_total_cents: number;
+          created_by: string | null;
+          cancelled_at: string | null;
+          refunded_at: string | null;
+          cancellation_reason: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          event_id: string;
+          session_id: string;
+          status?: string;
+          source?: string;
+          external_reference?: string | null;
+          gross_total_cents?: number;
+          discount_total_cents?: number;
+          net_total_cents?: number;
+          funnel_eligible_net_cents?: number;
+          service_fee_cents?: number;
+          tip_cents?: number;
+          couvert_cents?: number;
+          cost_total_cents?: number;
+          margin_total_cents?: number;
+          created_by?: string | null;
+          cancelled_at?: string | null;
+          refunded_at?: string | null;
+          cancellation_reason?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          event_id?: string;
+          session_id?: string;
+          status?: string;
+          source?: string;
+          external_reference?: string | null;
+          gross_total_cents?: number;
+          discount_total_cents?: number;
+          net_total_cents?: number;
+          funnel_eligible_net_cents?: number;
+          service_fee_cents?: number;
+          tip_cents?: number;
+          couvert_cents?: number;
+          cost_total_cents?: number;
+          margin_total_cents?: number;
+          created_by?: string | null;
+          cancelled_at?: string | null;
+          refunded_at?: string | null;
+          cancellation_reason?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      sale_items: {
+        Row: {
+          id: string;
+          sale_id: string;
+          product_id: string;
+          quantity: number;
+          catalog_sale_price_cents: number;
+          unit_sale_price_cents: number;
+          unit_cost_snapshot_cents: number;
+          gross_value_cents: number;
+          discount_type: string | null;
+          configured_discount_value: number | null;
+          discount_real_cents: number;
+          net_paid_cents: number;
+          estimated_margin_cents: number;
+          campaign_id: string | null;
+          reward_id: string | null;
+          eligible_for_funnel: boolean;
+          counts_for_fofocometro: boolean;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sale_id: string;
+          product_id: string;
+          quantity?: number;
+          catalog_sale_price_cents: number;
+          unit_sale_price_cents: number;
+          unit_cost_snapshot_cents: number;
+          gross_value_cents: number;
+          discount_type?: string | null;
+          configured_discount_value?: number | null;
+          discount_real_cents?: number;
+          net_paid_cents: number;
+          estimated_margin_cents: number;
+          campaign_id?: string | null;
+          reward_id?: string | null;
+          eligible_for_funnel?: boolean;
+          counts_for_fofocometro?: boolean;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          sale_id?: string;
+          product_id?: string;
+          quantity?: number;
+          catalog_sale_price_cents?: number;
+          unit_sale_price_cents?: number;
+          unit_cost_snapshot_cents?: number;
+          gross_value_cents?: number;
+          discount_type?: string | null;
+          configured_discount_value?: number | null;
+          discount_real_cents?: number;
+          net_paid_cents?: number;
+          estimated_margin_cents?: number;
+          campaign_id?: string | null;
+          reward_id?: string | null;
+          eligible_for_funnel?: boolean;
+          counts_for_fofocometro?: boolean;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      event_funnel_rules: {
+        Row: {
+          id: string;
+          event_id: string | null;
+          name: string;
+          active: boolean;
+          starts_at: string | null;
+          ends_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id?: string | null;
+          name?: string;
+          active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string | null;
+          name?: string;
+          active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      funnel_stages: {
+        Row: {
+          id: string;
+          rule_id: string;
+          stage_order: number;
+          trigger_type: string;
+          threshold_cents: number;
+          reward_campaign_id: string;
+          title: string;
+          progress_copy: string | null;
+          unlocked_copy: string | null;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          rule_id: string;
+          stage_order: number;
+          trigger_type: string;
+          threshold_cents?: number;
+          reward_campaign_id: string;
+          title: string;
+          progress_copy?: string | null;
+          unlocked_copy?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          rule_id?: string;
+          stage_order?: number;
+          trigger_type?: string;
+          threshold_cents?: number;
+          reward_campaign_id?: string;
+          title?: string;
+          progress_copy?: string | null;
+          unlocked_copy?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      event_funnel_progress: {
+        Row: {
+          id: string;
+          session_id: string;
+          stage_id: string;
+          reward_id: string | null;
+          reached_at: string;
+          reversed_at: string | null;
+          reversal_reason: string | null;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          stage_id: string;
+          reward_id?: string | null;
+          reached_at?: string;
+          reversed_at?: string | null;
+          reversal_reason?: string | null;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          stage_id?: string;
+          reward_id?: string | null;
+          reached_at?: string;
+          reversed_at?: string | null;
+          reversal_reason?: string | null;
+        };
+        Relationships: [];
+      };
+      collective_goals: {
+        Row: {
+          id: string;
+          event_id: string;
+          campaign_id: string | null;
+          name: string;
+          stage_order: number;
+          target_count: number;
+          current_count: number;
+          status: string;
+          starts_at: string | null;
+          completed_at: string | null;
+          reward_description: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          campaign_id?: string | null;
+          name?: string;
+          stage_order?: number;
+          target_count: number;
+          current_count?: number;
+          status?: string;
+          starts_at?: string | null;
+          completed_at?: string | null;
+          reward_description?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          campaign_id?: string | null;
+          name?: string;
+          stage_order?: number;
+          target_count?: number;
+          current_count?: number;
+          status?: string;
+          starts_at?: string | null;
+          completed_at?: string | null;
+          reward_description?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      collective_goal_contributions: {
+        Row: {
+          id: string;
+          goal_id: string;
+          event_id: string;
+          user_id: string;
+          reward_redemption_id: string;
+          sale_id: string | null;
+          product_id: string | null;
+          gross_cents: number;
+          discount_cents: number;
+          net_cents: number;
+          cost_cents: number;
+          margin_cents: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          goal_id: string;
+          event_id: string;
+          user_id: string;
+          reward_redemption_id: string;
+          sale_id?: string | null;
+          product_id?: string | null;
+          gross_cents?: number;
+          discount_cents?: number;
+          net_cents?: number;
+          cost_cents?: number;
+          margin_cents?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          goal_id?: string;
+          event_id?: string;
+          user_id?: string;
+          reward_redemption_id?: string;
+          sale_id?: string | null;
+          product_id?: string | null;
+          gross_cents?: number;
+          discount_cents?: number;
+          net_cents?: number;
+          cost_cents?: number;
+          margin_cents?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      event_reviews: {
+        Row: {
+          id: string;
+          user_id: string;
+          event_id: string;
+          rating: number;
+          service_rating: number | null;
+          music_rating: number | null;
+          atmosphere_rating: number | null;
+          comment: string | null;
+          would_return: boolean | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          event_id: string;
+          rating: number;
+          service_rating?: number | null;
+          music_rating?: number | null;
+          atmosphere_rating?: number | null;
+          comment?: string | null;
+          would_return?: boolean | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          event_id?: string;
+          rating?: number;
+          service_rating?: number | null;
+          music_rating?: number | null;
+          atmosphere_rating?: number | null;
+          comment?: string | null;
+          would_return?: boolean | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      salve_requests: {
+        Row: {
+          id: string;
+          event_id: string;
+          sender_id: string;
+          recipient_id: string;
+          status: string;
+          opener: string | null;
+          created_at: string;
+          expires_at: string;
+          responded_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          sender_id: string;
+          recipient_id: string;
+          status?: string;
+          opener?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          responded_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          sender_id?: string;
+          recipient_id?: string;
+          status?: string;
+          opener?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          responded_at?: string | null;
+        };
+        Relationships: [];
+      };
+      private_chat_threads: {
+        Row: {
+          id: string;
+          event_id: string;
+          salve_request_id: string;
+          member_one_id: string;
+          member_two_id: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          salve_request_id: string;
+          member_one_id: string;
+          member_two_id: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          salve_request_id?: string;
+          member_one_id?: string;
+          member_two_id?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      private_chat_messages: {
+        Row: {
+          id: string;
+          thread_id: string;
+          sender_id: string;
+          body: string;
+          created_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          thread_id: string;
+          sender_id: string;
+          body: string;
+          created_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          thread_id?: string;
+          sender_id?: string;
+          body?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
       };
       qr_tokens: {
         Row: {
@@ -1074,6 +1870,8 @@ export type Database = {
       };
       user_rewards: {
         Row: {
+          activated_at: string | null;
+          activation_expires_at: string | null;
           campaign_id: string;
           checkin_id: string | null;
           created_at: string;
@@ -1081,11 +1879,17 @@ export type Database = {
           expires_at: string | null;
           granted_at: string;
           id: string;
+          reward_snapshot: Json;
+          source_stage_id: string | null;
           status: string;
           updated_at: string;
+          used_at: string | null;
+          visit_scope: string;
           user_id: string;
         };
         Insert: {
+          activated_at?: string | null;
+          activation_expires_at?: string | null;
           campaign_id: string;
           checkin_id?: string | null;
           created_at?: string;
@@ -1093,11 +1897,17 @@ export type Database = {
           expires_at?: string | null;
           granted_at?: string;
           id?: string;
+          reward_snapshot?: Json;
+          source_stage_id?: string | null;
           status?: string;
           updated_at?: string;
+          used_at?: string | null;
+          visit_scope?: string;
           user_id: string;
         };
         Update: {
+          activated_at?: string | null;
+          activation_expires_at?: string | null;
           campaign_id?: string;
           checkin_id?: string | null;
           created_at?: string;
@@ -1105,8 +1915,12 @@ export type Database = {
           expires_at?: string | null;
           granted_at?: string;
           id?: string;
+          reward_snapshot?: Json;
+          source_stage_id?: string | null;
           status?: string;
           updated_at?: string;
+          used_at?: string | null;
+          visit_scope?: string;
           user_id?: string;
         };
         Relationships: [
@@ -1186,150 +2000,150 @@ export type Database = {
           },
         ];
       };
-    };
-    security_controls: {
-      Row: {
-        category: string;
-        completed: boolean;
-        control_key: string;
-        created_at: string;
-        description: string;
-        evidence: string | null;
-        label: string;
-        notes: string | null;
-        required: boolean;
-        reviewed_at: string | null;
-        reviewed_by: string | null;
-        updated_at: string;
+      security_controls: {
+        Row: {
+          category: string;
+          completed: boolean;
+          control_key: string;
+          created_at: string;
+          description: string;
+          evidence: string | null;
+          label: string;
+          notes: string | null;
+          required: boolean;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          category: string;
+          completed?: boolean;
+          control_key: string;
+          created_at?: string;
+          description: string;
+          evidence?: string | null;
+          label: string;
+          notes?: string | null;
+          required?: boolean;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string;
+          completed?: boolean;
+          control_key?: string;
+          created_at?: string;
+          description?: string;
+          evidence?: string | null;
+          label?: string;
+          notes?: string | null;
+          required?: boolean;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
-      Insert: {
-        category: string;
-        completed?: boolean;
-        control_key: string;
-        created_at?: string;
-        description: string;
-        evidence?: string | null;
-        label: string;
-        notes?: string | null;
-        required?: boolean;
-        reviewed_at?: string | null;
-        reviewed_by?: string | null;
-        updated_at?: string;
+      security_events: {
+        Row: {
+          actor_id: string | null;
+          category: string;
+          created_at: string;
+          details: Json;
+          entity: string | null;
+          entity_id: string | null;
+          event_key: string;
+          id: string;
+          occurred_at: string;
+          resolution_note: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          severity: string;
+          target_user_id: string | null;
+          title: string;
+        };
+        Insert: {
+          actor_id?: string | null;
+          category: string;
+          created_at?: string;
+          details?: Json;
+          entity?: string | null;
+          entity_id?: string | null;
+          event_key: string;
+          id?: string;
+          occurred_at?: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity: string;
+          target_user_id?: string | null;
+          title: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          category?: string;
+          created_at?: string;
+          details?: Json;
+          entity?: string | null;
+          entity_id?: string | null;
+          event_key?: string;
+          id?: string;
+          occurred_at?: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity?: string;
+          target_user_id?: string | null;
+          title?: string;
+        };
+        Relationships: [];
       };
-      Update: {
-        category?: string;
-        completed?: boolean;
-        control_key?: string;
-        created_at?: string;
-        description?: string;
-        evidence?: string | null;
-        label?: string;
-        notes?: string | null;
-        required?: boolean;
-        reviewed_at?: string | null;
-        reviewed_by?: string | null;
-        updated_at?: string;
+      venues: {
+        Row: {
+          address: string;
+          created_at: string;
+          created_by: string | null;
+          default_geofence_radius_m: number;
+          default_max_accuracy_m: number;
+          google_place_id: string | null;
+          id: string;
+          is_active: boolean;
+          latitude: number;
+          longitude: number;
+          name: string;
+          updated_at: string;
+        };
+        Insert: {
+          address: string;
+          created_at?: string;
+          created_by?: string | null;
+          default_geofence_radius_m?: number;
+          default_max_accuracy_m?: number;
+          google_place_id?: string | null;
+          id?: string;
+          is_active?: boolean;
+          latitude: number;
+          longitude: number;
+          name: string;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string;
+          created_at?: string;
+          created_by?: string | null;
+          default_geofence_radius_m?: number;
+          default_max_accuracy_m?: number;
+          google_place_id?: string | null;
+          id?: string;
+          is_active?: boolean;
+          latitude?: number;
+          longitude?: number;
+          name?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
-      Relationships: [];
-    };
-    security_events: {
-      Row: {
-        actor_id: string | null;
-        category: string;
-        created_at: string;
-        details: Json;
-        entity: string | null;
-        entity_id: string | null;
-        event_key: string;
-        id: string;
-        occurred_at: string;
-        resolution_note: string | null;
-        resolved_at: string | null;
-        resolved_by: string | null;
-        severity: string;
-        target_user_id: string | null;
-        title: string;
-      };
-      Insert: {
-        actor_id?: string | null;
-        category: string;
-        created_at?: string;
-        details?: Json;
-        entity?: string | null;
-        entity_id?: string | null;
-        event_key: string;
-        id?: string;
-        occurred_at?: string;
-        resolution_note?: string | null;
-        resolved_at?: string | null;
-        resolved_by?: string | null;
-        severity: string;
-        target_user_id?: string | null;
-        title: string;
-      };
-      Update: {
-        actor_id?: string | null;
-        category?: string;
-        created_at?: string;
-        details?: Json;
-        entity?: string | null;
-        entity_id?: string | null;
-        event_key?: string;
-        id?: string;
-        occurred_at?: string;
-        resolution_note?: string | null;
-        resolved_at?: string | null;
-        resolved_by?: string | null;
-        severity?: string;
-        target_user_id?: string | null;
-        title?: string;
-      };
-      Relationships: [];
-    };
-    venues: {
-      Row: {
-        address: string;
-        created_at: string;
-        created_by: string | null;
-        default_geofence_radius_m: number;
-        default_max_accuracy_m: number;
-        google_place_id: string | null;
-        id: string;
-        is_active: boolean;
-        latitude: number;
-        longitude: number;
-        name: string;
-        updated_at: string;
-      };
-      Insert: {
-        address: string;
-        created_at?: string;
-        created_by?: string | null;
-        default_geofence_radius_m?: number;
-        default_max_accuracy_m?: number;
-        google_place_id?: string | null;
-        id?: string;
-        is_active?: boolean;
-        latitude: number;
-        longitude: number;
-        name: string;
-        updated_at?: string;
-      };
-      Update: {
-        address?: string;
-        created_at?: string;
-        created_by?: string | null;
-        default_geofence_radius_m?: number;
-        default_max_accuracy_m?: number;
-        google_place_id?: string | null;
-        id?: string;
-        is_active?: boolean;
-        latitude?: number;
-        longitude?: number;
-        name?: string;
-        updated_at?: string;
-      };
-      Relationships: [];
     };
     Views: {
       public_profiles: {
@@ -1402,7 +2216,63 @@ export type Database = {
           ends_at: string | null;
           is_pinned: boolean;
           feed_priority: number;
+          public_title: string;
+          public_copy: string | null;
+          product_id: string | null;
+          product_category: string | null;
+          activation_expires_at: string | null;
+          visit_scope: string;
         }[];
+      };
+      admin_change_sale_status: {
+        Args: { _sale_id: string; _status: string; _reason?: string | null };
+        Returns: Json;
+      };
+      admin_commercial_snapshot: { Args: never; Returns: Json };
+      admin_configure_event_funnel: { Args: { _event_id: string; _config?: Json }; Returns: Json };
+      admin_upsert_product: {
+        Args: {
+          _name: string;
+          _category?: string;
+          _sale_price_cents?: number;
+          _cost_cents?: number;
+          _reason?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["products"]["Row"];
+      };
+      event_fofocometro: { Args: { _event_id: string }; Returns: Json };
+      inspect_commercial_qr: { Args: { _token: string }; Returns: Json };
+      my_event_journey: { Args: never; Returns: Json };
+      record_customer_sale: {
+        Args: {
+          _event_id: string;
+          _items: Json;
+          _commercial_token: string;
+          _external_reference?: string | null;
+          _source?: string;
+          _service_fee_cents?: number;
+          _tip_cents?: number;
+          _couvert_cents?: number;
+        };
+        Returns: Json;
+      };
+      respond_salve_request: { Args: { _request_id: string; _accept: boolean }; Returns: Json };
+      send_private_message: { Args: { _thread_id: string; _body: string }; Returns: string };
+      send_salve_request: {
+        Args: { _event_id: string; _recipient_id: string; _opener?: string | null };
+        Returns: Json;
+      };
+      submit_event_review: {
+        Args: {
+          _event_id: string;
+          _rating: number;
+          _service_rating?: number | null;
+          _music_rating?: number | null;
+          _atmosphere_rating?: number | null;
+          _comment?: string | null;
+          _would_return?: boolean | null;
+        };
+        Returns: Json;
       };
       admin_prune_security_events: { Args: { _days?: number }; Returns: number };
       admin_resolve_security_event: {
@@ -1568,13 +2438,7 @@ export type Database = {
       payment_source: "demo" | "stripe" | "manual" | "pix";
       plan_code: "gratuito" | "carteirinha_mensal" | "carteirinha_anual";
       subscription_status:
-        | "teste"
-        | "ativa"
-        | "pendente"
-        | "vencida"
-        | "cancelada"
-        | "inadimplente"
-        | "em_carencia";
+        "teste" | "ativa" | "pendente" | "vencida" | "cancelada" | "inadimplente" | "em_carencia";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1590,12 +2454,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1615,13 +2479,12 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1640,13 +2503,12 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1665,13 +2527,12 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1682,13 +2543,12 @@ export type Enums<
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
