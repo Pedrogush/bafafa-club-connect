@@ -270,7 +270,7 @@ function Fofoquinhas() {
                 {generalPromos.map((item) => (
                   <article
                     key={item.campaign_id}
-                    className="ticket-card checker-texture p-5 text-foreground"
+                    className="content-card content-card--promotion p-5 text-foreground"
                   >
                     <span className="cut-label bg-white">promoção aberta</span>
                     <h2 className="mt-5 font-display text-3xl leading-none">
@@ -311,7 +311,7 @@ function Fofoquinhas() {
               history.map((row) => (
                 <article
                   key={row.id}
-                  className="sticker-card flex items-center gap-3 bg-card p-4 opacity-75"
+                  className="content-card flex items-center gap-3 bg-card p-4 opacity-75"
                 >
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground/20 bg-muted">
                     {row.status === "redeemed" ? (
@@ -338,7 +338,7 @@ function Fofoquinhas() {
       )}
 
       <Dialog open={Boolean(confirmItem)} onOpenChange={(open) => !open && setConfirmItem(null)}>
-        <DialogContent className="max-w-sm rounded-3xl">
+        <DialogContent className="bafafa-dialog max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Usar esta Fofoquinha?</DialogTitle>
             <DialogDescription>
@@ -375,7 +375,7 @@ function Fofoquinhas() {
           }
         }}
       >
-        <DialogContent className="max-w-sm rounded-3xl text-center">
+        <DialogContent className="bafafa-dialog max-w-sm text-center">
           <DialogHeader>
             <DialogTitle className="font-display text-3xl">Fofoquinha ativada</DialogTitle>
             <DialogDescription>
@@ -437,7 +437,7 @@ function RewardCard({
   const appEnabled = item.redemption_mode !== "external";
   const externalEnabled = item.redemption_mode !== "app" && Boolean(item.external_url);
   return (
-    <article className="ticket-card checker-texture p-5 text-foreground">
+    <article className="content-card content-card--promotion p-5 text-foreground">
       <span className="cut-label bg-white">liberada pra você</span>
       <h2 className="mt-5 font-display text-4xl leading-none">{item.public_title || item.name}</h2>
       <p className="mt-3 font-poster text-xl">{campaignBenefitLabel(item)}</p>
@@ -482,18 +482,18 @@ function MissionCard({ item }: { item: Fofoquinha }) {
     Math.round((item.progress_value / Math.max(item.trigger_target, 1)) * 100),
   );
   return (
-    <article className="sticker-card bg-card p-5">
+    <article className="content-card content-card--mission p-5 text-foreground">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="section-kicker text-muted-foreground">Missão do clube</p>
+          <p className="section-kicker text-foreground/65">Missão do clube</p>
           <h2 className="mt-1 font-display text-3xl leading-none">
             {item.public_title || item.name}
           </h2>
         </div>
-        <Target className="h-7 w-7 shrink-0 text-primary" />
+        <Target className="h-7 w-7 shrink-0 text-foreground" />
       </div>
       {item.description && (
-        <p className="mt-3 text-sm font-semibold text-muted-foreground">{item.description}</p>
+        <p className="mt-3 text-sm font-semibold text-foreground/70">{item.description}</p>
       )}
       <p className="mt-3 font-poster text-base">Recompensa: {campaignBenefitLabel(item)}</p>
       <div className="mt-4">
@@ -503,12 +503,14 @@ function MissionCard({ item }: { item: Fofoquinha }) {
           </span>
           <span>{progress}%</span>
         </div>
-        <div className="h-4 overflow-hidden rounded-full border-2 border-foreground bg-muted">
-          <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+        <div className="h-4 overflow-hidden rounded-full border-2 border-foreground bg-white/65">
+          <div className="h-full bg-foreground" style={{ width: `${progress}%` }} />
         </div>
       </div>
       {item.public_rules && (
-        <p className="mt-4 text-xs font-semibold text-muted-foreground">{item.public_rules}</p>
+        <p className="mt-4 rounded-xl bg-white/65 p-3 text-xs font-semibold text-foreground/75">
+          {item.public_rules}
+        </p>
       )}
     </article>
   );
@@ -516,7 +518,7 @@ function MissionCard({ item }: { item: Fofoquinha }) {
 
 function RewardSummary({ item }: { item: Fofoquinha }) {
   return (
-    <div className="ticket-card checker-texture p-4 text-left text-foreground">
+    <div className="content-card content-card--promotion p-4 text-left text-foreground">
       <p className="font-display text-2xl leading-none">{item.public_title || item.name}</p>
       <p className="mt-2 text-sm font-black">{campaignBenefitLabel(item)}</p>
     </div>
@@ -525,7 +527,7 @@ function RewardSummary({ item }: { item: Fofoquinha }) {
 
 function Empty({ icon: Icon, title, copy }: { icon: typeof Gift; title: string; copy: string }) {
   return (
-    <section className="sticker-card bg-card p-6 text-center">
+    <section className="content-card bg-card p-6 text-center">
       <Icon className="mx-auto h-8 w-8 text-primary" />
       <h2 className="mt-3 font-display text-3xl leading-none">{title}</h2>
       <p className="mt-3 text-sm font-semibold text-muted-foreground">{copy}</p>

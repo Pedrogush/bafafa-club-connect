@@ -437,11 +437,12 @@ function Resenha() {
 
   return (
     <AppShell>
-      <header className="border-b border-foreground/10 bg-card px-4 pb-3 pt-4">
+      <header className="resenha-header relative overflow-hidden border-b-2 border-foreground px-5 pb-5 pt-6 text-white">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="section-kicker text-muted-foreground">Só entra quem fez check-in</p>
-            <h1 className="mt-1 font-display text-3xl leading-none">Resenha</h1>
+            <p className="section-kicker text-white/65">Ao vivo na casa</p>
+            <h1 className="mt-1 font-display text-4xl leading-none">Resenha do Bafas</h1>
+            <p className="mt-2 text-xs font-bold text-white/72">Cantada pode. Desrespeito, não.</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -450,7 +451,7 @@ function Resenha() {
                 setSalvesOpen(true);
                 void loadSalves();
               }}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground"
+              className="bafafa-icon-button shrink-0"
               aria-label="Abrir salves"
               title="Salves"
             >
@@ -459,7 +460,7 @@ function Resenha() {
             <button
               type="button"
               onClick={() => setBlockedUsersOpen(true)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground"
+              className="bafafa-icon-button shrink-0"
               aria-label="Gerenciar pessoas bloqueadas"
               title="Pessoas bloqueadas"
             >
@@ -469,7 +470,7 @@ function Resenha() {
               type="button"
               onClick={() => void refreshChat()}
               disabled={refreshing || !selectedId}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-foreground/20 bg-background text-foreground disabled:opacity-50"
+              className="bafafa-icon-button shrink-0 disabled:opacity-50"
               aria-label="Atualizar Resenha"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -499,22 +500,22 @@ function Resenha() {
           {rooms.length === 0 ? (
             <ResenhaUnavailable session={houseSession} onRetry={() => void initialize()} />
           ) : (
-            <section className="flex h-[calc(100dvh-9.8rem)] min-h-[430px] flex-col overflow-hidden rounded-3xl border-2 border-foreground/15 bg-card shadow-sm">
-              <div className="border-b border-foreground/10 bg-card px-4 py-3">
+            <section className="resenha-room flex h-[calc(100dvh-11.8rem)] min-h-[430px] flex-col overflow-hidden">
+              <div className="resenha-room__header px-4 py-3 text-white">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="section-kicker text-muted-foreground">Resenha do Bafas</p>
+                    <p className="section-kicker text-white/65">Papo aberto</p>
                     <p className="mt-1 truncate font-black">A conversa de quem já chegou</p>
                   </div>
                   <span
                     className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase ${
-                      roomClosed ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary"
+                      roomClosed ? "bg-white/12 text-white/65" : "bg-mango text-foreground"
                     }`}
                   >
                     {roomClosed ? "encerrada" : "ao vivo"}
                   </span>
                 </div>
-                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-muted-foreground">
+                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-white/65">
                   <span className="flex items-center gap-1">
                     <UsersRound className="h-3.5 w-3.5" /> {participantCount} na conversa
                   </span>
@@ -527,7 +528,7 @@ function Resenha() {
               <div
                 ref={feedRef}
                 onScroll={handleFeedScroll}
-                className="relative flex-1 space-y-2 overflow-y-auto bg-background px-3 py-3"
+                className="resenha-room__feed relative flex-1 space-y-2 overflow-y-auto px-3 py-3"
               >
                 {loadingMessages ? (
                   <p className="py-16 text-center text-sm font-bold text-muted-foreground">
@@ -553,10 +554,10 @@ function Resenha() {
                     return (
                       <article
                         key={message.message_id}
-                        className={`max-w-[86%] rounded-2xl border px-3 py-2.5 ${
+                        className={`resenha-bubble max-w-[86%] px-3 py-2.5 ${
                           message.is_mine
-                            ? "ml-auto border-lagoa/45 bg-lagoa/20"
-                            : "mr-auto border-foreground/10 bg-card"
+                            ? "resenha-bubble--mine ml-auto"
+                            : "resenha-bubble--other mr-auto"
                         }`}
                       >
                         <div className="flex items-start gap-2">
@@ -707,14 +708,17 @@ function Resenha() {
               </div>
 
               {roomClosed ? (
-                <div className="border-t border-foreground/10 bg-muted px-4 py-3 text-center">
+                <div className="border-t-2 border-foreground bg-[#2c1b4a] px-4 py-3 text-center text-white">
                   <p className="text-sm font-black">Resenha encerrada.</p>
-                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                  <p className="mt-0.5 text-[11px] font-semibold text-white/65">
                     As mensagens ficam somente para consulta.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={sendMessage} className="border-t border-foreground/10 bg-card p-3">
+                <form
+                  onSubmit={sendMessage}
+                  className="resenha-composer border-t-2 border-foreground p-3"
+                >
                   {replyingTo && (
                     <div className="mb-2 flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-xs font-bold">
                       <Reply className="h-3.5 w-3.5" />
@@ -736,7 +740,7 @@ function Resenha() {
                       onChange={(event) => setDraft(event.target.value.slice(0, 300))}
                       placeholder="Manda a boa, Bafafã…"
                       rows={1}
-                      className="max-h-28 min-h-11 resize-none rounded-2xl border border-foreground/20 bg-background"
+                      className="max-h-28 min-h-11 resize-none rounded-2xl border-2 border-foreground bg-white shadow-[2px_3px_0_rgba(22,18,43,0.18)]"
                     />
                     <Button
                       type="submit"
@@ -760,7 +764,7 @@ function Resenha() {
       <BlockedUsersDialog open={blockedUsersOpen} onOpenChange={setBlockedUsersOpen} />
 
       <Dialog open={Boolean(reporting)} onOpenChange={(open) => !open && setReporting(null)}>
-        <DialogContent className="rounded-3xl">
+        <DialogContent className="bafafa-dialog">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Denunciar mensagem</DialogTitle>
             <DialogDescription>
@@ -806,7 +810,7 @@ function Resenha() {
       </Dialog>
 
       <Dialog open={Boolean(salveTarget)} onOpenChange={(open) => !open && setSalveTarget(null)}>
-        <DialogContent className="rounded-3xl">
+        <DialogContent className="bafafa-dialog">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
               Mandar um salve para {salveTarget?.author_name}
@@ -840,7 +844,7 @@ function Resenha() {
       </Dialog>
 
       <Dialog open={salvesOpen} onOpenChange={setSalvesOpen}>
-        <DialogContent className="max-w-md rounded-3xl">
+        <DialogContent className="bafafa-dialog max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Salves da noite</DialogTitle>
             <DialogDescription>
@@ -920,7 +924,7 @@ function Resenha() {
           }
         }}
       >
-        <DialogContent className="flex max-h-[82vh] max-w-md flex-col rounded-3xl">
+        <DialogContent className="bafafa-dialog flex max-h-[82vh] max-w-md flex-col">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
               Conversa com {privateThread?.otherName}
@@ -1019,7 +1023,7 @@ function ResenhaUnavailable({
 }) {
   if (!session) {
     return (
-      <section className="poster-card checker-texture p-6 text-foreground">
+      <section className="content-card content-card--chat p-6 text-white">
         <Clock3 className="h-9 w-9" />
         <h2 className="mt-4 font-display text-4xl leading-none">A Resenha tá fechada agora.</h2>
         <p className="mt-3 text-sm font-semibold opacity-75">
@@ -1027,7 +1031,7 @@ function ResenhaUnavailable({
         </p>
         <Link
           to="/inicio"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-mango px-5 py-3 text-sm font-black text-foreground shadow-[3px_4px_0_var(--foreground)]"
         >
           Voltar ao Início
         </Link>
@@ -1037,7 +1041,7 @@ function ResenhaUnavailable({
 
   if (!session.checked_in) {
     return (
-      <section className="poster-card checker-texture p-6 text-foreground">
+      <section className="content-card content-card--chat p-6 text-white">
         <MessageCircleMore className="h-9 w-9" />
         <h2 className="mt-4 font-display text-4xl leading-none">A Resenha começa no check-in.</h2>
         <p className="mt-3 text-sm font-semibold opacity-75">
@@ -1045,7 +1049,7 @@ function ResenhaUnavailable({
         </p>
         <Link
           to="/checkin"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-mango px-5 py-3 text-sm font-black text-foreground shadow-[3px_4px_0_var(--foreground)]"
         >
           Confirmar minha presença <ShieldCheck className="h-4 w-4" />
         </Link>
@@ -1060,7 +1064,7 @@ function ResenhaUnavailable({
   const ended = !session.chat_enabled || now > closesAt;
 
   return (
-    <section className="poster-card checker-texture p-6 text-foreground">
+    <section className="content-card content-card--chat p-6 text-white">
       <Clock3 className="h-9 w-9" />
       <h2 className="mt-4 font-display text-4xl leading-none">
         {waiting
@@ -1080,7 +1084,7 @@ function ResenhaUnavailable({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-mango px-5 py-3 text-sm font-black text-foreground shadow-[3px_4px_0_var(--foreground)]"
         >
           <RefreshCw className="h-4 w-4" /> Atualizar Resenha
         </button>

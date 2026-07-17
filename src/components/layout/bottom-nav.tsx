@@ -3,10 +3,20 @@ import { Home, MessageCircleMore, Sparkles, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { to: "/inicio", label: "Início", icon: Home, active: "bg-mango" },
-  { to: "/mimos", label: "Fofoquinhas", icon: Sparkles, active: "bg-secondary" },
-  { to: "/resenha", label: "Resenha", icon: MessageCircleMore, active: "bg-samba" },
-  { to: "/perfil", label: "Perfil", icon: UserRound, active: "bg-primary" },
+  { to: "/inicio", label: "Início", icon: Home, active: "bg-mango text-foreground" },
+  {
+    to: "/mimos",
+    label: "Fofoquinhas",
+    icon: Sparkles,
+    active: "bg-secondary text-foreground",
+  },
+  {
+    to: "/resenha",
+    label: "Resenha",
+    icon: MessageCircleMore,
+    active: "bg-[#2c1b4a] text-white",
+  },
+  { to: "/perfil", label: "Perfil", icon: UserRound, active: "bg-electric text-white" },
 ] as const;
 
 export function BottomNav() {
@@ -15,9 +25,9 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-foreground bg-background/97 pb-safe backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-foreground bg-background/95 pb-safe shadow-[0_-8px_24px_-18px_var(--foreground)] backdrop-blur-xl"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4 items-center gap-1 px-2 py-2">
+      <ul className="mx-auto grid max-w-lg grid-cols-4 items-center gap-1 px-2 py-2.5">
         {items.map(({ to, label, icon: Icon, active: activeColor }) => {
           const active = pathname === to || pathname.startsWith(`${to}/`);
           return (
@@ -25,10 +35,10 @@ export function BottomNav() {
               <Link
                 to={to}
                 className={cn(
-                  "mx-auto flex min-h-14 w-full max-w-[96px] flex-col items-center justify-center gap-1 rounded-2xl border-2 px-1 py-1.5 text-[10px] font-extrabold transition",
+                  "mx-auto flex min-h-14 w-full max-w-[96px] flex-col items-center justify-center gap-1 rounded-[1.15rem] border-2 px-1 py-1.5 text-[10px] font-extrabold transition-all duration-150",
                   active
-                    ? `${activeColor} border-foreground text-foreground shadow-[2px_3px_0_var(--foreground)]`
-                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? `${activeColor} border-foreground shadow-[2px_3px_0_var(--foreground)]`
+                    : "border-transparent text-muted-foreground hover:-translate-y-0.5 hover:bg-muted hover:text-foreground",
                 )}
               >
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.7 : 2.1} />

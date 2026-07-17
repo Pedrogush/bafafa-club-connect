@@ -366,7 +366,7 @@ function Perfil() {
       <ScreenHeader
         eyebrow="Sua carteirinha"
         title="Carteirinha"
-        tone="brick"
+        tone="blue"
         action={
           <button
             onClick={handleSignOut}
@@ -396,8 +396,8 @@ function Perfil() {
 
       {!loadingProfile && !loadError && (
         <div className="space-y-5 px-5 pt-2">
-          <section className="overflow-hidden rounded-[2rem] border-2 border-foreground/20 bg-card shadow-[0_6px_0_rgba(20,16,40,0.12)]">
-            <div className="brick-texture h-12 border-b-2 border-foreground/15" />
+          <section className="content-card content-card--profile overflow-hidden text-white">
+            <div className="profile-card__stripe h-12 border-b-2 border-foreground" />
             <div className="relative p-4 pt-0">
               <div className="-mt-8 flex items-start gap-3">
                 <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full border-[3px] border-foreground bg-primary font-display text-2xl text-primary-foreground shadow-[2px_3px_0_var(--foreground)]">
@@ -418,7 +418,7 @@ function Perfil() {
                     maxBadges={3}
                     className="text-xl font-black"
                   />
-                  <p className="mt-0.5 truncate text-sm font-semibold text-muted-foreground">
+                  <p className="mt-0.5 truncate text-sm font-semibold text-white/75">
                     {profile?.username ? `@${profile.username}` : "Escolha seu @ no perfil"}
                   </p>
                 </div>
@@ -441,38 +441,30 @@ function Perfil() {
                   </span>
                 )}
                 {profile?.bio && (
-                  <p className="w-full text-sm leading-relaxed text-muted-foreground">
-                    {profile.bio}
-                  </p>
+                  <p className="w-full text-sm leading-relaxed text-white/80">{profile.bio}</p>
                 )}
               </div>
 
-              <div className="mt-4 grid grid-cols-3 divide-x divide-foreground/10 rounded-2xl bg-muted/45 py-3 text-center">
+              <div className="mt-4 grid grid-cols-3 divide-x divide-white/20 rounded-2xl border-2 border-white/30 bg-white/12 py-3 text-center">
                 <div>
                   <p className="text-xl font-black leading-none">{checkins}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
-                    check-ins
-                  </p>
+                  <p className="mt-1 text-[9px] font-black uppercase text-white/65">check-ins</p>
                 </div>
                 <div>
                   <p className="text-xl font-black leading-none">
                     {visibleBadgeDefinitions.length}
                   </p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
-                    selos
-                  </p>
+                  <p className="mt-1 text-[9px] font-black uppercase text-white/65">selos</p>
                 </div>
                 <div>
                   <p className="text-sm font-black leading-none">{memberSince}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-muted-foreground">
-                    no clube
-                  </p>
+                  <p className="mt-1 text-[9px] font-black uppercase text-white/65">no clube</p>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="sticker-card checker-texture p-4 text-foreground">
+          <section className="content-card content-card--mission p-4 text-foreground">
             <div className="flex items-center justify-between text-sm">
               <div>
                 <p className="section-kicker">Aquisição de fofoca</p>
@@ -545,7 +537,7 @@ function Perfil() {
             </div>
           )}
 
-          <section className="sticker-card bg-card p-5">
+          <section className="content-card bg-card p-5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <BadgeCheck className="h-5 w-5 text-samba" />
@@ -568,7 +560,7 @@ function Perfil() {
             )}
           </section>
 
-          <form onSubmit={saveProfile} className="sticker-card space-y-5 bg-card p-5">
+          <form onSubmit={saveProfile} className="profile-form content-card space-y-5 bg-card p-5">
             <div className="flex items-center gap-2">
               <UserRound className="h-5 w-5 text-primary" />
               <div>
@@ -627,7 +619,7 @@ function Perfil() {
                   />
                 </div>
 
-                <section className="rounded-2xl border-2 border-foreground/15 bg-muted/60 p-4">
+                <section className="profile-subpanel profile-subpanel--identity p-4">
                   <div>
                     <p className="font-black">Identidade e tratamento</p>
                     <p className="mt-1 text-xs font-semibold text-muted-foreground">
@@ -644,7 +636,7 @@ function Perfil() {
                         onChange={(event) =>
                           setProfile({ ...profile, gender_identity: event.target.value || null })
                         }
-                        className={inputCls}
+                        className="bafafa-select"
                       >
                         <option value="">Não informado</option>
                         <option value="mulher">Mulher</option>
@@ -722,7 +714,7 @@ function Perfil() {
                       onChange={(event) =>
                         setProfile({ ...profile, active_title_id: event.target.value || null })
                       }
-                      className={inputCls}
+                      className="bafafa-select"
                     >
                       <option value="">Sem título</option>
                       {titles.map((title) => (
@@ -734,7 +726,7 @@ function Perfil() {
                   </label>
                 )}
 
-                <div className="space-y-3 rounded-2xl border-2 border-foreground/15 bg-muted p-4 text-sm">
+                <div className="profile-subpanel profile-subpanel--privacy space-y-3 p-4 text-sm">
                   <div>
                     <p className="font-black">Privacidade do perfil público</p>
                     <p className="mt-1 text-xs font-semibold text-muted-foreground">
@@ -792,20 +784,23 @@ function Perfil() {
             )}
           </form>
 
-          <Link to="/seguranca" className="sticker-card flex items-center gap-3 bg-card p-4">
+          <Link
+            to="/seguranca"
+            className="content-card content-card--profile flex items-center gap-3 p-4 text-white"
+          >
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground bg-primary text-primary-foreground shadow-[2px_3px_0_var(--foreground)]">
               <LockKeyhole className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-black">Segurança da conta</p>
-              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+              <p className="mt-0.5 text-xs font-semibold text-white/75">
                 Senha, sessões e autenticação em duas etapas.
               </p>
             </div>
-            <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+            <ShieldCheck className="h-5 w-5 shrink-0 text-white" />
           </Link>
 
-          <section className="sticker-card bg-card p-4">
+          <section className="content-card bg-card p-4">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground bg-samba text-samba-foreground shadow-[2px_3px_0_var(--foreground)]">
                 <UserRoundX className="h-5 w-5" />
@@ -942,14 +937,21 @@ function Toggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-start gap-3 font-semibold">
+    <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-foreground/10 bg-white/55 px-3 py-2.5 font-semibold transition hover:border-foreground/25">
       <input
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-0.5 h-4 w-4 accent-primary"
+        className="sr-only"
       />
-      <span>{label}</span>
+      <span
+        className={`relative h-6 w-11 shrink-0 rounded-full border-2 border-foreground transition ${checked ? "bg-primary" : "bg-muted"}`}
+      >
+        <span
+          className={`absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full transition-transform ${checked ? "translate-x-5 bg-white" : "bg-foreground"}`}
+        />
+      </span>
+      <span className="min-w-0 flex-1">{label}</span>
     </label>
   );
 }

@@ -90,6 +90,20 @@ const EMPTY: HomeData = {
   houseSession: null,
 };
 
+const GREETINGS = [
+  "E aí, {name}!",
+  "Chegou, {name}!",
+  "Fala, {name}!",
+  "Bora, {name}!",
+  "Olha essa, {name}!",
+  "Tem fofoca, {name}!",
+] as const;
+
+function greetingFor(name: string, seed: string) {
+  const index = Array.from(seed).reduce((total, character) => total + character.charCodeAt(0), 0);
+  return GREETINGS[index % GREETINGS.length].replace("{name}", name);
+}
+
 function Inicio() {
   const { user } = useAuth();
   const [data, setData] = useState<HomeData>(EMPTY);
@@ -175,6 +189,10 @@ function Inicio() {
   );
 
   const firstName = data.displayName.split(" ")[0] || "Bafafã";
+  const greeting = useMemo(
+    () => greetingFor(firstName, user?.last_sign_in_at ?? user?.id ?? firstName),
+    [firstName, user?.id, user?.last_sign_in_at],
+  );
   const nextTask = nextProfileTask(data.completion);
 
   function openExternalPromotion(promo: Promo, source: "home" | "fofoquinhas" = "home") {
@@ -198,21 +216,28 @@ function Inicio() {
 
   return (
     <AppShell>
-      <header className="relative overflow-hidden border-b-2 border-foreground bg-background px-5 pb-5 pt-5">
-        <div className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-mango/50 blur-3xl" />
-        <div className="relative flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="section-kicker text-muted-foreground">Feed oficial do Bafafá</p>
-            <h1 className="mt-1 truncate font-display text-4xl leading-none">Ô, {firstName}!</h1>
-            <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 text-brick" /> Praça Dr. Amaro de Souza · Lagoa Nova
-            </p>
+      <header className="home-hero relative overflow-hidden border-b-2 border-foreground px-5 pb-6 pt-6">
+        <div className="home-hero__sun" aria-hidden="true" />
+        <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+          <div className="min-w-0 pt-1">
+            <span className="home-hero__invitation">BAFAFEED</span>
+            <h1 className="home-hero__greeting mt-4">
+              <span>{greeting}</span>
+              <span className="home-hero__asterisk" aria-hidden="true">
+                *
+              </span>
+            </h1>
+            <p className="home-hero__institutional">O que tá valendo no Bafafá, do seu jeito.</p>
           </div>
-          <img
-            src="/brand/logo-bafafa.png"
-            alt="Bafafá"
-            className="h-16 w-24 shrink-0 object-contain drop-shadow-[2px_3px_0_rgba(20,16,40,.18)]"
-          />
+          <div className="bafafa-sign" aria-label="Bafafá Bar">
+            <span className="bafafa-sign__nail bafafa-sign__nail--left" aria-hidden="true" />
+            <span className="bafafa-sign__nail bafafa-sign__nail--right" aria-hidden="true" />
+            <img
+              src="/brand/logo-bafafa.png"
+              alt="Bafafá Bar"
+              className="relative z-[1] h-auto w-full max-w-[9.5rem] object-contain"
+            />
+          </div>
         </div>
       </header>
 
@@ -266,15 +291,18 @@ function Inicio() {
           <FeedPostsSection posts={postsByPlacement.afterPromotions} />
 
           {data.completion.percentage < 100 && nextTask && (
-            <Link to="/perfil" className="sticker-card flex items-center gap-3 bg-card p-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-foreground bg-mango shadow-[2px_3px_0_var(--foreground)]">
+            <Link
+              to="/perfil"
+              className="content-card content-card--profile flex items-center gap-3 p-4 text-white"
+            >
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-foreground bg-white text-foreground shadow-[2px_3px_0_var(--foreground)]">
                 <UserRound className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-black">
                   Sua carteirinha está {data.completion.percentage}% pronta
                 </p>
-                <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                <p className="mt-0.5 text-xs font-semibold text-white/80">
                   {nextTask.label}. Complete e deixe seu perfil com a sua cara.
                 </p>
               </div>
@@ -285,7 +313,7 @@ function Inicio() {
           <FeedPostsSection posts={postsByPlacement.bottom} />
 
           {!data.houseSession && data.promotions.length === 0 && data.posts.length === 0 && (
-            <section className="poster-card checker-texture p-6 text-foreground">
+            <section className="content-card content-card--news p-6 text-foreground">
               <Sparkles className="h-8 w-8" />
               <h2 className="mt-4 font-display text-4xl leading-none">
                 A fofoca ainda está sendo apurada.
@@ -321,13 +349,15 @@ function sortPromotions(promotions: Promo[]) {
 function HouseSessionCard({ session }: { session: HouseSession }) {
   if (session.checked_in) {
     return (
-      <section className="poster-card grid-texture bg-primary p-5 text-primary-foreground">
+      <section className="content-card content-card--chat p-5 text-white">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="h-8 w-8 shrink-0" />
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-white/80 bg-white text-foreground shadow-[2px_3px_0_var(--foreground)]">
+            <CheckCircle2 className="h-6 w-6" />
+          </div>
           <div>
-            <p className="section-kicker opacity-75">Presença confirmada</p>
+            <p className="section-kicker text-white/70">Presença confirmada</p>
             <h2 className="mt-1 font-display text-4xl leading-none">A Resenha tá aberta.</h2>
-            <p className="mt-3 text-sm font-semibold opacity-85">
+            <p className="mt-3 text-sm font-semibold text-white/80">
               Entre para conversar com quem já chegou ao Bafafá.
             </p>
           </div>
@@ -345,13 +375,15 @@ function HouseSessionCard({ session }: { session: HouseSession }) {
   if (!session.checkin_open) return null;
 
   return (
-    <section className="poster-card checker-texture p-5 text-foreground">
+    <section className="content-card content-card--checkin p-5 text-white">
       <div className="flex items-start gap-3">
-        <MapPin className="h-8 w-8 shrink-0" />
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-foreground bg-white text-foreground shadow-[2px_3px_0_var(--foreground)]">
+          <MapPin className="h-6 w-6" />
+        </div>
         <div>
-          <p className="section-kicker opacity-65">A casa está aberta</p>
+          <p className="section-kicker text-white/75">A casa está aberta</p>
           <h2 className="mt-1 font-display text-4xl leading-none">Já tá no Bafafá?</h2>
-          <p className="mt-3 text-sm font-semibold opacity-75">
+          <p className="mt-3 text-sm font-semibold text-white/85">
             Confirme sua presença para entrar na Resenha e liberar as vantagens da casa.
           </p>
         </div>
@@ -372,12 +404,18 @@ function FeedPostsSection({ posts }: { posts: FeedPost[] }) {
     <section className="space-y-4">
       <FeedSectionTitle icon={MessageCircleMore} title="Direto do Bafafá" />
       {posts.map((post) => (
-        <article key={post.id} className="sticker-card overflow-hidden bg-card">
+        <article key={post.id} className="content-card content-card--news overflow-hidden">
           {post.image_url && (
-            <img src={post.image_url} alt="" className="aspect-[16/9] w-full object-cover" />
+            <div className="border-b-2 border-foreground/80 bg-background/30 p-2">
+              <img
+                src={post.image_url}
+                alt=""
+                className="aspect-[16/9] w-full rounded-[1.15rem] border-2 border-foreground object-cover"
+              />
+            </div>
           )}
           <div className="p-5">
-            <span className="cut-label bg-lagoa text-foreground">
+            <span className="cut-label bg-white text-foreground">
               {post.post_type === "photo"
                 ? "álbum"
                 : post.post_type === "notice"
@@ -388,7 +426,7 @@ function FeedPostsSection({ posts }: { posts: FeedPost[] }) {
             </span>
             <h2 className="mt-4 font-display text-3xl leading-none">{post.title}</h2>
             {post.body && (
-              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-3 whitespace-pre-line text-sm font-semibold leading-relaxed text-foreground/75">
                 {post.body}
               </p>
             )}
@@ -435,15 +473,16 @@ function PromotionCard({
   const hasReward = promo.reward_status === "available";
   const appEnabled = promo.redemption_mode !== "external";
   const externalEnabled = promo.redemption_mode !== "app" && Boolean(promo.external_url);
+  const isMission = promo.campaign_kind === "milestone";
 
   return (
     <article
-      className={`${featured ? "poster-card checker-texture" : "ticket-card bg-card"} overflow-hidden p-5 text-foreground`}
+      className={`content-card ${isMission ? "content-card--mission" : "content-card--promotion"} ${featured ? "content-card--featured" : ""} overflow-hidden p-5 text-foreground`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="section-kicker opacity-65">
-            {promo.campaign_kind === "milestone" ? "Missão do clube" : "Promoção aberta"}
+            {isMission ? "Missão do clube" : "Fofoquinha em destaque"}
           </p>
           <h3
             className={`${featured ? "text-4xl" : "text-3xl"} mt-1 break-words font-display leading-none`}
