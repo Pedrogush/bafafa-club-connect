@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   Clock3,
+  ExternalLink,
   Gift,
   History,
   LockKeyhole,
@@ -54,6 +55,12 @@ type Fofoquinha = {
   public_copy?: string | null;
   activation_expires_at?: string | null;
   visit_scope?: string;
+  home_sort_order?: number | null;
+  home_visible?: boolean;
+  redemption_mode?: "app" | "external" | "both";
+  external_url?: string | null;
+  external_button_label?: string;
+  external_open_new_tab?: boolean;
 };
 
 type HistoryRow = {
@@ -103,7 +110,11 @@ function Fofoquinhas() {
     const firstError = fofoquinhas.error ?? rewards.error;
     if (firstError) setError(firstError.message);
     else {
-      setItems((fofoquinhas.data ?? []) as Fofoquinha[]);
+      setItems(
+        ((fofoquinhas.data ?? []) as Fofoquinha[]).filter(
+          (item) => item.campaign_kind !== "event" && item.campaign_kind !== "funnel",
+        ),
+      );
       setHistory((rewards.data ?? []) as unknown as HistoryRow[]);
     }
     setLoading(false);
@@ -152,6 +163,25 @@ function Fofoquinhas() {
       toast.error("Não foi possível gerar o código. Tente novamente.");
     } finally {
       setGenerating(false);
+    }
+  }
+
+  function openExternalPromotion(item: Fofoquinha) {
+    if (!item.external_url) return;
+    void supabase
+      .rpc("track_campaign_external_click", {
+        _campaign_id: item.campaign_id,
+        _source: "fofoquinhas",
+      })
+      .then(({ error: trackingError }) => {
+        if (trackingError)
+          console.warn("Não foi possível registrar o clique:", trackingError.message);
+      });
+
+    if (item.external_open_new_tab ?? true) {
+      window.open(item.external_url, "_blank", "noopener,noreferrer");
+    } else {
+      window.location.assign(item.external_url);
     }
   }
 
@@ -212,11 +242,16 @@ function Fofoquinhas() {
               <Empty
                 icon={Gift}
                 title="Nada liberado agora"
-                copy="Continue participando dos eventos e das missões. A próxima vantagem aparece aqui."
+                copy="Continue participando das missões e acompanhando o Bafafá. A próxima vantagem aparece aqui."
               />
             ) : (
               available.map((item) => (
-                <RewardCard key={item.campaign_id} item={item} onUse={() => setConfirmItem(item)} />
+                <RewardCard
+                  key={item.campaign_id}
+                  item={item}
+                  onUse={() => setConfirmItem(item)}
+                  onExternal={() => openExternalPromotion(item)}
+                />
               ))
             ))}
 
@@ -249,6 +284,16 @@ function Fofoquinhas() {
                       <p className="mt-4 rounded-xl bg-white/70 p-3 text-xs font-semibold">
                         {item.public_rules}
                       </p>
+                    )}
+                    {item.redemption_mode !== "app" && item.external_url && (
+                      <button
+                        type="button"
+                        onClick={() => openExternalPromotion(item)}
+                        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+                      >
+                        {item.external_button_label || "Garantir promoção"}
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
                     )}
                   </article>
                 ))}
@@ -380,7 +425,17 @@ function TabButton({
   );
 }
 
-function RewardCard({ item, onUse }: { item: Fofoquinha; onUse: () => void }) {
+function RewardCard({
+  item,
+  onUse,
+  onExternal,
+}: {
+  item: Fofoquinha;
+  onUse: () => void;
+  onExternal: () => void;
+}) {
+  const appEnabled = item.redemption_mode !== "external";
+  const externalEnabled = item.redemption_mode !== "app" && Boolean(item.external_url);
   return (
     <article className="ticket-card checker-texture p-5 text-foreground">
       <span className="cut-label bg-white">liberada pra você</span>
@@ -396,13 +451,27 @@ function RewardCard({ item, onUse }: { item: Fofoquinha; onUse: () => void }) {
           Válida até {formatDateTime(item.reward_expires_at)}
         </p>
       )}
-      <button
-        type="button"
-        onClick={onUse}
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
-      >
-        Usar minha Fofoquinha <Gift className="h-4 w-4" />
-      </button>
+      <div className={`mt-5 grid gap-2 ${appEnabled && externalEnabled ? "sm:grid-cols-2" : ""}`}>
+        {appEnabled && (
+          <button
+            type="button"
+            onClick={onUse}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+          >
+            Usar minha Fofoquinha <Gift className="h-4 w-4" />
+          </button>
+        )}
+        {externalEnabled && (
+          <button
+            type="button"
+            onClick={onExternal}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-foreground bg-card px-4 py-3 text-sm font-black"
+          >
+            {item.external_button_label || "Garantir promoção"}
+            <ExternalLink className="h-4 w-4" />
+          </button>
+        )}
+      </div>
     </article>
   );
 }

@@ -125,6 +125,12 @@ export type Database = {
           event_id: string | null;
           feed_priority: number;
           feed_visible: boolean;
+          home_sort_order: number | null;
+          home_visible: boolean;
+          redemption_mode: string;
+          external_url: string | null;
+          external_button_label: string;
+          external_open_new_tab: boolean;
           fixed_off_cents: number | null;
           id: string;
           instructions: string | null;
@@ -174,6 +180,12 @@ export type Database = {
           event_id?: string | null;
           feed_priority?: number;
           feed_visible?: boolean;
+          home_sort_order?: number | null;
+          home_visible?: boolean;
+          redemption_mode?: string;
+          external_url?: string | null;
+          external_button_label?: string;
+          external_open_new_tab?: boolean;
           fixed_off_cents?: number | null;
           id?: string;
           instructions?: string | null;
@@ -223,6 +235,12 @@ export type Database = {
           event_id?: string | null;
           feed_priority?: number;
           feed_visible?: boolean;
+          home_sort_order?: number | null;
+          home_visible?: boolean;
+          redemption_mode?: string;
+          external_url?: string | null;
+          external_button_label?: string;
+          external_open_new_tab?: boolean;
           fixed_off_cents?: number | null;
           id?: string;
           instructions?: string | null;
@@ -261,6 +279,41 @@ export type Database = {
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      campaign_link_clicks: {
+        Row: {
+          campaign_id: string;
+          clicked_at: string;
+          id: string;
+          source: string;
+          user_agent: string | null;
+          user_id: string;
+        };
+        Insert: {
+          campaign_id: string;
+          clicked_at?: string;
+          id?: string;
+          source?: string;
+          user_agent?: string | null;
+          user_id: string;
+        };
+        Update: {
+          campaign_id?: string;
+          clicked_at?: string;
+          id?: string;
+          source?: string;
+          user_agent?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "campaign_link_clicks_campaign_id_fkey";
+            columns: ["campaign_id"];
+            isOneToOne: false;
+            referencedRelation: "campaigns";
             referencedColumns: ["id"];
           },
         ];
@@ -431,6 +484,8 @@ export type Database = {
           created_by: string | null;
           description: string | null;
           ends_at: string | null;
+          experience_type: string;
+          public_visible: boolean;
           id: string;
           image_url: string | null;
           max_location_accuracy_m: number;
@@ -462,6 +517,8 @@ export type Database = {
           created_by?: string | null;
           description?: string | null;
           ends_at?: string | null;
+          experience_type?: string;
+          public_visible?: boolean;
           id?: string;
           image_url?: string | null;
           max_location_accuracy_m?: number;
@@ -493,6 +550,8 @@ export type Database = {
           created_by?: string | null;
           description?: string | null;
           ends_at?: string | null;
+          experience_type?: string;
+          public_visible?: boolean;
           id?: string;
           image_url?: string | null;
           max_location_accuracy_m?: number;
@@ -2196,6 +2255,11 @@ export type Database = {
         };
         Returns: Json;
       };
+      my_house_session: { Args: never; Returns: Json };
+      track_campaign_external_click: {
+        Args: { _campaign_id: string; _source?: string };
+        Returns: string;
+      };
       my_fofoquinhas: {
         Args: never;
         Returns: {
@@ -2225,6 +2289,12 @@ export type Database = {
           product_category: string | null;
           activation_expires_at: string | null;
           visit_scope: string;
+          home_sort_order: number | null;
+          home_visible: boolean;
+          redemption_mode: string;
+          external_url: string | null;
+          external_button_label: string;
+          external_open_new_tab: boolean;
         }[];
       };
       admin_change_sale_status: {

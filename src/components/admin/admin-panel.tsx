@@ -10,6 +10,8 @@ import {
 } from "react";
 import { Link } from "@tanstack/react-router";
 import {
+  ArrowDown,
+  ArrowUp,
   BarChart3,
   CalendarDays,
   CheckCircle2,
@@ -18,7 +20,10 @@ import {
   Copy,
   Edit3,
   Eye,
+  ExternalLink,
   Gift,
+  House,
+  ListOrdered,
   Loader2,
   MessageCircleMore,
   Newspaper,
@@ -66,6 +71,7 @@ export type AdminSection =
   | "overview"
   | "management"
   | "commercial"
+  | "house_sessions"
   | "events"
   | "campaigns"
   | "content"
@@ -82,6 +88,7 @@ type EventUpdate = Database["public"]["Tables"]["events"]["Update"];
 type VenueRow = Database["public"]["Tables"]["venues"]["Row"];
 type VenueInsert = Database["public"]["Tables"]["venues"]["Insert"];
 type CampaignRow = Database["public"]["Tables"]["campaigns"]["Row"];
+type CampaignLinkClickRow = Database["public"]["Tables"]["campaign_link_clicks"]["Row"];
 type FeedPostRow = Database["public"]["Tables"]["feed_posts"]["Row"];
 type CampaignInsert = Database["public"]["Tables"]["campaigns"]["Insert"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -101,6 +108,7 @@ type AdminData = {
   events: EventRow[];
   venues: VenueRow[];
   campaigns: CampaignRow[];
+  campaignLinkClicks: CampaignLinkClickRow[];
   feedPosts: FeedPostRow[];
   profiles: ProfileRow[];
   preferences: PreferenceRow[];
@@ -120,6 +128,7 @@ const EMPTY_DATA: AdminData = {
   events: [],
   venues: [],
   campaigns: [],
+  campaignLinkClicks: [],
   feedPosts: [],
   profiles: [],
   preferences: [],
@@ -139,6 +148,7 @@ const NAV_ITEMS: Array<{ key: AdminSection; label: string; icon: typeof BarChart
   { key: "overview", label: "Visão geral", icon: BarChart3 },
   { key: "management", label: "Gestão e piloto", icon: Target },
   { key: "commercial", label: "CRM e vendas", icon: ShoppingBag },
+  { key: "house_sessions", label: "Sessão da Casa", icon: House },
   { key: "events", label: "Eventos", icon: CalendarDays },
   { key: "campaigns", label: "Campanhas", icon: Gift },
   { key: "content", label: "Feed", icon: Newspaper },
@@ -168,6 +178,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       events,
       venues,
       campaigns,
+      campaignLinkClicks,
       feedPosts,
       profiles,
       preferences,
@@ -185,6 +196,11 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       supabase.from("events").select("*").order("starts_at", { ascending: false }),
       supabase.from("venues").select("*").order("name"),
       supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("campaign_link_clicks")
+        .select("*")
+        .order("clicked_at", { ascending: false })
+        .limit(5000),
       supabase.from("feed_posts").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*").is("deleted_at", null).order("created_at", {
         ascending: false,
@@ -222,6 +238,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
       events,
       venues,
       campaigns,
+      campaignLinkClicks,
       feedPosts,
       profiles,
       preferences,
@@ -247,6 +264,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
         events: (events.data ?? []).map((event) => withEffectiveEventStatus(event)),
         venues: venues.data ?? [],
         campaigns: campaigns.data ?? [],
+        campaignLinkClicks: campaignLinkClicks.data ?? [],
         feedPosts: feedPosts.data ?? [],
         profiles: profiles.data ?? [],
         preferences: preferences.data ?? [],
@@ -343,6 +361,13 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
               <ManagementDashboard data={data} currentUserId={currentUserId} />
             )}
             {section === "commercial" && <CommercialDashboard events={data.events} />}
+            {section === "house_sessions" && (
+              <HouseSessionsManager
+                events={data.events}
+                venues={data.venues}
+                onChanged={() => void loadData(true)}
+              />
+            )}
             {section === "events" && (
               <EventsManager
                 events={data.events}
@@ -353,6 +378,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
             {section === "campaigns" && (
               <CampaignsManager
                 campaigns={data.campaigns}
+                campaignLinkClicks={data.campaignLinkClicks}
                 events={data.events}
                 rewards={data.rewards}
                 redemptions={data.redemptions}
@@ -518,6 +544,383 @@ function Overview({ data }: { data: AdminData }) {
   );
 }
 
+function HouseSessionsManager({
+  events,
+  venues,
+  onChanged,
+}: {
+  events: EventRow[];
+  venues: VenueRow[];
+  onChanged: () => void;
+}) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<EventRow | null>(null);
+  const [workingId, setWorkingId] = useState<string | null>(null);
+  const sessions = events
+    .filter((event) => event.experience_type === "house_session")
+    .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
+
+  async function closeSession(session: EventRow) {
+    if (!window.confirm("Encerrar agora o check-in e a Resenha desta Sessão da Casa?")) return;
+    setWorkingId(session.id);
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase
+      .from("events")
+      .update({
+        status: "ended",
+        ends_at: nowIso,
+        checkin_closes_at: nowIso,
+        chat_closes_at: nowIso,
+        checkin_enabled: false,
+        chat_enabled: false,
+      })
+      .eq("id", session.id);
+    setWorkingId(null);
+    if (error) return toast.error(publicErrorMessage(error));
+    toast.success("Sessão da Casa encerrada.");
+    onChanged();
+  }
+
+  return (
+    <SectionLayout
+      eyebrow="Operação interna"
+      title="Sessão da Casa"
+      description="Abra o check-in e a Resenha sem publicar um evento para os clientes. A sessão começa e termina nos horários definidos."
+      action={
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setDialogOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" /> Nova sessão
+        </Button>
+      }
+    >
+      <div className="rounded-2xl border-2 border-primary/15 bg-primary/5 p-4 text-sm">
+        <p className="font-black">Como funciona</p>
+        <p className="mt-1 text-muted-foreground">
+          A Sessão da Casa é invisível na Agenda. Ela existe apenas para controlar presença,
+          Resenha, moderação e histórico operacional.
+        </p>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        {sessions.length === 0 ? (
+          <div className="lg:col-span-2">
+            <EmptyMessage>Nenhuma Sessão da Casa criada.</EmptyMessage>
+          </div>
+        ) : (
+          sessions.map((session) => {
+            const busy = workingId === session.id;
+            const status = effectiveEventStatus(session, Date.now());
+            return (
+              <article key={session.id} className="card-festa p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="section-kicker text-muted-foreground">Uso interno</p>
+                    <h3 className="mt-1 font-display text-2xl leading-none">{session.name}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {formatDateTime(session.starts_at)} até {formatDateTime(session.ends_at)}
+                    </p>
+                  </div>
+                  <StatusPill status={status} />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
+                  <span className="rounded-full bg-primary/10 px-3 py-1.5 text-primary">
+                    Check-in {session.checkin_enabled ? "ativo" : "desativado"}
+                  </span>
+                  <span className="rounded-full bg-samba/15 px-3 py-1.5 text-samba">
+                    Resenha {session.chat_enabled ? "ativa" : "desativada"}
+                  </span>
+                  <span className="rounded-full bg-muted px-3 py-1.5">Oculta do público</span>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditing(session);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Edit3 className="h-4 w-4" /> Editar
+                  </Button>
+                  {!["ended", "cancelled"].includes(status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => void closeSession(session)}
+                    >
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <TimerOff className="h-4 w-4" />
+                      )}
+                      Encerrar agora
+                    </Button>
+                  )}
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+
+      <HouseSessionDialog
+        open={dialogOpen}
+        session={editing}
+        venues={venues}
+        onOpenChange={setDialogOpen}
+        onSaved={onChanged}
+      />
+    </SectionLayout>
+  );
+}
+
+function HouseSessionDialog({
+  open,
+  session,
+  venues,
+  onOpenChange,
+  onSaved,
+}: {
+  open: boolean;
+  session: EventRow | null;
+  venues: VenueRow[];
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  async function submit(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    const form = new FormData(formEvent.currentTarget);
+    const startsAt = toIso(textValue(form, "starts_at"));
+    const endsAt = toIso(textValue(form, "ends_at"));
+    const checkinOpensAt = toIso(textValue(form, "checkin_opens_at"));
+    const checkinClosesAt = toIso(textValue(form, "checkin_closes_at"));
+    const chatOpensAt = toIso(textValue(form, "chat_opens_at"));
+    const chatClosesAt = toIso(textValue(form, "chat_closes_at"));
+    if (new Date(endsAt) <= new Date(startsAt)) {
+      return toast.error("O encerramento precisa ser depois da abertura.");
+    }
+    if (new Date(checkinClosesAt) <= new Date(checkinOpensAt)) {
+      return toast.error("O encerramento do check-in precisa ser depois da abertura.");
+    }
+    if (new Date(chatClosesAt) <= new Date(chatOpensAt)) {
+      return toast.error("O encerramento da Resenha precisa ser depois da abertura.");
+    }
+    if (
+      new Date(checkinOpensAt) < new Date(startsAt) ||
+      new Date(checkinClosesAt) > new Date(endsAt) ||
+      new Date(chatOpensAt) < new Date(startsAt) ||
+      new Date(chatClosesAt) > new Date(endsAt)
+    ) {
+      return toast.error(
+        "Os horários de check-in e Resenha precisam ficar dentro da abertura e do encerramento da casa.",
+      );
+    }
+
+    const venueId = nullableText(form, "venue_id");
+    const venue = venues.find((item) => item.id === venueId) ?? null;
+    const latitude = venue?.latitude ?? session?.venue_latitude ?? null;
+    const longitude = venue?.longitude ?? session?.venue_longitude ?? null;
+    if (latitude === null || longitude === null) {
+      return toast.error(
+        "Selecione um local com latitude e longitude configuradas antes de abrir a Sessão da Casa.",
+      );
+    }
+    const name =
+      nullableText(form, "name") ??
+      `Sessão da Casa · ${new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      }).format(new Date(startsAt))}`;
+
+    const payload: EventInsert = {
+      name,
+      slug: session?.slug ?? `sessao-da-casa-${Date.now()}`,
+      category: "Sessão da Casa",
+      description: "Sessão operacional interna para check-in e Resenha.",
+      starts_at: startsAt,
+      ends_at: endsAt,
+      checkin_opens_at: checkinOpensAt,
+      checkin_closes_at: checkinClosesAt,
+      chat_opens_at: chatOpensAt,
+      chat_closes_at: chatClosesAt,
+      checkin_enabled: form.get("checkin_enabled") === "on",
+      chat_enabled: form.get("chat_enabled") === "on",
+      geolocation_checkin_enabled: true,
+      geofence_radius_m: numberValue(
+        form,
+        "geofence_radius_m",
+        venue?.default_geofence_radius_m ?? 180,
+      ),
+      max_location_accuracy_m: numberValue(
+        form,
+        "max_location_accuracy_m",
+        venue?.default_max_accuracy_m ?? 250,
+      ),
+      venue_id: venue?.id ?? null,
+      venue_name: venue?.name ?? "Bafafá Bar",
+      venue_address: venue?.address ?? "Praça Dr. Amaro de Souza · Lagoa Nova",
+      venue_latitude: latitude,
+      venue_longitude: longitude,
+      venue_google_place_id: venue?.google_place_id ?? null,
+      experience_type: "house_session",
+      public_visible: false,
+      status: "published",
+    };
+
+    setSaving(true);
+    const result = session
+      ? await supabase.from("events").update(payload).eq("id", session.id)
+      : await supabase.from("events").insert(payload);
+    setSaving(false);
+    if (result.error) return toast.error(publicErrorMessage(result.error));
+    toast.success(session ? "Sessão da Casa atualizada." : "Sessão da Casa criada.");
+    onOpenChange(false);
+    onSaved();
+  }
+
+  const baseStart = session?.starts_at ?? new Date().toISOString();
+  const baseEnd =
+    session?.ends_at ?? new Date(new Date(baseStart).getTime() + 8 * 60 * 60 * 1000).toISOString();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">
+            {session ? "Editar Sessão da Casa" : "Nova Sessão da Casa"}
+          </DialogTitle>
+          <DialogDescription>
+            Defina quando a presença e a Resenha ficam disponíveis. Nada aparece como evento para o
+            cliente.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Nome interno, opcional"
+              name="name"
+              defaultValue={session?.name}
+              placeholder="Sessão da Casa · Sexta"
+            />
+            <div className="space-y-2">
+              <Label htmlFor="house-venue">Local</Label>
+              <select
+                id="house-venue"
+                name="venue_id"
+                defaultValue={session?.venue_id ?? venues.find((item) => item.is_active)?.id ?? ""}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Local padrão do Bafafá</option>
+                {venues
+                  .filter((venue) => venue.is_active)
+                  .map((venue) => (
+                    <option key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <Field
+              label="Abertura da casa"
+              name="starts_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(baseStart)}
+              required
+            />
+            <Field
+              label="Encerramento da casa"
+              name="ends_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(baseEnd)}
+              required
+            />
+            <Field
+              label="Check-in abre"
+              name="checkin_opens_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(session?.checkin_opens_at ?? baseStart)}
+              required
+            />
+            <Field
+              label="Check-in fecha"
+              name="checkin_closes_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(session?.checkin_closes_at ?? baseEnd)}
+              required
+            />
+            <Field
+              label="Resenha abre"
+              name="chat_opens_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(session?.chat_opens_at ?? baseStart)}
+              required
+            />
+            <Field
+              label="Resenha fecha"
+              name="chat_closes_at"
+              type="datetime-local"
+              defaultValue={toLocalInput(session?.chat_closes_at ?? baseEnd)}
+              required
+            />
+            <Field
+              label="Raio permitido, em metros"
+              name="geofence_radius_m"
+              type="number"
+              min="30"
+              max="1500"
+              defaultValue={session?.geofence_radius_m ?? 180}
+              required
+            />
+            <Field
+              label="Precisão máxima, em metros"
+              name="max_location_accuracy_m"
+              type="number"
+              min="20"
+              max="1000"
+              defaultValue={session?.max_location_accuracy_m ?? 250}
+              required
+            />
+          </div>
+          <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
+            <div>
+              <p className="font-bold">Check-in ativo</p>
+              <p className="text-xs text-muted-foreground">
+                Permite confirmar presença no período.
+              </p>
+            </div>
+            <Switch name="checkin_enabled" defaultChecked={session?.checkin_enabled ?? true} />
+          </label>
+          <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
+            <div>
+              <p className="font-bold">Resenha ativa</p>
+              <p className="text-xs text-muted-foreground">
+                A conversa só abre para quem fez check-in.
+              </p>
+            </div>
+            <Switch name="chat_enabled" defaultChecked={session?.chat_enabled ?? true} />
+          </label>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {saving ? "Salvando…" : "Salvar sessão"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function EventsManager({
   events,
   venues,
@@ -540,7 +943,11 @@ function EventsManager({
     return () => window.clearInterval(timer);
   }, []);
 
-  const filtered = events.filter((event) => {
+  const publicEvents = events.filter(
+    (event) => event.experience_type !== "house_session" && event.public_visible !== false,
+  );
+
+  const filtered = publicEvents.filter((event) => {
     const matchesSearch = `${event.name} ${event.category} ${event.attraction ?? ""}`
       .toLowerCase()
       .includes(search.toLowerCase());
@@ -1464,6 +1871,7 @@ function EventPreviewDialog({
 
 function CampaignsManager({
   campaigns,
+  campaignLinkClicks,
   events,
   rewards,
   redemptions,
@@ -1471,6 +1879,7 @@ function CampaignsManager({
   onChanged,
 }: {
   campaigns: CampaignRow[];
+  campaignLinkClicks: CampaignLinkClickRow[];
   feedPosts: FeedPostRow[];
   events: EventRow[];
   rewards: RewardRow[];
@@ -1481,6 +1890,7 @@ function CampaignsManager({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CampaignRow | null>(null);
   const [previewing, setPreviewing] = useState<CampaignRow | null>(null);
+  const [organizerOpen, setOrganizerOpen] = useState(false);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const eventById = useMemo(() => new Map(events.map((event) => [event.id, event])), [events]);
@@ -1561,14 +1971,19 @@ function CampaignsManager({
       title="Campanhas"
       description="Crie o benefício, acompanhe o uso e pause a campanha sem apagar o histórico."
       action={
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" /> Nova campanha
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setOrganizerOpen(true)}>
+            <ListOrdered className="h-4 w-4" /> Organizar o Início
+          </Button>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Nova campanha
+          </Button>
+        </div>
       }
     >
       <div className="grid gap-4 lg:grid-cols-2">
@@ -1580,6 +1995,9 @@ function CampaignsManager({
           campaigns.map((campaign) => {
             const event = campaign.event_id ? eventById.get(campaign.event_id) : null;
             const counts = metrics(campaign.id);
+            const externalClicks = campaignLinkClicks.filter(
+              (click) => click.campaign_id === campaign.id,
+            ).length;
             const remaining =
               campaign.total_available === null
                 ? null
@@ -1617,6 +2035,24 @@ function CampaignsManager({
                   <span className="rounded-full bg-white/75 px-3 py-1.5">
                     Por cliente: {campaign.per_user_limit}
                   </span>
+                  <span className="rounded-full bg-white/75 px-3 py-1.5">
+                    Início:{" "}
+                    {campaign.home_visible
+                      ? campaign.home_sort_order
+                        ? `posição ${campaign.home_sort_order}`
+                        : "ordem automática"
+                      : "fora do Início"}
+                  </span>
+                  {campaign.redemption_mode !== "app" && (
+                    <>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-3 py-1.5">
+                        <ExternalLink className="h-3 w-3" /> Link externo
+                      </span>
+                      <span className="rounded-full bg-white/75 px-3 py-1.5">
+                        Cliques: {externalClicks}
+                      </span>
+                    </>
+                  )}
                   {remaining !== null && (
                     <span
                       className={`rounded-full px-3 py-1.5 ${remaining === 0 ? "bg-destructive text-white" : "bg-white/75"}`}
@@ -1718,6 +2154,12 @@ function CampaignsManager({
         </div>
       </section>
 
+      <CampaignHomeOrganizerDialog
+        open={organizerOpen}
+        campaigns={campaigns}
+        onOpenChange={setOrganizerOpen}
+        onChanged={onChanged}
+      />
       <CampaignDialog
         open={dialogOpen}
         campaign={editing}
@@ -1731,6 +2173,216 @@ function CampaignsManager({
         onOpenChange={(open) => !open && setPreviewing(null)}
       />
     </SectionLayout>
+  );
+}
+
+function CampaignHomeOrganizerDialog({
+  open,
+  campaigns,
+  onOpenChange,
+  onChanged,
+}: {
+  open: boolean;
+  campaigns: CampaignRow[];
+  onOpenChange: (open: boolean) => void;
+  onChanged: () => void;
+}) {
+  const eligible = useMemo(
+    () =>
+      campaigns
+        .filter((campaign) => ["global", "milestone"].includes(campaign.campaign_kind))
+        .sort((a, b) => {
+          const aManual = a.home_sort_order !== null;
+          const bManual = b.home_sort_order !== null;
+          if (aManual !== bManual) return aManual ? -1 : 1;
+          if (aManual && bManual && a.home_sort_order !== b.home_sort_order) {
+            return Number(a.home_sort_order) - Number(b.home_sort_order);
+          }
+          const kindOrder = { global: 0, milestone: 1 } as Record<string, number>;
+          const kindDiff = (kindOrder[a.campaign_kind] ?? 9) - (kindOrder[b.campaign_kind] ?? 9);
+          if (kindDiff !== 0) return kindDiff;
+          return new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime();
+        }),
+    [campaigns],
+  );
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setOrderedIds(eligible.map((campaign) => campaign.id));
+    setHiddenIds(
+      new Set(eligible.filter((campaign) => !campaign.home_visible).map((campaign) => campaign.id)),
+    );
+  }, [eligible, open]);
+
+  function move(id: string, direction: -1 | 1) {
+    setOrderedIds((current) => {
+      const index = current.indexOf(id);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.length) return current;
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  function moveTop(id: string) {
+    setOrderedIds((current) => [id, ...current.filter((item) => item !== id)]);
+  }
+
+  function toggleHidden(id: string) {
+    setHiddenIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function save() {
+    setSaving(true);
+    let visiblePosition = 0;
+    const results = await Promise.all(
+      orderedIds.map((id) => {
+        const hidden = hiddenIds.has(id);
+        if (!hidden) visiblePosition += 1;
+        return supabase
+          .from("campaigns")
+          .update({
+            home_visible: !hidden,
+            home_sort_order: hidden ? null : visiblePosition,
+          })
+          .eq("id", id);
+      }),
+    );
+    setSaving(false);
+    const firstError = results.map((result) => result.error).find(Boolean);
+    if (firstError) return toast.error(publicErrorMessage(firstError));
+    toast.success("Ordem do Início atualizada.");
+    onOpenChange(false);
+    onChanged();
+  }
+
+  async function restoreAutomaticOrder() {
+    if (eligible.length === 0) return;
+    if (!window.confirm("Voltar todas as Fofoquinhas para a ordem automática?")) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("campaigns")
+      .update({ home_sort_order: null })
+      .in(
+        "id",
+        eligible.map((campaign) => campaign.id),
+      );
+    setSaving(false);
+    if (error) return toast.error(publicErrorMessage(error));
+    toast.success("Ordem automática restaurada.");
+    onOpenChange(false);
+    onChanged();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">Organizar o Início</DialogTitle>
+          <DialogDescription>
+            Organize a ordem das Fofoquinhas no feed. Quando a casa estiver aberta, o check-in pode
+            aparecer antes como ação prioritária.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {orderedIds.length === 0 ? (
+            <EmptyMessage>Nenhuma Fofoquinha geral ou missão disponível.</EmptyMessage>
+          ) : (
+            orderedIds.map((id, index) => {
+              const campaign = eligible.find((item) => item.id === id);
+              if (!campaign) return null;
+              const hidden = hiddenIds.has(id);
+              return (
+                <article
+                  key={id}
+                  className={`rounded-2xl border-2 p-4 ${
+                    hidden
+                      ? "border-foreground/10 bg-muted opacity-60"
+                      : "border-foreground/20 bg-card"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-foreground bg-mango font-black">
+                      {hidden ? "–" : index + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="section-kicker text-muted-foreground">
+                        {campaign.campaign_kind === "global" ? "Promoção geral" : "Missão"}
+                      </p>
+                      <h3 className="mt-1 font-black">{campaign.name}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {hidden ? "Oculta do Início" : campaignBenefitLabel(campaign)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={index === 0 || hidden}
+                      onClick={() => move(id, -1)}
+                    >
+                      <ArrowUp className="h-4 w-4" /> Subir
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={index === orderedIds.length - 1 || hidden}
+                      onClick={() => move(id, 1)}
+                    >
+                      <ArrowDown className="h-4 w-4" /> Descer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={index === 0 || hidden}
+                      onClick={() => moveTop(id)}
+                    >
+                      <ListOrdered className="h-4 w-4" /> Topo das Fofoquinhas
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => toggleHidden(id)}>
+                      {hidden ? "Mostrar no Início" : "Retirar do Início"}
+                    </Button>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={saving}
+            onClick={() => void restoreAutomaticOrder()}
+          >
+            Usar ordem automática
+          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={saving || orderedIds.length === 0}
+              onClick={() => void save()}
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Salvar ordem
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1749,16 +2401,28 @@ function CampaignDialog({
 }) {
   const [saving, setSaving] = useState(false);
   const [benefitType, setBenefitType] = useState(campaign?.benefit_type ?? "percent_off");
-  const [campaignKind, setCampaignKind] = useState(campaign?.campaign_kind ?? "event");
-  const [triggerType, setTriggerType] = useState(campaign?.trigger_type ?? "event_checkin");
+  const [campaignKind, setCampaignKind] = useState(campaign?.campaign_kind ?? "global");
+  const [triggerType, setTriggerType] = useState(campaign?.trigger_type ?? "none");
+  const [redemptionMode, setRedemptionMode] = useState(campaign?.redemption_mode ?? "app");
   const [durationUnit, setDurationUnit] = useState<"minutes" | "hours">("hours");
   const [durationValue, setDurationValue] = useState("24");
+  const selectableEvents = useMemo(
+    () =>
+      events.filter(
+        (event) =>
+          event.experience_type !== "house_session" &&
+          event.public_visible !== false &&
+          !["cancelled"].includes(event.status),
+      ),
+    [events],
+  );
 
   useEffect(() => {
     if (!open) return;
     setBenefitType(campaign?.benefit_type ?? "percent_off");
     setCampaignKind(campaign?.campaign_kind ?? (campaign?.event_id ? "event" : "global"));
     setTriggerType(campaign?.trigger_type ?? (campaign?.event_id ? "event_checkin" : "none"));
+    setRedemptionMode(campaign?.redemption_mode ?? "app");
     const storedHours = Number(campaign?.reward_valid_hours ?? 24);
     const useMinutes = storedHours < 1 || !Number.isInteger(storedHours);
     setDurationUnit(useMinutes ? "minutes" : "hours");
@@ -1777,6 +2441,11 @@ function CampaignDialog({
     const requiresCheckin = campaignKind !== "milestone" && form.get("requires_checkin") === "on";
     if (totalAvailable !== null && perUser > totalAvailable)
       return toast.error("O limite por cliente não pode ser maior que o limite total.");
+    const externalUrl = nullableText(form, "external_url");
+    if (redemptionMode !== "app" && !externalUrl)
+      return toast.error("Informe o link do site onde a promoção será vendida.");
+    if (externalUrl && !/^https?:\/\//i.test(externalUrl))
+      return toast.error("O link externo precisa começar com http:// ou https://.");
 
     setSaving(true);
     const payload: CampaignInsert = {
@@ -1791,9 +2460,18 @@ function CampaignDialog({
       trigger_target: campaignKind === "milestone" ? numberValue(form, "trigger_target", 1) : 1,
       trigger_category:
         triggerType === "category_checkins" ? nullableText(form, "trigger_category") : null,
-      feed_priority: numberValue(form, "feed_priority", 0),
-      feed_visible: form.get("feed_visible") === "on",
-      is_pinned: form.get("is_pinned") === "on",
+      feed_priority: campaign?.feed_priority ?? 0,
+      home_sort_order: campaign?.home_sort_order ?? null,
+      home_visible: campaignKind === "event" ? false : form.get("home_visible") === "on",
+      feed_visible: campaignKind !== "event",
+      is_pinned: campaign?.is_pinned ?? false,
+      redemption_mode: redemptionMode,
+      external_url: redemptionMode === "app" ? null : externalUrl,
+      external_button_label:
+        redemptionMode === "app"
+          ? (campaign?.external_button_label ?? "Garantir minha promoção")
+          : (nullableText(form, "external_button_label") ?? "Garantir minha promoção"),
+      external_open_new_tab: form.get("external_open_new_tab") === "on",
       name: textValue(form, "name"),
       description: nullableText(form, "description"),
       benefit_type: textValue(form, "benefit_type"),
@@ -1850,7 +2528,8 @@ function CampaignDialog({
             {campaign ? "Editar campanha" : "Nova campanha"}
           </DialogTitle>
           <DialogDescription>
-            Crie uma promoção de evento, uma missão de frequência ou uma vantagem geral.
+            Crie uma Fofoquinha geral ou uma missão. Promoções de evento ficam guardadas, mas
+            ocultas do aplicativo.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-5">
@@ -1874,9 +2553,9 @@ function CampaignDialog({
                 }}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="event">Promoção ligada a evento</option>
-                <option value="milestone">Missão / marco do cliente</option>
                 <option value="global">Promoção geral</option>
+                <option value="milestone">Missão / marco do cliente</option>
+                <option value="event">Promoção ligada a evento, oculta no app</option>
               </select>
             </div>
             {campaignKind === "event" && (
@@ -1885,18 +2564,16 @@ function CampaignDialog({
                 <select
                   id="campaign-event"
                   name="event_id"
-                  defaultValue={campaign?.event_id ?? events[0]?.id ?? ""}
+                  defaultValue={campaign?.event_id ?? selectableEvents[0]?.id ?? ""}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   required
                 >
                   <option value="">Selecione</option>
-                  {events
-                    .filter((event) => !["cancelled"].includes(event.status))
-                    .map((event) => (
-                      <option key={event.id} value={event.id}>
-                        {event.name} — {formatDateTime(event.starts_at)}
-                      </option>
-                    ))}
+                  {selectableEvents.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.name} — {formatDateTime(event.starts_at)}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -1911,8 +2588,8 @@ function CampaignDialog({
                     onChange={(event) => setTriggerType(event.target.value)}
                     className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   >
-                    <option value="distinct_checkins">Check-ins em eventos diferentes</option>
-                    <option value="total_checkins">Quantidade total de check-ins</option>
+                    <option value="distinct_checkins">Presenças em dias diferentes</option>
+                    <option value="total_checkins">Quantidade total de presenças</option>
                     <option value="profile_completion">Percentual do perfil</option>
                     <option value="category_checkins">Check-ins por categoria</option>
                   </select>
@@ -1934,7 +2611,7 @@ function CampaignDialog({
                 />
                 {triggerType === "category_checkins" && (
                   <Field
-                    label="Categoria exata do evento"
+                    label="Categoria interna da programação"
                     name="trigger_category"
                     defaultValue={campaign?.trigger_category}
                     placeholder="Feijoada"
@@ -2063,14 +2740,38 @@ function CampaignDialog({
                 <option value="ended">Encerrada</option>
               </select>
             </div>
-            <Field
-              label="Prioridade no feed"
-              name="feed_priority"
-              type="number"
-              min="-100"
-              max="1000"
-              defaultValue={campaign?.feed_priority ?? 0}
-            />
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="redemption-mode">Como o cliente usa esta Fofoquinha?</Label>
+              <select
+                id="redemption-mode"
+                name="redemption_mode"
+                value={redemptionMode}
+                onChange={(event) => setRedemptionMode(event.target.value)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="app">Validar pelo aplicativo</option>
+                <option value="external">Comprar em site externo</option>
+                <option value="both">Oferecer as duas opções</option>
+              </select>
+            </div>
+            {redemptionMode !== "app" && (
+              <>
+                <Field
+                  label="Link do site externo"
+                  name="external_url"
+                  type="url"
+                  defaultValue={campaign?.external_url}
+                  placeholder="https://..."
+                  required
+                />
+                <Field
+                  label="Texto do botão"
+                  name="external_button_label"
+                  defaultValue={campaign?.external_button_label ?? "Garantir minha promoção"}
+                  required
+                />
+              </>
+            )}
           </div>
           <TextField label="Descrição" name="description" defaultValue={campaign?.description} />
           <TextField
@@ -2088,24 +2789,35 @@ function CampaignDialog({
             name="internal_rules"
             defaultValue={campaign?.internal_rules}
           />
-          <label className="flex items-center justify-between rounded-2xl border-2 border-mango/30 bg-mango/10 p-4">
-            <div>
-              <p className="font-bold">Fixar entre as primeiras promoções</p>
-              <p className="text-xs text-muted-foreground">
-                Aparece antes das demais no feed e em Fofoquinhas.
-              </p>
-            </div>
-            <Switch name="is_pinned" defaultChecked={campaign?.is_pinned ?? false} />
-          </label>
+
           <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
             <div>
-              <p className="font-bold">Mostrar no feed</p>
+              <p className="font-bold">Mostrar no Início</p>
               <p className="text-xs text-muted-foreground">
-                Permite comunicar a promoção mesmo antes de ser liberada.
+                Exibe esta Fofoquinha no feed principal. A posição é definida em “Organizar o
+                Início”.
               </p>
             </div>
-            <Switch name="feed_visible" defaultChecked={campaign?.feed_visible ?? true} />
+            <Switch
+              name="home_visible"
+              defaultChecked={campaignKind === "event" ? false : (campaign?.home_visible ?? true)}
+              disabled={campaignKind === "event"}
+            />
           </label>
+          {redemptionMode !== "app" && (
+            <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
+              <div>
+                <p className="font-bold">Abrir o site em outra aba</p>
+                <p className="text-xs text-muted-foreground">
+                  Mantém o Bafafá Connect aberto para o cliente voltar.
+                </p>
+              </div>
+              <Switch
+                name="external_open_new_tab"
+                defaultChecked={campaign?.external_open_new_tab ?? true}
+              />
+            </label>
+          )}
           {campaignKind !== "milestone" && (
             <label className="flex items-center justify-between rounded-2xl bg-muted p-4">
               <div>
@@ -2136,7 +2848,7 @@ function CampaignDialog({
               </div>
               <Switch
                 name="requires_staff_validation"
-                defaultChecked={campaign?.requires_staff_validation ?? campaignKind === "global"}
+                defaultChecked={campaign?.requires_staff_validation ?? false}
               />
             </label>
           )}

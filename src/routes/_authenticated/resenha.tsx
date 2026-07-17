@@ -12,7 +12,6 @@ import {
 import {
   ArrowDown,
   Ban,
-  CalendarDays,
   Clock3,
   Flag,
   HeartHandshake,
@@ -45,12 +44,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { formatEventDate, formatEventTime } from "@/lib/bafafa";
+import { parseHouseSession, type HouseSession } from "@/lib/house-session";
 
 export const Route = createFileRoute("/_authenticated/resenha")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    event: typeof search.event === "string" ? search.event : undefined,
-  }),
   component: Resenha,
 });
 
@@ -112,8 +108,8 @@ const REPORT_REASONS = [
 
 function Resenha() {
   const { roles, user } = useAuth();
-  const search = Route.useSearch();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [houseSession, setHouseSession] = useState<HouseSession | null>(null);
   const [selectedId, setSelectedId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesRef = useRef<ChatMessage[]>([]);
@@ -162,20 +158,22 @@ function Resenha() {
   }, []);
 
   const loadRooms = useCallback(async () => {
-    const { data, error: roomError } = await supabase.rpc("my_event_chat_rooms");
+    const [{ data: roomData, error: roomError }, { data: sessionData, error: sessionError }] =
+      await Promise.all([supabase.rpc("my_event_chat_rooms"), supabase.rpc("my_house_session")]);
     if (roomError) throw roomError;
-    const nextRooms = (data ?? []).map((room) => ({
+    if (sessionError) throw sessionError;
+
+    const nextRooms = (roomData ?? []).map((room) => ({
       ...room,
       message_count: Number(room.message_count ?? 0),
     })) as ChatRoom[];
+    setHouseSession(parseHouseSession(sessionData));
     setRooms(nextRooms);
     setSelectedId((current) => {
       if (current && nextRooms.some((room) => room.event_id === current)) return current;
-      if (search.event && nextRooms.some((room) => room.event_id === search.event))
-        return search.event;
       return nextRooms[0]?.event_id ?? "";
     });
-  }, [search.event]);
+  }, []);
 
   const loadMessages = useCallback(async (eventId: string, quiet = false) => {
     if (!quiet) setLoadingMessages(true);
@@ -499,56 +497,31 @@ function Resenha() {
       {!loading && !error && (
         <div className="px-3 pt-3">
           {rooms.length === 0 ? (
-            <section className="poster-card checker-texture p-6 text-foreground">
-              <MessageCircleMore className="h-9 w-9" />
-              <h2 className="mt-4 font-display text-4xl leading-none">
-                A Resenha começa no check-in.
-              </h2>
-              <p className="mt-3 text-sm font-semibold opacity-75">
-                Faça check-in em um evento com a sala liberada para conversar com quem está no
-                Bafafá.
-              </p>
-              <Link
-                to="/checkin"
-                search={{ event: undefined }}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
-              >
-                Abrir meu check-in <ShieldCheck className="h-4 w-4" />
-              </Link>
-            </section>
+            <ResenhaUnavailable session={houseSession} onRetry={() => void initialize()} />
           ) : (
             <section className="flex h-[calc(100dvh-9.8rem)] min-h-[430px] flex-col overflow-hidden rounded-3xl border-2 border-foreground/15 bg-card shadow-sm">
-              <div className="border-b border-foreground/10 bg-card px-3 py-2.5">
-                <select
-                  value={selectedId}
-                  onChange={(event) => {
-                    setSelectedId(event.target.value);
-                    setReplyingTo(null);
-                  }}
-                  aria-label="Selecionar evento da Resenha"
-                  className="h-10 w-full rounded-xl border border-foreground/20 bg-surface px-3 text-sm font-black outline-none focus:ring-4 focus:ring-lagoa/20"
-                >
-                  {rooms.map((room) => (
-                    <option key={room.event_id} value={room.event_id}>
-                      {room.event_name}
-                    </option>
-                  ))}
-                </select>
-                {selectedRoom && (
-                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <CalendarDays className="h-3.5 w-3.5" />{" "}
-                      {formatEventDate(selectedRoom.starts_at)} ·{" "}
-                      {formatEventTime(selectedRoom.starts_at)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <UsersRound className="h-3.5 w-3.5" /> {participantCount} na conversa
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock3 className="h-3.5 w-3.5" /> {roomClosed ? "encerrada" : "ao vivo"}
-                    </span>
+              <div className="border-b border-foreground/10 bg-card px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="section-kicker text-muted-foreground">Resenha do Bafas</p>
+                    <p className="mt-1 truncate font-black">A conversa de quem já chegou</p>
                   </div>
-                )}
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase ${
+                      roomClosed ? "bg-muted text-muted-foreground" : "bg-primary/15 text-primary"
+                    }`}
+                  >
+                    {roomClosed ? "encerrada" : "ao vivo"}
+                  </span>
+                </div>
+                <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <UsersRound className="h-3.5 w-3.5" /> {participantCount} na conversa
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock3 className="h-3.5 w-3.5" /> A sala fecha junto com a Sessão da Casa
+                  </span>
+                </div>
               </div>
 
               <div
@@ -1035,4 +1008,90 @@ function formatMessageTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(
     new Date(value),
   );
+}
+
+function ResenhaUnavailable({
+  session,
+  onRetry,
+}: {
+  session: HouseSession | null;
+  onRetry: () => void;
+}) {
+  if (!session) {
+    return (
+      <section className="poster-card checker-texture p-6 text-foreground">
+        <Clock3 className="h-9 w-9" />
+        <h2 className="mt-4 font-display text-4xl leading-none">A Resenha tá fechada agora.</h2>
+        <p className="mt-3 text-sm font-semibold opacity-75">
+          Quando o Bafafá abrir a conversa, o check-in aparece no Início.
+        </p>
+        <Link
+          to="/inicio"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+        >
+          Voltar ao Início
+        </Link>
+      </section>
+    );
+  }
+
+  if (!session.checked_in) {
+    return (
+      <section className="poster-card checker-texture p-6 text-foreground">
+        <MessageCircleMore className="h-9 w-9" />
+        <h2 className="mt-4 font-display text-4xl leading-none">A Resenha começa no check-in.</h2>
+        <p className="mt-3 text-sm font-semibold opacity-75">
+          Confirme sua presença para conversar com quem já chegou ao Bafafá.
+        </p>
+        <Link
+          to="/checkin"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+        >
+          Confirmar minha presença <ShieldCheck className="h-4 w-4" />
+        </Link>
+      </section>
+    );
+  }
+
+  const now = Date.now();
+  const opensAt = new Date(session.chat_opens_at).getTime();
+  const closesAt = new Date(session.chat_closes_at).getTime();
+  const waiting = session.chat_enabled && now < opensAt;
+  const ended = !session.chat_enabled || now > closesAt;
+
+  return (
+    <section className="poster-card checker-texture p-6 text-foreground">
+      <Clock3 className="h-9 w-9" />
+      <h2 className="mt-4 font-display text-4xl leading-none">
+        {waiting
+          ? `A Resenha abre às ${formatSessionTime(session.chat_opens_at)}.`
+          : ended
+            ? "A Resenha encerrou por hoje."
+            : "A Resenha está abrindo."}
+      </h2>
+      <p className="mt-3 text-sm font-semibold opacity-75">
+        {waiting
+          ? "Sua presença já está confirmada. Volte no horário e entre direto na conversa."
+          : ended
+            ? "As mensagens ficam fechadas até a próxima Sessão da Casa."
+            : "Sua presença está confirmada. Atualize para entrar na conversa."}
+      </p>
+      {!waiting && !ended && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-primary px-5 py-3 text-sm font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)]"
+        >
+          <RefreshCw className="h-4 w-4" /> Atualizar Resenha
+        </button>
+      )}
+    </section>
+  );
+}
+
+function formatSessionTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
