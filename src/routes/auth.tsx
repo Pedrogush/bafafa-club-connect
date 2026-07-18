@@ -627,7 +627,7 @@ function SignupForm({ onDone }: { onDone: () => void }) {
         name="password"
         show={showPassword}
         onToggle={() => setShowPassword((value) => !value)}
-        hint="Use 10+ caracteres, com letra e número."
+        hint="Use 12+ caracteres, com maiúscula, minúscula, número e símbolo."
         error={errors.password}
       />
       <PasswordField

@@ -68,7 +68,7 @@ A rota operacional é `/staff/checkin`. Somente `equipe` e `admin` podem validar
 - CRUD visual de eventos e campanhas no painel administrativo;
 - upload de foto de perfil;
 - testes automatizados e pipeline de CI;
-- política final de retenção e exportação de dados;
+- automação da rotina de retenção após validar o relatório trimestral no piloto;
 - promoção real definida pelo Bafafá.
 
 ## Teste rápido

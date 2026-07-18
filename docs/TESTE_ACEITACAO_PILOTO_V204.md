@@ -2,6 +2,14 @@
 
 Use duas contas adultas de teste e dois celulares reais. Não use dados de clientes sem autorização.
 
+## 0. Transparência e privacidade
+
+1. Abra `/privacidade` sem estar autenticado.
+2. Confirme Bafafa Gastrobar LTDA, CNPJ 39.715.843/0001-00 e `bafafa.bar@gmail.com`.
+3. Confirme que o link de contato abre um novo e-mail com assunto de privacidade.
+4. Confira os critérios de 24 meses, 180 dias e retenções legais de até cinco anos.
+5. Entre numa conta legada e confirme que o perfil começou privado, podendo ser publicado novamente.
+
 ## 1. Preparação
 
 1. Confirme backup recente do Supabase.
@@ -60,4 +68,3 @@ Use duas contas adultas de teste e dois celulares reais. Não use dados de clien
 O piloto não deve começar com falha em cadastro, OTP, check-in, RLS, bloqueio, denúncia, privacidade,
 contraste crítico ou navegação pública. Registre qualquer falha com horário, conta de teste, aparelho,
 rede, tela e resultado esperado — sem anexar tokens ou dados pessoais desnecessários.
-

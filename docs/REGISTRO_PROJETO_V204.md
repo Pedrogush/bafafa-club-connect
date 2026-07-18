@@ -22,6 +22,8 @@
 - Consentimentos explícitos no telefone e no e-mail, versão 2.1.
 - Marketing opcional e desligado por padrão.
 - Página pública de termos, privacidade, comunidade e direitos.
+- Controlador, CNPJ, endereço e canal `bafafa.bar@gmail.com` publicados na política.
+- Critérios formais de retenção e relatório trimestral somente de leitura documentados.
 - Perfil público fechado por padrão para novos cadastros.
 - Dez perfis legados fechados por padrão, sem apagar dados, com snapshot em auditoria.
 - Maioridade derivada do nascimento e exigida em check-in/Resenha.
@@ -46,11 +48,10 @@
 
 ## Pendências antes de convidar usuários
 
-1. Ativar proteção contra senhas vazadas no painel do Supabase Auth.
-2. Confirmar provedor de SMS, remetente e entrega real de OTP em um telefone externo.
-3. Definir e publicar canal de atendimento, razão social/CNPJ e prazo formal de retenção após revisão jurídica.
-4. Executar o roteiro de aceitação em dois celulares reais e com contas distintas.
-5. Criar backup imediatamente antes do primeiro piloto e registrar responsável operacional.
+1. Confirmar provedor de SMS, remetente e entrega real de OTP em um telefone externo.
+2. Executar o roteiro de aceitação em dois celulares reais e com contas distintas.
+3. Criar backup imediatamente antes do primeiro piloto e registrar responsável operacional.
+4. Validar a primeira revisão trimestral antes de automatizar qualquer exclusão por retenção.
 
 ## Riscos conhecidos
 
@@ -58,6 +59,8 @@
   cada função precisa continuar validando `auth.uid()` e/ou papel internamente.
 - Há 183 alertas de performance herdados. Alterações globais de índices e RLS foram adiadas para não
   aumentar o risco antes do piloto; medir lentidão real antes de priorizar.
+- A proteção nativa contra senhas vazadas exige Supabase Pro. O risco foi aceito para o piloto porque
+  o acesso canônico do cliente será telefone + OTP pela Twilio; e-mail/senha será contingência temporária.
 - A conciliação dos dez perfis existentes foi executada e verificada: nenhum permanece público.
 - Não há suíte automatizada de E2E. Build, lint, tipos, verificação SQL e resposta HTTP local cobrem a
   atualização, mas não substituem os testes em aparelhos reais.

@@ -267,7 +267,7 @@ function Perfil() {
           _notify_whatsapp: prefs.notify_whatsapp,
           _notify_push: prefs.notify_push,
           _marketing_opt_in: prefs.marketing_opt_in,
-          _consent_version: "1.0",
+          _consent_version: "2.1",
         }),
       ]);
 
