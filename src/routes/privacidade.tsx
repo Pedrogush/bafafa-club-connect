@@ -68,7 +68,7 @@ function PrivacyPage() {
               />
               <Fact
                 icon={ShieldCheck}
-                title="Controle seu"
+                title="Controle é seu"
                 copy="O perfil público começa fechado para novos cadastros e pode ser ajustado por você."
               />
             </div>
