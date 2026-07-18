@@ -45,12 +45,16 @@
 - Migration de moderação: `20260731120000_content_moderation_v2042.sql`.
 - Registro criado pelo conector no Supabase: `20260718033310 / pilot_readiness_v204`.
 - Registro criado pelo conector para a conciliação: `20260718163928 / privacy_defaults_v2041`.
+- Registro remoto da moderação: pendente. O conector recusou a chamada de aplicação em 18/07/2026;
+  não houve alteração parcial no banco.
 - A diferença de timestamp é do registro automático do conector; o SQL aplicado é o mesmo da migration.
 - As migrations antigas continuam sem histórico remoto. Elas não devem ser reaplicadas em lote.
 - Nenhum dado existente foi apagado. As preferências anteriores dos dez perfis foram preservadas em
   `audit_logs`; todos começaram privados e podem publicar novamente pelo próprio Perfil.
 - A migration de moderação é incremental, não apaga histórico e rejeita conteúdo novo antes da
   persistência. O script de verificação também procura correspondências no conteúdo legado.
+- Merge e deploy de produção permanecem bloqueados até aplicar `content_moderation_v2042` e confirmar
+  `verificacao_ok = true` no projeto correto.
 
 ## Pendências antes de convidar usuários
 

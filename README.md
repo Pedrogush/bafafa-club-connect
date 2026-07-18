@@ -43,6 +43,9 @@ Nunca coloque uma chave `service_role` no frontend ou em arquivos versionados.
 
 `supabase/migrations/20260731120000_content_moderation_v2042.sql`
 
+A migration V20.4.2 ainda precisa ser aplicada no Supabase correto. Não faça merge ou deploy de
+produção antes de executar o script de verificação e confirmar `verificacao_ok = true`.
+
 Ela adiciona e consolida:
 
 - perfil fechado por padrão para novos cadastros;
