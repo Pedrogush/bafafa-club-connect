@@ -2,7 +2,7 @@
 
 MVP mobile-first para aquisição e relacionamento de clientes do Bafafá Bar — Natal/RN.
 
-## Versão atual: V20.4 — prontidão para o piloto
+## Versão atual: V20.4.1 — privacidade conciliada para o piloto
 
 O produto foi reduzido para um ciclo simples:
 
@@ -35,13 +35,16 @@ banco antes de check-in e Resenha.
 
 Nunca coloque uma chave `service_role` no frontend ou em arquivos versionados.
 
-## Migration principal da V20.4
+## Migrations da prontidão para o piloto
 
 `supabase/migrations/20260729120000_pilot_readiness_v204.sql`
 
+`supabase/migrations/20260730120000_privacy_defaults_v2041.sql`
+
 Ela adiciona e consolida:
 
-- perfil fechado por padrão para novos cadastros, preservando escolhas existentes;
+- perfil fechado por padrão para novos cadastros;
+- perfis legados fechados com snapshot auditável das preferências anteriores;
 - consentimentos explícitos conciliados com os campos de CRM;
 - maioridade obrigatória em check-in e Resenha;
 - salves sem consulta direta à tabela de perfis;

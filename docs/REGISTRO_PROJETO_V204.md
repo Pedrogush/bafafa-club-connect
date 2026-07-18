@@ -1,9 +1,9 @@
-# Registro do projeto — V20.4
+# Registro do projeto — V20.4.1
 
 ## Versão e referência
 
 - Versão anterior: V20.3.
-- Versão desta atualização: V20.4 — prontidão para o piloto.
+- Versão desta atualização: V20.4.1 — prontidão e privacidade conciliada para o piloto.
 - Branch canônica da aplicação completa: `mvp-checkin-v1`.
 - Projeto Supabase: `xijjohgokwfkqfkkhsyn` (`bafafa-club-connect`).
 - Projeto Vercel: `prj_h2SFRn7SZPyB38U8jQgPfYeEUCQD`.
@@ -23,6 +23,7 @@
 - Marketing opcional e desligado por padrão.
 - Página pública de termos, privacidade, comunidade e direitos.
 - Perfil público fechado por padrão para novos cadastros.
+- Dez perfis legados fechados por padrão, sem apagar dados, com snapshot em auditoria.
 - Maioridade derivada do nascimento e exigida em check-in/Resenha.
 - Salves lidos por RPC segura, sem leitura direta de perfis.
 - Conversa privada com limite de envio, bloqueio, denúncia e moderação.
@@ -35,10 +36,13 @@
 ## Banco e histórico
 
 - Migration no repositório: `20260729120000_pilot_readiness_v204.sql`.
+- Migration de conciliação: `20260730120000_privacy_defaults_v2041.sql`.
 - Registro criado pelo conector no Supabase: `20260718033310 / pilot_readiness_v204`.
+- Registro criado pelo conector para a conciliação: `20260718163928 / privacy_defaults_v2041`.
 - A diferença de timestamp é do registro automático do conector; o SQL aplicado é o mesmo da migration.
 - As migrations antigas continuam sem histórico remoto. Elas não devem ser reaplicadas em lote.
-- Nenhum dado existente foi apagado e as escolhas de privacidade dos perfis existentes foram preservadas.
+- Nenhum dado existente foi apagado. As preferências anteriores dos dez perfis foram preservadas em
+  `audit_logs`; todos começaram privados e podem publicar novamente pelo próprio Perfil.
 
 ## Pendências antes de convidar usuários
 
@@ -54,7 +58,7 @@
   cada função precisa continuar validando `auth.uid()` e/ou papel internamente.
 - Há 183 alertas de performance herdados. Alterações globais de índices e RLS foram adiadas para não
   aumentar o risco antes do piloto; medir lentidão real antes de priorizar.
-- Perfis existentes não foram fechados automaticamente. Revisar as dez contas atuais antes do piloto.
+- A conciliação dos dez perfis existentes foi executada e verificada: nenhum permanece público.
 - Não há suíte automatizada de E2E. Build, lint, tipos, verificação SQL e resposta HTTP local cobrem a
   atualização, mas não substituem os testes em aparelhos reais.
 - Os bundles principais continuam acima de 500 kB; dividir scanner e painel é a próxima otimização.
@@ -63,4 +67,3 @@
 
 Executar o roteiro `TESTE_ACEITACAO_PILOTO_V204.md` em uma janela operacional controlada. Só depois
 aprovar o merge e o comando de deploy de produção.
-
