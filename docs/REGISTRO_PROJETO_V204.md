@@ -1,9 +1,9 @@
-# Registro do projeto — V20.4.1
+# Registro do projeto — V20.4.2
 
 ## Versão e referência
 
 - Versão anterior: V20.3.
-- Versão desta atualização: V20.4.1 — prontidão e privacidade conciliada para o piloto.
+- Versão desta atualização: V20.4.2 — prontidão, privacidade e moderação preventiva para o piloto.
 - Branch canônica da aplicação completa: `mvp-checkin-v1`.
 - Projeto Supabase: `xijjohgokwfkqfkkhsyn` (`bafafa-club-connect`).
 - Projeto Vercel: `prj_h2SFRn7SZPyB38U8jQgPfYeEUCQD`.
@@ -29,6 +29,9 @@
 - Maioridade derivada do nascimento e exigida em check-in/Resenha.
 - Salves lidos por RPC segura, sem leitura direta de perfis.
 - Conversa privada com limite de envio, bloqueio, denúncia e moderação.
+- Moderação preventiva de nomes, `@`, Resenha, salves e conversa privada em cinco categorias.
+- Normalização de acentos, caixa, separadores, repetições e substituições comuns antes do bloqueio.
+- Lista de termos no schema privado, sem acesso de visitante ou cliente autenticado.
 - Listagem ampla de objetos dos buckets públicos removida.
 - Funções de gatilho indisponíveis como endpoints de cliente.
 - Contraste, foco, navegação atual, alvos de toque e movimento reduzido revisados.
@@ -39,12 +42,15 @@
 
 - Migration no repositório: `20260729120000_pilot_readiness_v204.sql`.
 - Migration de conciliação: `20260730120000_privacy_defaults_v2041.sql`.
+- Migration de moderação: `20260731120000_content_moderation_v2042.sql`.
 - Registro criado pelo conector no Supabase: `20260718033310 / pilot_readiness_v204`.
 - Registro criado pelo conector para a conciliação: `20260718163928 / privacy_defaults_v2041`.
 - A diferença de timestamp é do registro automático do conector; o SQL aplicado é o mesmo da migration.
 - As migrations antigas continuam sem histórico remoto. Elas não devem ser reaplicadas em lote.
 - Nenhum dado existente foi apagado. As preferências anteriores dos dez perfis foram preservadas em
   `audit_logs`; todos começaram privados e podem publicar novamente pelo próprio Perfil.
+- A migration de moderação é incremental, não apaga histórico e rejeita conteúdo novo antes da
+  persistência. O script de verificação também procura correspondências no conteúdo legado.
 
 ## Pendências antes de convidar usuários
 
@@ -52,6 +58,7 @@
 2. Executar o roteiro de aceitação em dois celulares reais e com contas distintas.
 3. Criar backup imediatamente antes do primeiro piloto e registrar responsável operacional.
 4. Validar a primeira revisão trimestral antes de automatizar qualquer exclusão por retenção.
+5. Executar os casos de falso positivo e disfarce do roteiro de moderação em aparelho real.
 
 ## Riscos conhecidos
 
@@ -65,6 +72,8 @@
 - Não há suíte automatizada de E2E. Build, lint, tipos, verificação SQL e resposta HTTP local cobrem a
   atualização, mas não substituem os testes em aparelhos reais.
 - Os bundles principais continuam acima de 500 kB; dividir scanner e painel é a próxima otimização.
+- A lista automática não interpreta contexto. Denúncia, bloqueio e revisão humana continuam sendo a
+  proteção para ironia, novas gírias e disfarces ainda desconhecidos.
 
 ## Próximo passo recomendado
 

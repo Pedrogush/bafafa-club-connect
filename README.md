@@ -2,7 +2,7 @@
 
 MVP mobile-first para aquisição e relacionamento de clientes do Bafafá Bar — Natal/RN.
 
-## Versão atual: V20.4.1 — privacidade conciliada para o piloto
+## Versão atual: V20.4.2 — privacidade e moderação preventiva para o piloto
 
 O produto foi reduzido para um ciclo simples:
 
@@ -41,6 +41,8 @@ Nunca coloque uma chave `service_role` no frontend ou em arquivos versionados.
 
 `supabase/migrations/20260730120000_privacy_defaults_v2041.sql`
 
+`supabase/migrations/20260731120000_content_moderation_v2042.sql`
+
 Ela adiciona e consolida:
 
 - perfil fechado por padrão para novos cadastros;
@@ -51,6 +53,8 @@ Ela adiciona e consolida:
 - bloqueio, limite de envio, denúncia e moderação da conversa privada;
 - remoção da listagem ampla dos buckets públicos;
 - revogação de execução direta das funções de gatilho.
+- bloqueio preventivo de nomes, `@`, Resenha, salves e mensagens privadas ofensivas;
+- lista de moderação mantida em schema privado e validação final por gatilhos no banco.
 
 ## Papéis
 

@@ -46,6 +46,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { parseHouseSession, type HouseSession } from "@/lib/house-session";
 import { publicErrorMessage } from "@/lib/public-error";
+import { checkCommunityContent, MESSAGE_MODERATION_MESSAGE } from "@/lib/content-moderation";
 
 export const Route = createFileRoute("/_authenticated/resenha")({
   component: Resenha,
@@ -289,6 +290,11 @@ function Resenha() {
     event.preventDefault();
     if (!selectedId || !draft.trim() || sending || roomClosed) return;
     setSending(true);
+    const moderationStatus = await checkCommunityContent(draft, "chat");
+    if (moderationStatus === "blocked") {
+      setSending(false);
+      return toast.error(MESSAGE_MODERATION_MESSAGE);
+    }
     const { error: sendError } = await supabase.rpc("send_event_chat_message", {
       _event_id: selectedId,
       _body: draft.trim(),
@@ -363,6 +369,8 @@ function Resenha() {
 
   async function sendSalve() {
     if (!salveTarget || !selectedId) return;
+    const moderationStatus = await checkCommunityContent(salveOpener, "chat");
+    if (moderationStatus === "blocked") return toast.error(MESSAGE_MODERATION_MESSAGE);
     const { error: salveError } = await supabase.rpc("send_salve_request", {
       _event_id: selectedId,
       _recipient_id: salveTarget.author_id,
@@ -413,6 +421,11 @@ function Resenha() {
     event.preventDefault();
     if (!privateThread || !privateDraft.trim() || privateSending) return;
     setPrivateSending(true);
+    const moderationStatus = await checkCommunityContent(privateDraft, "chat");
+    if (moderationStatus === "blocked") {
+      setPrivateSending(false);
+      return toast.error(MESSAGE_MODERATION_MESSAGE);
+    }
     const { error: privateError } = await supabase.rpc("send_private_message", {
       _thread_id: privateThread.id,
       _body: privateDraft.trim(),
@@ -781,9 +794,10 @@ function Resenha() {
                       <Send className="h-5 w-5" />
                     </Button>
                   </div>
-                  <p className="mt-1 text-right text-xs font-bold text-muted-foreground">
-                    {draft.length}/300
-                  </p>
+                  <div className="mt-1 flex items-start justify-between gap-3 text-xs font-bold text-muted-foreground">
+                    <span>Resenha boa é sem ofensa ou discriminação.</span>
+                    <span className="shrink-0">{draft.length}/300</span>
+                  </div>
                 </form>
               )}
             </section>
@@ -1031,6 +1045,9 @@ function Resenha() {
               <Send className="h-5 w-5" />
             </Button>
           </form>
+          <p className="mt-1 text-xs font-bold text-muted-foreground">
+            A mesma regra vale no privado: sem ofensa, discriminação ou conteúdo sexual.
+          </p>
         </DialogContent>
       </Dialog>
 

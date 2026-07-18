@@ -8,6 +8,7 @@ import { Eye, EyeOff, Loader2, Mail, MessageCircleMore, Phone, ShieldCheck } fro
 import { TurnstileChallenge, useAuthCaptcha } from "@/components/auth/turnstile";
 import { friendlyAuthError, isPrivilegedRole, validatePassword } from "@/lib/auth-security";
 import { formatPhoneBR, normalizePhoneE164BR } from "@/lib/commercial";
+import { checkCommunityContent, NAME_MODERATION_MESSAGE } from "@/lib/content-moderation";
 
 type Mode = "signin" | "signup" | "reset";
 
@@ -301,6 +302,11 @@ function PhoneSignupForm() {
     const displayName = [formData.firstName.trim(), formData.lastName.trim()]
       .filter(Boolean)
       .join(" ");
+    const moderationStatus = await checkCommunityContent(displayName, "display_name");
+    if (moderationStatus === "blocked") {
+      setLoading(false);
+      return toast.error(NAME_MODERATION_MESSAGE);
+    }
     const { error } = await supabase.auth.signInWithOtp({
       phone: normalized,
       options: {
@@ -390,7 +396,7 @@ function PhoneSignupForm() {
         autorização.
       </p>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Nome">
+        <Field label="Nome" hint="Apelidos são bem-vindos. Ofensas e discriminação ficam de fora.">
           <input
             value={formData.firstName}
             onChange={(event) =>
@@ -564,6 +570,12 @@ function SignupForm({ onDone }: { onDone: () => void }) {
       return;
     }
     setLoading(true);
+    const moderationStatus = await checkCommunityContent(data.display_name, "display_name");
+    if (moderationStatus === "blocked") {
+      setLoading(false);
+      setErrors({ display_name: NAME_MODERATION_MESSAGE });
+      return;
+    }
     const { data: signUp, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -605,7 +617,11 @@ function SignupForm({ onDone }: { onDone: () => void }) {
         Só o essencial agora. Usuário, cidade e preferências você completa depois e ganha progresso
         no perfil.
       </p>
-      <Field label="Como te chamamos?" error={errors.display_name}>
+      <Field
+        label="Como te chamamos?"
+        hint="Apelidos são bem-vindos. Ofensas e discriminação ficam de fora."
+        error={errors.display_name}
+      >
         <input
           name="display_name"
           required

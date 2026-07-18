@@ -2643,6 +2643,10 @@ export type Database = {
         Returns: Json
       }
       close_event_checkin: { Args: { _event_id: string }; Returns: undefined }
+      check_content_allowed: {
+        Args: { _context?: string; _value: string }
+        Returns: Json
+      }
       create_my_qr_token: {
         Args: { _purpose: string; _ref_id?: string }
         Returns: {

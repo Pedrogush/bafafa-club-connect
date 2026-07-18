@@ -1,4 +1,5 @@
 import { publicErrorMessage } from "@/lib/public-error";
+import { checkCommunityContent, NAME_MODERATION_MESSAGE } from "@/lib/content-moderation";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type HTMLInputTypeAttribute } from "react";
 import { BlockedUsersDialog } from "@/components/chat/blocked-users-dialog";
@@ -220,6 +221,16 @@ function Perfil() {
     let uploadedAvatarUrl: string | null = null;
 
     try {
+      const [nameModeration, usernameModeration] = await Promise.all([
+        checkCommunityContent(profile.display_name, "display_name"),
+        profile.username?.trim()
+          ? checkCommunityContent(profile.username, "username")
+          : Promise.resolve("allowed"),
+      ]);
+      if (nameModeration === "blocked" || usernameModeration === "blocked") {
+        throw new Error(NAME_MODERATION_MESSAGE);
+      }
+
       if (avatarSelection instanceof File) {
         const uploaded = await uploadPublicImage({
           bucket: "avatars",
@@ -597,6 +608,7 @@ function Perfil() {
                     value={profile.username ?? ""}
                     onChange={(value) => setProfile({ ...profile, username: value })}
                     placeholder="seuusuario"
+                    hint="Seu @ não pode conter palavrões, conteúdo sexual ou discriminação."
                   />
                   <TextField
                     dataProfileKey="identity-birth"
@@ -868,6 +880,7 @@ function TextField({
   onChange,
   required,
   placeholder,
+  hint,
   type = "text",
 }: {
   dataProfileKey?: string;
@@ -876,6 +889,7 @@ function TextField({
   onChange: (value: string) => void;
   required?: boolean;
   placeholder?: string;
+  hint?: string;
   type?: HTMLInputTypeAttribute;
 }) {
   return (
@@ -889,6 +903,9 @@ function TextField({
         placeholder={placeholder}
         className={inputCls}
       />
+      {hint && (
+        <span className="mt-1 block text-xs font-semibold text-muted-foreground">{hint}</span>
+      )}
     </label>
   );
 }

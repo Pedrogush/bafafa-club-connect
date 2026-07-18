@@ -155,6 +155,12 @@ function PrivacyPage() {
               Spam, ameaça, assédio, discriminação, exposição indevida, fraude e conteúdo ilegal
               podem resultar em remoção da mensagem, encerramento da conversa ou suspensão.
             </p>
+            <p>
+              Nomes, nomes de usuário, salves e mensagens passam por uma barreira automática contra
+              palavrões, conteúdo sexual explícito, racismo, homofobia e transfobia. O texto
+              bloqueado não é publicado nem guardado. Como contexto também importa, denúncia,
+              bloqueio e revisão humana continuam disponíveis.
+            </p>
           </PolicySection>
 
           <section id="seus-direitos" className="sticker-card bg-mango p-5 text-sm">
