@@ -436,7 +436,7 @@ function Perfil() {
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {activeTitle && (
-                  <span className="rounded-full bg-foreground px-3 py-1 text-[10px] font-black uppercase tracking-wide text-background">
+                  <span className="rounded-full bg-foreground px-3 py-1 text-xs font-black uppercase tracking-wide text-background">
                     {activeTitle}
                   </span>
                 )}
@@ -448,17 +448,17 @@ function Perfil() {
               <div className="mt-4 grid grid-cols-3 divide-x divide-white/20 rounded-2xl border-2 border-white/30 bg-white/12 py-3 text-center">
                 <div>
                   <p className="text-xl font-black leading-none">{checkins}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-white/65">check-ins</p>
+                  <p className="mt-1 text-xs font-black uppercase text-white/65">check-ins</p>
                 </div>
                 <div>
                   <p className="text-xl font-black leading-none">
                     {visibleBadgeDefinitions.length}
                   </p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-white/65">selos</p>
+                  <p className="mt-1 text-xs font-black uppercase text-white/65">selos</p>
                 </div>
                 <div>
                   <p className="text-sm font-black leading-none">{memberSince}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-white/65">no clube</p>
+                  <p className="mt-1 text-xs font-black uppercase text-white/65">no clube</p>
                 </div>
               </div>
             </div>
@@ -543,7 +543,7 @@ function Perfil() {
                 <BadgeCheck className="h-5 w-5 text-samba" />
                 <h2 className="font-display text-2xl">Meus selos</h2>
               </div>
-              <span className="rounded-full bg-lagoa px-3 py-1 text-[10px] font-black uppercase">
+              <span className="rounded-full bg-lagoa px-3 py-1 text-xs font-black uppercase">
                 {visibleBadgeDefinitions.length} na coleção
               </span>
             </div>
@@ -749,7 +749,7 @@ function Perfil() {
                     onChange={(checked) => setProfile({ ...profile, show_checkin_count: checked })}
                   />
                   <Toggle
-                    label="Mostrar meus tipos de evento preferidos"
+                    label="Mostrar meus estilos de noite preferidos"
                     checked={profile.show_event_preferences}
                     onChange={(checked) =>
                       setProfile({ ...profile, show_event_preferences: checked })
@@ -800,6 +800,18 @@ function Perfil() {
             <ShieldCheck className="h-5 w-5 shrink-0 text-white" />
           </Link>
 
+          <Link to="/privacidade" className="content-card flex items-center gap-3 bg-card p-4">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground bg-mango shadow-[2px_3px_0_var(--foreground)]">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-black">Privacidade e seus dados</p>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                Entenda os usos e saiba como exercer seus direitos.
+              </p>
+            </div>
+          </Link>
+
           <section className="content-card bg-card p-4">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-foreground bg-samba text-samba-foreground shadow-[2px_3px_0_var(--foreground)]">
@@ -826,8 +838,8 @@ function Perfil() {
               <LockKeyhole className="h-4 w-4" /> Dados privados
             </p>
             <p className="mt-2">
-              Telefone, nascimento, bairro, histórico de mimos e detalhes de presença nunca aparecem
-              no perfil público.
+              Telefone, nascimento, bairro, histórico de Fofoquinhas e detalhes de presença nunca
+              aparecem no perfil público.
             </p>
             <p className="mt-2 flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5" /> Cidade, total de check-ins e preferências só
@@ -835,7 +847,7 @@ function Perfil() {
             </p>
             <p className="mt-2 flex items-center gap-1.5">
               <CalendarCheck2 className="h-3.5 w-3.5" /> Telefone verificado:{" "}
-              {profile?.phone_verified_at ? "sim" : "será ativado no lançamento com OTP"}.
+              {profile?.phone_verified_at ? "sim" : "ainda não"}.
             </p>
           </section>
         </div>
@@ -937,7 +949,7 @@ function Toggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-foreground/10 bg-white/55 px-3 py-2.5 font-semibold transition hover:border-foreground/25">
+    <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-foreground/10 bg-white/55 px-3 py-2.5 font-semibold transition hover:border-foreground/25 focus-within:border-electric focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
       <input
         type="checkbox"
         checked={checked}
