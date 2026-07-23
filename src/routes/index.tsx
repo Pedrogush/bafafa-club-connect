@@ -13,49 +13,42 @@ export const Route = createFileRoute("/")({
 });
 
 const HIGHLIGHTS = [
-  { icon: MapPin, label: "Check-in no Bafafá" },
-  { icon: Sparkles, label: "Fofoquinhas e benefícios" },
-  { icon: MessageCircleMore, label: "Resenha da comunidade" },
+  { icon: MapPin, label: "Check-in pelo celular", tone: "bg-primary text-primary-foreground" },
+  { icon: Sparkles, label: "Fofoquinhas e benefícios", tone: "bg-mango text-mango-foreground" },
+  { icon: MessageCircleMore, label: "Resenha da comunidade", tone: "bg-samba text-samba-foreground" },
 ];
 
 function LandingPage() {
   return (
-    <main className="app-canvas relative mx-auto flex min-h-screen max-w-lg flex-col overflow-hidden bg-background px-5 pb-8 pt-8 sm:px-7">
-      <div className="pointer-events-none absolute -right-20 -top-16 h-56 w-56 rounded-full bg-mango/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-24 h-64 w-64 rounded-full bg-lagoa/25 blur-3xl" />
+    <main className="app-canvas relative mx-auto flex min-h-dvh max-w-lg flex-col overflow-hidden bg-background px-5 pb-6 pt-6 sm:px-7 sm:pb-8 sm:pt-8">
+      <div className="pointer-events-none absolute -right-20 -top-24 h-52 w-52 rounded-full bg-mango/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -left-24 h-56 w-56 rounded-full bg-lagoa/20 blur-3xl" />
 
-      <header className="relative flex items-center justify-between">
-        <div className="rotate-[-2deg] rounded-2xl border-2 border-foreground bg-primary px-4 py-3 text-primary-foreground shadow-[4px_5px_0_var(--foreground)]">
+      <header className="relative flex justify-center">
+        <div className="inline-flex rotate-[-1deg] items-center rounded-2xl border-2 border-foreground bg-primary px-5 py-3 text-primary-foreground shadow-[3px_4px_0_var(--foreground)]">
           <Wordmark tone="white" />
         </div>
-        <span className="rounded-full border-2 border-foreground/15 bg-card px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-          Clube do Bafafã
-        </span>
       </header>
 
-      <section className="relative flex flex-1 flex-col justify-center py-10">
-        <p className="section-kicker text-primary">A resenha começa aqui</p>
-        <h1 className="mt-3 max-w-md font-display text-5xl leading-[0.96] tracking-tight sm:text-6xl">
-          O Bafafá começa antes de você chegar.
-        </h1>
-        <p className="mt-5 max-w-md text-base font-semibold leading-relaxed text-muted-foreground">
-          Faça check-in, descubra Fofoquinhas e acompanhe o que está rolando no bar, tudo pelo celular.
-        </p>
+      <section className="relative flex flex-1 flex-col justify-center py-7 sm:py-10">
+        <div className="mx-auto w-full max-w-md text-center">
+          <p className="section-kicker text-primary">Clube do Bafafã</p>
+          <h1 className="mt-3 font-display text-[2.65rem] leading-[0.98] tracking-tight sm:text-5xl">
+            O Bafafá começa antes de você chegar.
+          </h1>
+          <p className="mx-auto mt-4 max-w-sm text-[15px] font-semibold leading-relaxed text-muted-foreground sm:text-base">
+            Faça check-in, descubra Fofoquinhas e acompanhe o que está rolando no bar pelo celular.
+          </p>
+        </div>
 
-        <div className="mt-7 grid gap-2.5">
-          {HIGHLIGHTS.map(({ icon: Icon, label }, index) => (
+        <div className="mx-auto mt-6 grid w-full max-w-md gap-2.5">
+          {HIGHLIGHTS.map(({ icon: Icon, label, tone }) => (
             <div
               key={label}
-              className="flex items-center gap-3 rounded-2xl border-2 border-foreground/10 bg-card/90 px-4 py-3 shadow-sm backdrop-blur"
+              className="flex items-center gap-3 rounded-2xl border-2 border-foreground/10 bg-card/90 px-3.5 py-3 shadow-sm"
             >
               <span
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-foreground ${
-                  index === 0
-                    ? "bg-primary text-primary-foreground"
-                    : index === 1
-                      ? "bg-mango text-mango-foreground"
-                      : "bg-samba text-samba-foreground"
-                }`}
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-foreground ${tone}`}
               >
                 <Icon className="h-4 w-4" />
               </span>
@@ -64,29 +57,29 @@ function LandingPage() {
           ))}
         </div>
 
-        <div className="mt-8 grid gap-3">
+        <div className="mx-auto mt-7 grid w-full max-w-md gap-2.5">
           <Link
             to="/auth"
             search={{ mode: "signup" }}
-            className="inline-flex min-h-14 items-center justify-center rounded-2xl border-2 border-foreground bg-primary px-6 text-base font-black text-primary-foreground shadow-[4px_5px_0_var(--foreground)] transition active:translate-x-1 active:translate-y-1 active:shadow-none"
+            className="inline-flex min-h-13 items-center justify-center rounded-2xl border-2 border-foreground bg-primary px-6 text-base font-black text-primary-foreground shadow-[3px_4px_0_var(--foreground)] transition active:translate-x-1 active:translate-y-1 active:shadow-none"
           >
             Entrar no Clube
           </Link>
           <Link
             to="/auth"
             search={{ mode: "signin" }}
-            className="inline-flex min-h-12 items-center justify-center rounded-2xl px-5 text-sm font-black underline decoration-2 underline-offset-4"
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl px-5 text-sm font-black underline decoration-2 underline-offset-4"
           >
             Já tenho cadastro
           </Link>
         </div>
       </section>
 
-      <footer className="relative border-t border-foreground/10 pt-5 text-center text-xs text-muted-foreground">
+      <footer className="relative border-t border-foreground/10 pt-4 text-center text-[11px] leading-relaxed text-muted-foreground">
         <p>Cadastro gratuito para maiores de 18 anos.</p>
-        <p className="mt-2">
+        <p className="mt-1.5">
           <Link to="/privacidade" hash="termos" className="font-bold underline underline-offset-4">
-            Termos de Uso
+            Termos
           </Link>
           <span aria-hidden> · </span>
           <Link to="/privacidade" hash="privacidade" className="font-bold underline underline-offset-4">
@@ -97,7 +90,6 @@ function LandingPage() {
             Regras da Comunidade
           </Link>
         </p>
-        <p className="mt-3">Bafafá Bar — Natal/RN · © {new Date().getFullYear()}</p>
       </footer>
     </main>
   );
