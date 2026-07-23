@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { BadgeCheck, CalendarCheck, MapPin, Sparkles, UserRound } from "lucide-react";
+import { MapPin, MessageCircleMore, Sparkles } from "lucide-react";
 import { Wordmark } from "@/components/brand/wordmark";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,102 +12,93 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
+const HIGHLIGHTS = [
+  { icon: MapPin, label: "Check-in no Bafafá" },
+  { icon: Sparkles, label: "Fofoquinhas e benefícios" },
+  { icon: MessageCircleMore, label: "Resenha da comunidade" },
+];
+
 function LandingPage() {
   return (
-    <div className="mx-auto min-h-screen max-w-lg bg-background">
-      <section className="relative overflow-hidden bg-primary text-primary-foreground">
-        <div className="absolute inset-0 bg-confete opacity-40" aria-hidden />
-        <div className="relative px-6 pb-14 pt-16">
+    <main className="app-canvas relative mx-auto flex min-h-screen max-w-lg flex-col overflow-hidden bg-background px-5 pb-8 pt-8 sm:px-7">
+      <div className="pointer-events-none absolute -right-20 -top-16 h-56 w-56 rounded-full bg-mango/30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-16 -left-24 h-64 w-64 rounded-full bg-lagoa/25 blur-3xl" />
+
+      <header className="relative flex items-center justify-between">
+        <div className="rotate-[-2deg] rounded-2xl border-2 border-foreground bg-primary px-4 py-3 text-primary-foreground shadow-[4px_5px_0_var(--foreground)]">
           <Wordmark tone="white" />
-          <h1 className="mt-10 font-display text-4xl leading-[1.05]">
-            Chega mais, <span className="text-mango">Bafafã</span>.
-          </h1>
-          <p className="mt-4 max-w-sm text-base text-primary-foreground/90">
-            Veja o BAFAFEED, descubra Fofoquinhas e confirme sua presença pelo celular. Quanto mais
-            você volta ao Bafafá, mais missões, selos e títulos aparecem na sua carteirinha.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              to="/auth"
-              search={{ mode: "signup" }}
-              className="inline-flex items-center gap-2 rounded-full bg-mango px-5 py-3 text-sm font-bold text-mango-foreground shadow-festa transition hover:opacity-90"
-            >
-              Quero ser Bafafã
-            </Link>
-            <Link
-              to="/auth"
-              search={{ mode: "signin" }}
-              className="inline-flex items-center gap-2 rounded-full border-2 border-primary-foreground/40 px-5 py-3 text-sm font-bold text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              Já sou do clube
-            </Link>
-          </div>
         </div>
-      </section>
+        <span className="rounded-full border-2 border-foreground/15 bg-card px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+          Clube do Bafafã
+        </span>
+      </header>
 
-      <section className="space-y-3 px-5 py-10">
-        <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">
-          O que rola no clube
+      <section className="relative flex flex-1 flex-col justify-center py-10">
+        <p className="section-kicker text-primary">A resenha começa aqui</p>
+        <h1 className="mt-3 max-w-md font-display text-5xl leading-[0.96] tracking-tight sm:text-6xl">
+          O Bafafá começa antes de você chegar.
+        </h1>
+        <p className="mt-5 max-w-md text-base font-semibold leading-relaxed text-muted-foreground">
+          Faça check-in, descubra Fofoquinhas e acompanhe o que está rolando no bar, tudo pelo celular.
         </p>
-        {[
-          {
-            icon: MapPin,
-            title: "Confirme que já chegou",
-            copy: "Quando estiver no Bafafá, faça check-in pela localização. Se o GPS falhar, a equipe valida seu QR.",
-            tone: "bg-primary text-primary-foreground",
-          },
-          {
-            icon: Sparkles,
-            title: "Descubra as Fofoquinhas",
-            copy: "Promoções, vantagens e missões do clube aparecem conforme você participa.",
-            tone: "bg-samba text-samba-foreground",
-          },
-          {
-            icon: UserRound,
-            title: "Complete seu perfil aos poucos",
-            copy: "Nada de formulário gigante. Conte suas preferências no seu ritmo.",
-            tone: "bg-lagoa text-lagoa-foreground",
-          },
-          {
-            icon: BadgeCheck,
-            title: "Ganhe selos e títulos",
-            copy: "Primeiro check-in, perfil completo e frequência viram conquistas no clube.",
-            tone: "bg-mango text-mango-foreground",
-          },
-        ].map(({ icon: Icon, title, copy, tone }) => (
-          <article key={title} className="card-festa flex gap-4 p-4">
-            <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${tone}`}>
-              <Icon className="h-6 w-6" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="font-display text-lg leading-tight">{title}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
-            </div>
-          </article>
-        ))}
-      </section>
 
-      <section className="px-5 pb-16">
-        <div className="card-festa bg-foreground p-6 text-background">
-          <p className="font-display text-2xl leading-tight">
-            Chegue. Faça check-in. Desbloqueie a Fofoquinha.
-          </p>
-          <p className="mt-2 text-sm opacity-80">
-            Cadastro gratuito para maiores de 18 anos. Promoções têm regras e validade informadas no
-            aplicativo.
-          </p>
+        <div className="mt-7 grid gap-2.5">
+          {HIGHLIGHTS.map(({ icon: Icon, label }, index) => (
+            <div
+              key={label}
+              className="flex items-center gap-3 rounded-2xl border-2 border-foreground/10 bg-card/90 px-4 py-3 shadow-sm backdrop-blur"
+            >
+              <span
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-foreground ${
+                  index === 0
+                    ? "bg-primary text-primary-foreground"
+                    : index === 1
+                      ? "bg-mango text-mango-foreground"
+                      : "bg-samba text-samba-foreground"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-black">{label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-3">
           <Link
             to="/auth"
             search={{ mode: "signup" }}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-mango px-5 py-3 text-sm font-bold text-mango-foreground"
+            className="inline-flex min-h-14 items-center justify-center rounded-2xl border-2 border-foreground bg-primary px-6 text-base font-black text-primary-foreground shadow-[4px_5px_0_var(--foreground)] transition active:translate-x-1 active:translate-y-1 active:shadow-none"
           >
-            Criar meu cadastro
+            Entrar no Clube
+          </Link>
+          <Link
+            to="/auth"
+            search={{ mode: "signin" }}
+            className="inline-flex min-h-12 items-center justify-center rounded-2xl px-5 text-sm font-black underline decoration-2 underline-offset-4"
+          >
+            Já tenho cadastro
           </Link>
         </div>
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Bafafá Bar — Natal/RN · © {new Date().getFullYear()}
-        </p>
       </section>
-    </div>
+
+      <footer className="relative border-t border-foreground/10 pt-5 text-center text-xs text-muted-foreground">
+        <p>Cadastro gratuito para maiores de 18 anos.</p>
+        <p className="mt-2">
+          <Link to="/privacidade" hash="termos" className="font-bold underline underline-offset-4">
+            Termos de Uso
+          </Link>
+          <span aria-hidden> · </span>
+          <Link to="/privacidade" hash="privacidade" className="font-bold underline underline-offset-4">
+            Privacidade
+          </Link>
+          <span aria-hidden> · </span>
+          <Link to="/privacidade" hash="comunidade" className="font-bold underline underline-offset-4">
+            Regras da Comunidade
+          </Link>
+        </p>
+        <p className="mt-3">Bafafá Bar — Natal/RN · © {new Date().getFullYear()}</p>
+      </footer>
+    </main>
   );
 }
