@@ -18,7 +18,7 @@ with function_state as (
 )
 select
   position('_user_id = auth.uid()' in definition) > 0 as restricts_to_current_user,
-  position("auth.jwt() ->> 'role'" in definition) > 0 as preserves_service_role_path,
+  position('auth.jwt() ->> ''role''' in definition) > 0 as preserves_service_role_path,
   position('current_session_is_aal2()' in definition) > 0 as preserves_privileged_aal2,
   not anon_execute as anon_cannot_enumerate_roles,
   authenticated_execute as authenticated_can_use_self_check,
@@ -26,7 +26,7 @@ select
   no_session_denied,
   (
     position('_user_id = auth.uid()' in definition) > 0
-    and position("auth.jwt() ->> 'role'" in definition) > 0
+    and position('auth.jwt() ->> ''role''' in definition) > 0
     and position('current_session_is_aal2()' in definition) > 0
     and not anon_execute
     and authenticated_execute
