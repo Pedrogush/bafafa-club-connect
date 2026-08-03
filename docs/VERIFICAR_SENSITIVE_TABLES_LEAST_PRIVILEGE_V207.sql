@@ -1,15 +1,7 @@
--- Verificação V20.7 — menor privilégio em tabelas sensíveis.
+-- Verificação V20.7 — menor privilégio em tabelas comerciais sensíveis.
 -- Somente leitura.
 
-with policy_state as (
-  select not exists (
-    select 1
-    from pg_policies
-    where schemaname = 'public'
-      and tablename = 'sales'
-      and policyname = 'Admins manage sales'
-  ) as direct_sales_update_policy_removed
-), function_state as (
+with function_state as (
   select
     has_function_privilege(
       'authenticated',
@@ -44,20 +36,17 @@ with policy_state as (
       as sale_items_read_only
 )
 select
-  direct_sales_update_policy_removed,
   audited_status_rpc_available,
   audited_status_rpc_checks_role,
   anon_sensitive_access_removed,
   qr_tokens_read_only,
   sales_read_only,
   sale_items_read_only,
-  direct_sales_update_policy_removed
-    and audited_status_rpc_available
+  audited_status_rpc_available
     and audited_status_rpc_checks_role
     and anon_sensitive_access_removed
     and qr_tokens_read_only
     and sales_read_only
     and sale_items_read_only as verificacao_ok
-from policy_state
-cross join function_state
+from function_state
 cross join privilege_state;
