@@ -635,7 +635,23 @@ function ResetForm({ onDone }: { onDone: () => void }) {
 }
 
 function BirthDateSelect({ value, onChange, error }: { value: string; onChange: (value: string) => void; error?: string }) {
-  const [year = "", month = "", day = ""] = value ? value.split("-") : [];
+  const initialParts = useMemo(() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return { year: "", month: "", day: "" };
+    const [year, month, day] = value.split("-");
+    return { year, month, day };
+  }, [value]);
+  const [year, setYear] = useState(initialParts.year);
+  const [month, setMonth] = useState(initialParts.month);
+  const [day, setDay] = useState(initialParts.day);
+
+  useEffect(() => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    const [nextYear, nextMonth, nextDay] = value.split("-");
+    setYear(nextYear);
+    setMonth(nextMonth);
+    setDay(nextDay);
+  }, [value]);
+
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 83 }, (_, index) => String(currentYear - 18 - index));
@@ -643,29 +659,52 @@ function BirthDateSelect({ value, onChange, error }: { value: string; onChange: 
   const daysInMonth = year && month ? new Date(Number(year), Number(month), 0).getDate() : 31;
   const days = Array.from({ length: daysInMonth }, (_, index) => String(index + 1).padStart(2, "0"));
 
-  function update(part: "day" | "month" | "year", next: string) {
-    const parts = { day, month, year, [part]: next };
-    onChange(parts.year && parts.month && parts.day ? `${parts.year}-${parts.month}-${parts.day}` : "");
+  function publish(nextYear: string, nextMonth: string, nextDay: string) {
+    if (nextYear && nextMonth && nextDay) {
+      onChange(`${nextYear}-${nextMonth}-${nextDay}`);
+    } else {
+      onChange("");
+    }
+  }
+
+  function updateYear(nextYear: string) {
+    setYear(nextYear);
+    setMonth("");
+    setDay("");
+    publish(nextYear, "", "");
+  }
+
+  function updateMonth(nextMonth: string) {
+    setMonth(nextMonth);
+    const nextDaysInMonth = year && nextMonth ? new Date(Number(year), Number(nextMonth), 0).getDate() : 31;
+    const nextDay = day && Number(day) <= nextDaysInMonth ? day : "";
+    setDay(nextDay);
+    publish(year, nextMonth, nextDay);
+  }
+
+  function updateDay(nextDay: string) {
+    setDay(nextDay);
+    publish(year, month, nextDay);
   }
 
   return (
     <fieldset>
       <legend className="mb-1 text-sm font-semibold">Data de nascimento</legend>
-      <div className="grid grid-cols-[0.8fr_1.25fr_1fr] gap-2">
-        <select value={day} onChange={(event) => update("day", event.target.value)} className={selectCls} aria-label="Dia de nascimento">
-          <option value="">Dia</option>
-          {days.map((item) => <option key={item} value={item}>{Number(item)}</option>)}
-        </select>
-        <select value={month} onChange={(event) => update("month", event.target.value)} className={selectCls} aria-label="Mês de nascimento">
-          <option value="">Mês</option>
-          {MONTHS.map((item, index) => <option key={item} value={String(index + 1).padStart(2, "0")}>{item}</option>)}
-        </select>
-        <select value={year} onChange={(event) => update("year", event.target.value)} className={selectCls} aria-label="Ano de nascimento">
+      <div className="grid grid-cols-[1fr_1.2fr_0.8fr] gap-2">
+        <select value={year} onChange={(event) => updateYear(event.target.value)} className={selectCls} aria-label="Ano de nascimento">
           <option value="">Ano</option>
           {years.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
+        <select value={month} onChange={(event) => updateMonth(event.target.value)} className={selectCls} aria-label="Mês de nascimento" disabled={!year}>
+          <option value="">Mês</option>
+          {MONTHS.map((item, index) => <option key={item} value={String(index + 1).padStart(2, "0")}>{item}</option>)}
+        </select>
+        <select value={day} onChange={(event) => updateDay(event.target.value)} className={selectCls} aria-label="Dia de nascimento" disabled={!year || !month}>
+          <option value="">Dia</option>
+          {days.map((item) => <option key={item} value={item}>{Number(item)}</option>)}
+        </select>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">Escolha primeiro o ano, depois o mês e o dia.</p>
+      <p className="mt-1 text-xs text-muted-foreground">Escolha o ano, depois o mês e por último o dia.</p>
       {error && <p className="mt-1 text-xs font-semibold text-destructive">{error}</p>}
     </fieldset>
   );
