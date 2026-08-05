@@ -70,12 +70,18 @@ confirmar que:
 Durante a retomada, a suíte encontrou erros de Prettier em arquivos já alterados
 pela PR. A formatação foi normalizada, restaurando o lint sem erros.
 
+Na primeira execução do GitHub Actions, o `bun audit` identificou três achados
+altos em dependências transitivas: `postcss@8.5.10` e duas ocorrências de
+`js-yaml@4.1.1`. O resultado anterior do `npm audit` não representava a resolução
+registrada no lockfile do Bun usado pelo CI. Foram adicionados overrides para
+`postcss@8.5.25` e `js-yaml@4.3.0`, com regeneração do `bun.lock` pelo Bun 1.3.14.
+
 Validações locais:
 
 - busca de segredos: passou;
 - TypeScript: passou;
 - build de produção: passou;
-- lint: passou com 10 avisos preexistentes de Fast Refresh e zero erros.
+- lint: passou com 10 avisos preexistentes de Fast Refresh e zero erros;
 - auditoria de dependências de produção: zero vulnerabilidades;
 - cabeçalhos de segurança na produção: passou.
 
