@@ -124,7 +124,6 @@ function StaffCheckin() {
 
   const loadData = useCallback(async () => {
     if (!allowed) return;
-    await supabase.rpc("sync_event_statuses");
     const [eventResult, productResult] = await Promise.all([
       supabase
         .from("events")
