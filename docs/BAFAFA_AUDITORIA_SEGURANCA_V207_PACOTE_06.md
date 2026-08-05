@@ -82,7 +82,8 @@ Validações locais:
 - TypeScript: passou;
 - build de produção: passou;
 - lint: passou com 10 avisos preexistentes de Fast Refresh e zero erros;
-- auditoria de dependências de produção: zero vulnerabilidades;
+- auditoria de dependências de produção: zero achados altos ou críticos e 2
+  avisos baixos residuais (`@babel/core` e `esbuild`);
 - cabeçalhos de segurança na produção: passou.
 
 O preview da PR está protegido pelo SSO da Vercel. Por isso, o teste de
