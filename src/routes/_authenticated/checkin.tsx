@@ -41,7 +41,6 @@ function Checkin() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    await supabase.rpc("sync_event_statuses");
     const { data, error: rpcError } = await supabase.rpc("my_house_session");
     if (rpcError) setError(publicErrorMessage(rpcError, "Não foi possível abrir o check-in."));
     else setSession(parseHouseSession(data));
