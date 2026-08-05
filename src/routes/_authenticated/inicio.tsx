@@ -116,8 +116,6 @@ function Inicio() {
     if (!user) return;
     setLoading(true);
     setError(null);
-    await supabase.rpc("sync_event_statuses");
-
     const [profile, completion, promotions, posts, goals, houseSession] = await Promise.all([
       supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
       supabase.rpc("my_profile_completion_details"),
