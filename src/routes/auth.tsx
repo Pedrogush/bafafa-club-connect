@@ -14,7 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Wordmark } from "@/components/brand/wordmark";
+import { BafafaSign } from "@/components/brand/bafafa-sign";
 import { TurnstileChallenge, useAuthCaptcha } from "@/components/auth/turnstile";
 import { friendlyAuthError, isPrivilegedRole, validatePassword } from "@/lib/auth-security";
 import { formatPhoneBR, normalizePhoneE164BR } from "@/lib/commercial";
@@ -86,8 +86,8 @@ function AuthPage() {
     <main className="app-canvas min-h-screen px-4 py-5 sm:py-7">
       <div className="mx-auto max-w-lg">
         <header className="flex items-center justify-between gap-4">
-          <Link to="/" className="inline-flex max-w-[190px]">
-            <Wordmark variant="full" />
+          <Link to="/" className="inline-flex max-w-[200px]" aria-label="Voltar ao início">
+            <BafafaSign size="full" showCaption />
           </Link>
           <span className="rounded-full border border-foreground/15 bg-card px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.17em] text-muted-foreground">
             Clube do Bafafã

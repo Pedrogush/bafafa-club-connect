@@ -10,7 +10,7 @@ import {
   MessageCircleMore,
   ShieldCheck,
 } from "lucide-react";
-import { Wordmark } from "@/components/brand/wordmark";
+import { BafafaSign } from "@/components/brand/bafafa-sign";
 
 export const Route = createFileRoute("/privacidade")({
   component: PrivacyPage,
@@ -22,7 +22,7 @@ function PrivacyPage() {
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center justify-between gap-4">
           <Link to="/" className="inline-block" aria-label="Voltar ao Início">
-            <Wordmark variant="full" />
+            <BafafaSign size="full" showCaption />
           </Link>
           <Link
             to="/auth"

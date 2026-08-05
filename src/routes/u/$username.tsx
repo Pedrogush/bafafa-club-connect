@@ -10,7 +10,7 @@ import {
   Music2,
   TicketCheck,
 } from "lucide-react";
-import { Wordmark } from "@/components/brand/wordmark";
+import { BafafaSign } from "@/components/brand/bafafa-sign";
 import {
   BadgeSticker,
   NameWithBadges,
@@ -64,7 +64,7 @@ function PublicProfilePage() {
     <div className="app-canvas min-h-screen px-4 py-6">
       <main className="mx-auto max-w-lg">
         <div className="mb-5 flex items-center justify-between gap-4">
-          <Wordmark variant="short" />
+          <BafafaSign size="compact" />
           <Link
             to="/"
             className="rounded-xl border-2 border-foreground bg-background px-3 py-2 text-xs font-black shadow-[2px_3px_0_var(--foreground)]"
@@ -91,7 +91,7 @@ function PublicProfilePage() {
         ) : (
           <div className="space-y-4">
             <section className="overflow-hidden rounded-[2rem] border-2 border-foreground/20 bg-card shadow-[0_7px_0_rgba(20,16,40,0.13)]">
-              <div className="brick-texture h-24 border-b-2 border-foreground/15" />
+              <div className="grid-texture h-24 border-b-2 border-foreground/15 bg-electric text-white" />
               <div className="relative px-5 pb-5">
                 <div className="-mt-12 grid h-24 w-24 place-items-center overflow-hidden rounded-full border-[4px] border-foreground bg-primary font-display text-4xl text-primary-foreground shadow-[3px_4px_0_var(--foreground)]">
                   {profile.avatar_url ? (

@@ -13,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BafafaSign } from "@/components/brand/bafafa-sign";
 import { AppShell } from "@/components/layout/app-shell";
 import { FofocometroCard } from "@/components/customer/fofocometro-card";
 import { ErrorCard, LoadingCard } from "@/components/ui/async-state";
@@ -233,15 +234,7 @@ function Inicio() {
             </h1>
             <p className="home-hero__institutional">O que tá valendo no Bafafá, do seu jeito.</p>
           </div>
-          <div className="bafafa-sign" aria-label="Bafafá Bar">
-            <span className="bafafa-sign__nail bafafa-sign__nail--left" aria-hidden="true" />
-            <span className="bafafa-sign__nail bafafa-sign__nail--right" aria-hidden="true" />
-            <img
-              src="/brand/logo-bafafa.png"
-              alt="Bafafá Bar"
-              className="relative z-[1] h-auto w-full max-w-[9.5rem] object-contain"
-            />
-          </div>
+          <BafafaSign />
         </div>
       </header>
 
@@ -262,7 +255,7 @@ function Inicio() {
         </div>
       ) : (
         <main className="space-y-7 px-5 pt-5">
-          <FeedPostsSection posts={postsByPlacement.top} />
+          <FeedPostsSection posts={postsByPlacement.top} title="Direto do Bafafá" />
 
           {data.houseSession && <HouseSessionCard session={data.houseSession} />}
 
@@ -292,7 +285,7 @@ function Inicio() {
             </section>
           )}
 
-          <FeedPostsSection posts={postsByPlacement.afterPromotions} />
+          <FeedPostsSection posts={postsByPlacement.afterPromotions} title="Mais do Bafafá" />
 
           {data.completion.percentage < 100 && nextTask && (
             <Link
@@ -314,7 +307,7 @@ function Inicio() {
             </Link>
           )}
 
-          <FeedPostsSection posts={postsByPlacement.bottom} />
+          <FeedPostsSection posts={postsByPlacement.bottom} title="Pra fechar a roda" />
 
           {!data.houseSession && data.promotions.length === 0 && data.posts.length === 0 && (
             <section className="content-card content-card--news p-6 text-foreground">
@@ -402,11 +395,11 @@ function HouseSessionCard({ session }: { session: HouseSession }) {
   );
 }
 
-function FeedPostsSection({ posts }: { posts: FeedPost[] }) {
+function FeedPostsSection({ posts, title }: { posts: FeedPost[]; title: string }) {
   if (posts.length === 0) return null;
   return (
     <section className="space-y-4">
-      <FeedSectionTitle icon={MessageCircleMore} title="Direto do Bafafá" />
+      <FeedSectionTitle icon={MessageCircleMore} title={title} />
       {posts.map((post) => (
         <article key={post.id} className="content-card content-card--news overflow-hidden">
           {post.image_url && (
