@@ -15,7 +15,11 @@ export const Route = createFileRoute("/")({
 const HIGHLIGHTS = [
   { icon: MapPin, label: "Check-in pelo celular", tone: "bg-primary text-primary-foreground" },
   { icon: Sparkles, label: "Fofoquinhas e benefícios", tone: "bg-mango text-mango-foreground" },
-  { icon: MessageCircleMore, label: "Resenha da comunidade", tone: "bg-samba text-samba-foreground" },
+  {
+    icon: MessageCircleMore,
+    label: "Resenha da comunidade",
+    tone: "bg-samba text-samba-foreground",
+  },
 ];
 
 function LandingPage() {
@@ -82,11 +86,19 @@ function LandingPage() {
             Termos
           </Link>
           <span aria-hidden> · </span>
-          <Link to="/privacidade" hash="privacidade" className="font-bold underline underline-offset-4">
+          <Link
+            to="/privacidade"
+            hash="privacidade"
+            className="font-bold underline underline-offset-4"
+          >
             Privacidade
           </Link>
           <span aria-hidden> · </span>
-          <Link to="/privacidade" hash="comunidade" className="font-bold underline underline-offset-4">
+          <Link
+            to="/privacidade"
+            hash="comunidade"
+            className="font-bold underline underline-offset-4"
+          >
             Regras da Comunidade
           </Link>
         </p>

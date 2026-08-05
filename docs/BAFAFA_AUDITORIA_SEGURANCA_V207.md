@@ -153,6 +153,33 @@ Arquivos existentes:
 
 Status: REVISÃO FAVORÁVEL. RISCO ACEITO PARA LEITURA PÚBLICA DE MÍDIA NÃO SENSÍVEL.
 
+## Pacote 06 — inventário de RPCs públicas
+
+Arquivo de verificação:
+
+`docs/VERIFICAR_INVENTARIO_RPCS_V207.sql`
+
+Resultado estrutural em 05/08/2026:
+
+- 100 funções no schema `public`;
+- 89 funções `SECURITY DEFINER`;
+- 53 funções `SECURITY DEFINER` executáveis por `authenticated`;
+- 3 funções `SECURITY DEFINER` executáveis por `anon`;
+- 12 de 12 RPCs administrativas expostas ao aplicativo validam `has_role()`;
+- zero funções privilegiadas sem `search_path` fixo;
+- zero exposições autenticadas ou anônimas sem justificativa estrutural.
+
+Evidência:
+
+- `all_admin_rpcs_have_role_guard = true`;
+- `all_security_definer_have_fixed_search_path = true`;
+- `no_unexplained_authenticated_security_definer = true`;
+- `no_unexplained_anon_security_definer = true`;
+- `verificacao_ok = true`.
+
+Status: INVENTÁRIO CONCLUÍDO E VALIDADO ESTRUTURALMENTE. Testes com sessões
+reais AAL1/AAL2 continuam pendentes.
+
 ## Achados
 
 ### SEC-001 — RPCs anônimas `SECURITY DEFINER`
@@ -191,15 +218,20 @@ Severidade: variável conforme a função.
 
 O Advisor sinaliza funções que possuem `EXECUTE` para `authenticated`. Muitas precisam ser chamadas pelo aplicativo, mas validam internamente `has_role()`, agora restrito ao próprio usuário e com `aal2` obrigatório para papéis privilegiados.
 
+O inventário do Pacote 06 confirmou que todas as 12 RPCs administrativas
+expostas ao frontend contêm a guarda `has_role()` e que nenhuma função
+privilegiada está sem `search_path` fixo.
+
 Pendente:
 
 - teste direto por usuário comum;
 - teste com conta privilegiada em `aal1`;
 - teste positivo em `aal2`;
-- revogar `EXECUTE` das funções sem uso direto no frontend;
-- migrar helpers internos para schema não exposto quando viável.
+- confirmar o comportamento com tokens reais;
+- migrar helpers internos para schema não exposto quando isso reduzir a
+  superfície sem quebrar policies ou fluxos internos.
 
-Status: EM ANÁLISE.
+Status: VALIDADO ESTRUTURALMENTE — TESTES REAIS AAL1/AAL2 PENDENTES.
 
 ### SEC-004 — Integridade de preços e custos
 
@@ -251,13 +283,12 @@ Status: REVISÃO INICIAL FAVORÁVEL; testes negativos ainda necessários.
 
 1. executar os testes com tokens reais `aal1` e `aal2`;
 2. fazer uma venda controlada normal e uma tentativa adulterada;
-3. inventariar e classificar todas as RPCs administrativas;
-4. revisar RLS tabela por tabela, começando por perfis, papéis, QR, recompensas e vendas;
-5. revisar funções que recebem IDs de outros usuários;
-6. revisar dependências, CI, segredos, cabeçalhos e variáveis;
-7. habilitar proteção contra senhas vazadas;
-8. desenhar rate limiting para endpoints públicos e ações de abuso;
-9. atualizar o Documento Mestre AI-First.
+3. revisar RLS das tabelas ainda não cobertas pelos Pacotes 04 e 05;
+4. revisar funções que recebem IDs de outros usuários;
+5. revisar dependências, CI, segredos, cabeçalhos e variáveis;
+6. habilitar proteção contra senhas vazadas;
+7. desenhar rate limiting para endpoints públicos e ações de abuso;
+8. atualizar o Documento Mestre AI-First.
 
 ## Critério de liberação
 
