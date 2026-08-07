@@ -9,11 +9,12 @@ const ROLE_CACHE_WINDOW_MS = 15 * 1000;
 
 type RoleCacheEntry = {
   expiresAt: number;
-  roles?: AppRole[];
-  request?: Promise<AppRole[]>;
+  roles: AppRole[];
 };
 
 const roleCache = new Map<string, RoleCacheEntry>();
+const roleRequests = new Map<string, Promise<AppRole[]>>();
+let roleCacheGeneration = 0;
 
 export type RecoveryMarker = {
   userId: string;
@@ -28,27 +29,32 @@ export function isPrivilegedRole(roles: AppRole[]): boolean {
 
 export async function loadCurrentUserRoles(userId: string): Promise<AppRole[]> {
   const cached = roleCache.get(userId);
-  if (cached?.roles && cached.expiresAt > Date.now()) return cached.roles;
-  if (cached?.request) return cached.request;
+  if (cached && cached.expiresAt > Date.now()) return cached.roles;
 
+  const pending = roleRequests.get(userId);
+  if (pending) return pending;
+
+  const requestGeneration = roleCacheGeneration;
   const query = supabase.from("user_roles").select("role").eq("user_id", userId);
   const request = Promise.resolve(query)
     .then(({ data, error }) => {
       if (error) throw error;
       const roles = (data ?? []).map((row) => row.role as AppRole);
-      roleCache.set(userId, { roles, expiresAt: Date.now() + ROLE_CACHE_WINDOW_MS });
+      if (requestGeneration === roleCacheGeneration) {
+        roleCache.set(userId, { roles, expiresAt: Date.now() + ROLE_CACHE_WINDOW_MS });
+      }
       return roles;
     })
-    .catch((error) => {
-      roleCache.delete(userId);
-      throw error;
+    .finally(() => {
+      roleRequests.delete(userId);
     });
 
-  roleCache.set(userId, { request, expiresAt: Date.now() + ROLE_CACHE_WINDOW_MS });
+  roleRequests.set(userId, request);
   return request;
 }
 
 export function clearAuthSecurityCache(): void {
+  roleCacheGeneration += 1;
   roleCache.clear();
 }
 

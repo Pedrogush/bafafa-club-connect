@@ -445,7 +445,7 @@ function Perfil() {
           <button
             onClick={handleSignOut}
             aria-label="Sair"
-            className="grid h-11 w-11 place-items-center rounded-full border-2 border-foreground bg-background text-foreground shadow-[2px_3px_0_var(--foreground)]"
+            className="bafafa-touch-target grid h-11 w-11 place-items-center rounded-full border-2 border-foreground bg-background text-foreground shadow-[2px_3px_0_var(--foreground)]"
           >
             <LogOut className="h-4 w-4" />
           </button>
@@ -502,7 +502,7 @@ function Perfil() {
                     params={{ username: profile.username }}
                     preload="intent"
                     aria-label="Abrir perfil público"
-                    className="mt-3 inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border-2 border-foreground/30 bg-mango px-3 py-2 text-xs font-black text-foreground"
+                    className="bafafa-touch-target mt-3 inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border-2 border-foreground/30 bg-mango px-3 py-2 text-xs font-black text-foreground"
                   >
                     <Eye className="h-4 w-4" /> Ver perfil
                   </Link>
@@ -510,7 +510,7 @@ function Perfil() {
                   <button
                     type="button"
                     onClick={focusPublicProfileSetup}
-                    className="mt-3 inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border-2 border-white/40 bg-white/15 px-3 py-2 text-xs font-black text-white"
+                    className="bafafa-touch-target mt-3 inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border-2 border-white/40 bg-white/15 px-3 py-2 text-xs font-black text-white"
                   >
                     <Eye className="h-4 w-4" /> Configurar perfil
                   </button>
@@ -913,7 +913,7 @@ function Perfil() {
               <button
                 type="button"
                 onClick={() => setBlockedUsersOpen(true)}
-                className="shrink-0 rounded-full border-2 border-foreground bg-background px-3 py-2 text-xs font-black shadow-[2px_2px_0_var(--foreground)]"
+                className="bafafa-touch-target shrink-0 rounded-full border-2 border-foreground bg-background px-3 py-2 text-xs font-black shadow-[2px_2px_0_var(--foreground)]"
               >
                 Gerenciar
               </button>
@@ -1016,7 +1016,7 @@ function PreferenceGroup({
               key={option}
               type="button"
               onClick={() => onToggle(option)}
-              className={`min-h-11 rounded-full border-2 px-3 py-2 text-xs font-black transition ${
+              className={`bafafa-touch-target min-h-11 rounded-full border-2 px-3 py-2 text-xs font-black transition ${
                 active
                   ? `${colors[index % colors.length]} border-foreground shadow-[2px_2px_0_var(--foreground)]`
                   : "border-foreground/15 bg-background text-muted-foreground"

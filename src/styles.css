@@ -4,6 +4,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Medidas e contraste críticos não dependem da cascata temática. */
+.bafafa-touch-target {
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+.badge-overflow-count {
+  border-color: #16122b !important;
+  background-color: #fff8e9 !important;
+  color: #16122b !important;
+}
+
 /* =====================================================================
  * BAFAFÁ — Clube dos Bafafãs :: Identidade visual 2026
  * ---------------------------------------------------------------------

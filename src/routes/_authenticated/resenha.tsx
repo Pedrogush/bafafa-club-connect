@@ -729,7 +729,7 @@ function Resenha() {
                                   to="/u/$username"
                                   params={{ username: message.author_username }}
                                   preload="intent"
-                                  className="min-w-0 flex-1 rounded-md outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary"
+                                  className="bafafa-touch-target inline-flex min-w-0 flex-1 items-center rounded-md outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary"
                                   aria-label={`Abrir perfil de ${message.author_name}`}
                                 >
                                   <NameWithBadges
