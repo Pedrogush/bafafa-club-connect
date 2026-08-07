@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import {
   Check,
+  ArrowLeft,
   Circle,
   Eye,
   EyeOff,
@@ -136,7 +137,7 @@ function AuthPage() {
               <p className="font-black">No acesso por telefone não existe senha.</p>
               <p className="text-muted-foreground">Volte para Entrar e peça um novo código.</p>
               <button type="button" className={secondaryButton} onClick={() => setMode("signin")}>
-                Voltar
+                <ArrowLeft className="h-4 w-4" /> Voltar
               </button>
             </div>
           )}
@@ -739,9 +740,11 @@ function BirthDateSelect({
 
   function updateYear(nextYear: string) {
     setYear(nextYear);
-    setMonth("");
-    setDay("");
-    publish(nextYear, "", "");
+    const nextDaysInMonth =
+      nextYear && month ? new Date(Number(nextYear), Number(month), 0).getDate() : 31;
+    const nextDay = day && Number(day) <= nextDaysInMonth ? day : "";
+    setDay(nextDay);
+    publish(nextYear, month, nextDay);
   }
 
   function updateMonth(nextMonth: string) {
@@ -761,7 +764,33 @@ function BirthDateSelect({
   return (
     <fieldset>
       <legend className="mb-1 text-sm font-semibold">Data de nascimento</legend>
-      <div className="grid grid-cols-[1fr_1.2fr_0.8fr] gap-2">
+      <div className="grid grid-cols-[0.8fr_1.2fr_1fr] gap-2">
+        <select
+          value={day}
+          onChange={(event) => updateDay(event.target.value)}
+          className={selectCls}
+          aria-label="Dia de nascimento"
+        >
+          <option value="">Dia</option>
+          {days.map((item) => (
+            <option key={item} value={item}>
+              {Number(item)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={month}
+          onChange={(event) => updateMonth(event.target.value)}
+          className={selectCls}
+          aria-label="Mês de nascimento"
+        >
+          <option value="">Mês</option>
+          {MONTHS.map((item, index) => (
+            <option key={item} value={String(index + 1).padStart(2, "0")}>
+              {item}
+            </option>
+          ))}
+        </select>
         <select
           value={year}
           onChange={(event) => updateYear(event.target.value)}
@@ -775,37 +804,9 @@ function BirthDateSelect({
             </option>
           ))}
         </select>
-        <select
-          value={month}
-          onChange={(event) => updateMonth(event.target.value)}
-          className={selectCls}
-          aria-label="Mês de nascimento"
-          disabled={!year}
-        >
-          <option value="">Mês</option>
-          {MONTHS.map((item, index) => (
-            <option key={item} value={String(index + 1).padStart(2, "0")}>
-              {item}
-            </option>
-          ))}
-        </select>
-        <select
-          value={day}
-          onChange={(event) => updateDay(event.target.value)}
-          className={selectCls}
-          aria-label="Dia de nascimento"
-          disabled={!year || !month}
-        >
-          <option value="">Dia</option>
-          {days.map((item) => (
-            <option key={item} value={item}>
-              {Number(item)}
-            </option>
-          ))}
-        </select>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Escolha o ano, depois o mês e por último o dia.
+        Escolha na ordem brasileira: dia, mês e ano (DD/MM/AAAA).
       </p>
       {error && <p className="mt-1 text-xs font-semibold text-destructive">{error}</p>}
     </fieldset>

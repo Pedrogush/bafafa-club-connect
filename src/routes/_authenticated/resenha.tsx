@@ -10,6 +10,7 @@ import {
   type UIEvent,
 } from "react";
 import {
+  ArrowLeft,
   ArrowDown,
   Ban,
   Clock3,
@@ -1163,7 +1164,7 @@ function ResenhaUnavailable({
           to="/inicio"
           className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-foreground bg-mango px-5 py-3 text-sm font-black text-foreground shadow-[3px_4px_0_var(--foreground)]"
         >
-          Voltar ao Início
+          <ArrowLeft className="h-4 w-4" /> Voltar ao Início
         </Link>
       </section>
     );

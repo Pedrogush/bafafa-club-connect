@@ -350,6 +350,13 @@ function Perfil() {
     );
   }
 
+  function focusPublicProfileSetup() {
+    const key = profile?.username ? "public-profile-privacy" : "username";
+    const target = document.querySelector<HTMLElement>(`[data-profile-key="${key}"]`);
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => target?.querySelector<HTMLElement>("input, button")?.focus(), 450);
+  }
+
   const completeness = completionDetails.percentage;
   const nextTask = nextProfileTask(completionDetails);
   const canValidate = roles.some((role) => role === "admin" || role === "equipe");
@@ -378,6 +385,11 @@ function Perfil() {
         eyebrow="Sua carteirinha"
         title="Carteirinha"
         tone="blue"
+        meta={
+          <>
+            <UserRound className="h-3.5 w-3.5" /> Seu perfil, selos e história no Bafafá
+          </>
+        }
         action={
           <button
             onClick={handleSignOut}
@@ -433,15 +445,23 @@ function Perfil() {
                     {profile?.username ? `@${profile.username}` : "Escolha seu @ no perfil"}
                   </p>
                 </div>
-                {profile?.username && profile.is_public && (
+                {profile?.username && profile.is_public ? (
                   <Link
                     to="/u/$username"
                     params={{ username: profile.username }}
                     aria-label="Abrir perfil público"
-                    className="mt-3 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-foreground/30 bg-mango text-foreground"
+                    className="mt-3 inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-foreground/30 bg-mango px-3 py-2 text-xs font-black text-foreground"
                   >
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4" /> Ver perfil
                   </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={focusPublicProfileSetup}
+                    className="mt-3 inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 border-white/40 bg-white/15 px-3 py-2 text-xs font-black text-white"
+                  >
+                    <Eye className="h-4 w-4" /> Configurar perfil
+                  </button>
                 )}
               </div>
 
@@ -738,7 +758,10 @@ function Perfil() {
                   </label>
                 )}
 
-                <div className="profile-subpanel profile-subpanel--privacy space-y-3 p-4 text-sm">
+                <div
+                  data-profile-key="public-profile-privacy"
+                  className="profile-subpanel profile-subpanel--privacy space-y-3 p-4 text-sm"
+                >
                   <div>
                     <p className="font-black">Privacidade do perfil público</p>
                     <p className="mt-1 text-xs font-semibold text-muted-foreground">

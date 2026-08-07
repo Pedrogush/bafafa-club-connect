@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import {
+  ArrowLeft,
   Camera,
   CheckCircle2,
   CircleDollarSign,
@@ -753,9 +754,9 @@ function AccessDenied() {
         </p>
         <Link
           to="/inicio"
-          className="mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
         >
-          Voltar
+          <ArrowLeft className="h-4 w-4" /> Voltar
         </Link>
       </div>
     </div>

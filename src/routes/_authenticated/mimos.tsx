@@ -192,6 +192,11 @@ function Fofoquinhas() {
         eyebrow="Vantagens do clube"
         title="Fofoquinhas"
         tone="green"
+        meta={
+          <>
+            <Gift className="h-3.5 w-3.5" /> Promoções, missões e vantagens do clube
+          </>
+        }
         action={
           <button
             type="button"
@@ -206,7 +211,8 @@ function Fofoquinhas() {
 
       <div className="px-5 pt-2">
         <p className="mb-5 text-sm font-semibold text-muted-foreground">
-          Promoções, missões e vantagens que a gente não consegue guardar em segredo.
+          Aqui, as promoções viram Fofoquinhas: vantagens liberadas, ofertas abertas e missões para
+          ganhar benefícios no Bafafá.
         </p>
         <div className="grid grid-cols-3 gap-2 rounded-2xl border-2 border-foreground/15 bg-muted p-1.5">
           <TabButton
