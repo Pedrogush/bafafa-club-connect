@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import {
   ArrowLeft,
@@ -17,6 +17,16 @@ export const Route = createFileRoute("/privacidade")({
 });
 
 function PrivacyPage() {
+  const navigate = useNavigate();
+
+  function goBack() {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    void navigate({ to: "/" });
+  }
+
   return (
     <main className="app-canvas min-h-screen px-4 py-6 text-foreground">
       <div className="mx-auto max-w-2xl">
@@ -24,13 +34,13 @@ function PrivacyPage() {
           <Link to="/" className="inline-block" aria-label="Voltar ao Início">
             <BafafaSign size="full" showCaption />
           </Link>
-          <Link
-            to="/auth"
-            search={{ mode: "signup" }}
+          <button
+            type="button"
+            onClick={goBack}
             className="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-foreground bg-background px-4 text-sm font-black shadow-[2px_3px_0_var(--foreground)]"
           >
             <ArrowLeft className="h-4 w-4" /> Voltar
-          </Link>
+          </button>
         </div>
 
         <header className="content-card content-card--profile mt-6 p-6 text-white">

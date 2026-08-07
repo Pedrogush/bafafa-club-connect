@@ -288,14 +288,14 @@ function StaffCheckin() {
             <button
               type="button"
               onClick={() => void loadData()}
-              className="grid h-10 w-10 place-items-center rounded-full border-2 border-foreground bg-card shadow-[2px_3px_0_var(--foreground)]"
+              className="grid h-11 w-11 place-items-center rounded-full border-2 border-foreground bg-card shadow-[2px_3px_0_var(--foreground)]"
               aria-label="Atualizar"
             >
               <RefreshCw className="h-4 w-4" />
             </button>
             <Link
               to="/inicio"
-              className="grid h-10 w-10 place-items-center rounded-full border-2 border-foreground bg-card shadow-[2px_3px_0_var(--foreground)]"
+              className="grid h-11 w-11 place-items-center rounded-full border-2 border-foreground bg-card shadow-[2px_3px_0_var(--foreground)]"
               aria-label="Sair"
             >
               <LogOut className="h-4 w-4" />

@@ -520,8 +520,8 @@
 
   .bafafa-icon-button {
     display: grid;
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.75rem;
+    height: 2.75rem;
     place-items: center;
     border: 2px solid var(--foreground);
     border-radius: 999px;

@@ -167,7 +167,7 @@ export function NameWithBadges({
         ))}
       </span>
       {sorted.length > maxBadges && (
-        <span className="shrink-0 rounded-full border border-foreground/15 bg-background px-1.5 py-0.5 text-xs font-black">
+        <span className="inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full border border-foreground/25 bg-background px-1.5 py-0.5 text-xs font-black text-foreground">
           +{sorted.length - maxBadges}
         </span>
       )}

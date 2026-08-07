@@ -5,6 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 export const PRIVILEGED_ROLES: AppRole[] = ["admin", "moderador", "equipe"];
 export const RECOVERY_MARKER_KEY = "bafafa-password-recovery";
 const RECOVERY_WINDOW_MS = 20 * 60 * 1000;
+const ROLE_CACHE_WINDOW_MS = 15 * 1000;
+
+type RoleCacheEntry = {
+  expiresAt: number;
+  roles?: AppRole[];
+  request?: Promise<AppRole[]>;
+};
+
+const roleCache = new Map<string, RoleCacheEntry>();
 
 export type RecoveryMarker = {
   userId: string;
@@ -18,10 +27,29 @@ export function isPrivilegedRole(roles: AppRole[]): boolean {
 }
 
 export async function loadCurrentUserRoles(userId: string): Promise<AppRole[]> {
-  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  const cached = roleCache.get(userId);
+  if (cached?.roles && cached.expiresAt > Date.now()) return cached.roles;
+  if (cached?.request) return cached.request;
 
-  if (error) throw error;
-  return (data ?? []).map((row) => row.role as AppRole);
+  const query = supabase.from("user_roles").select("role").eq("user_id", userId);
+  const request = Promise.resolve(query)
+    .then(({ data, error }) => {
+      if (error) throw error;
+      const roles = (data ?? []).map((row) => row.role as AppRole);
+      roleCache.set(userId, { roles, expiresAt: Date.now() + ROLE_CACHE_WINDOW_MS });
+      return roles;
+    })
+    .catch((error) => {
+      roleCache.delete(userId);
+      throw error;
+    });
+
+  roleCache.set(userId, { request, expiresAt: Date.now() + ROLE_CACHE_WINDOW_MS });
+  return request;
+}
+
+export function clearAuthSecurityCache(): void {
+  roleCache.clear();
 }
 
 export async function loadCurrentAssuranceLevel(): Promise<AuthAssuranceLevel> {

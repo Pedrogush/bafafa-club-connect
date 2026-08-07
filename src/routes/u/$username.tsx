@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   BadgeCheck,
   CalendarDays,
@@ -37,26 +37,18 @@ type PublicProfile = {
 };
 
 export const Route = createFileRoute("/u/$username")({
+  loader: async ({ params }) => {
+    const { data } = await supabase.rpc("get_public_profile", { _username: params.username });
+    return (data as unknown as PublicProfile | null) ?? null;
+  },
+  staleTime: 60_000,
+  pendingMs: 0,
+  pendingComponent: PublicProfileLoading,
   component: PublicProfilePage,
 });
 
 function PublicProfilePage() {
-  const { username } = Route.useParams();
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    void supabase.rpc("get_public_profile", { _username: username }).then(({ data }) => {
-      if (!mounted) return;
-      setProfile((data as unknown as PublicProfile | null) ?? null);
-      setLoading(false);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [username]);
+  const profile = Route.useLoaderData();
 
   const badges = useMemo(() => dedupeBadgeDefinitions(profile?.badges ?? []), [profile?.badges]);
 
@@ -73,11 +65,7 @@ function PublicProfilePage() {
           </Link>
         </div>
 
-        {loading ? (
-          <div className="card-festa p-8 text-center text-sm font-bold text-muted-foreground">
-            Procurando essa figurinha…
-          </div>
-        ) : !profile ? (
+        {!profile ? (
           <section className="poster-card checker-texture p-6 text-foreground">
             <span className="cut-label bg-white">perfil fechado</span>
             <LockKeyhole className="mt-5 h-8 w-8" />
@@ -234,6 +222,18 @@ function PublicProfilePage() {
             </section>
           </div>
         )}
+      </main>
+    </div>
+  );
+}
+
+function PublicProfileLoading() {
+  return (
+    <div className="app-canvas min-h-screen px-4 py-6">
+      <main className="mx-auto max-w-lg">
+        <div className="card-festa p-8 text-center text-sm font-bold text-muted-foreground">
+          Procurando essa figurinha…
+        </div>
       </main>
     </div>
   );

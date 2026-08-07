@@ -531,7 +531,7 @@ function PromotionCard({
         )}
       </div>
       {externalEnabled && (
-        <p className="mt-3 text-xs font-semibold text-muted-foreground">
+        <p className="mt-3 text-xs font-semibold text-foreground/80">
           Abre no site indicado. Registramos apenas o clique; a confirmação acontece fora do app.
         </p>
       )}
