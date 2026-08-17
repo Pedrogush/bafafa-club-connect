@@ -21,6 +21,30 @@ export type SupabaseMockOptions = {
   assuranceLevel?: "aal1" | "aal2";
   /** Respostas de RPC por nome, quando o teste precisar. */
   rpcResponses?: Record<string, { data?: unknown; error?: unknown }>;
+  /**
+   * Respostas sucessivas da consulta a `user_roles`, uma por chamada. Serve para
+   * provar cache: se a segunda resposta é diferente e o resultado não muda, é
+   * porque a consulta não foi refeita. A última resposta da fila se repete
+   * indefinidamente. Quando omitido, todas as chamadas devolvem `roles`.
+   */
+  roleResponses?: RoleQueryResponse[];
+  /**
+   * Segura a resposta da consulta a `user_roles` até o teste chamar
+   * `controls.releaseRoleQueries()`. Necessário para observar o estado
+   * "requisição em voo" (coalescência e guarda de geração).
+   */
+  deferRoleQuery?: boolean;
+};
+
+/** Uma resposta da consulta a `user_roles`. `error` preenchido simula falha do banco. */
+export type RoleQueryResponse = {
+  roles?: AppRole[];
+  error?: unknown;
+};
+
+type RoleQueryResult = {
+  data: { role: AppRole }[];
+  error: unknown;
 };
 
 export function makeUser(overrides: Partial<User> = {}): User {
@@ -37,21 +61,44 @@ export function makeUser(overrides: Partial<User> = {}): User {
 }
 
 export function createSupabaseMock(options: SupabaseMockOptions = {}) {
-  const { user = makeUser(), roles = [], assuranceLevel = "aal1", rpcResponses = {} } = options;
+  const {
+    user = makeUser(),
+    roles = [],
+    assuranceLevel = "aal1",
+    rpcResponses = {},
+    roleResponses,
+    deferRoleQuery = false,
+  } = options;
 
-  const roleRows = roles.map((role) => ({ role }));
+  // Fila de respostas da consulta a `user_roles`. Sem `roleResponses`, é uma
+  // fila de um item só — o comportamento antigo, em que toda chamada devolve
+  // os mesmos papéis.
+  const queue: RoleQueryResponse[] = roleResponses?.length ? [...roleResponses] : [{ roles }];
+
+  function nextRoleResult(): RoleQueryResult {
+    // A última resposta fica "presa" na fila e se repete.
+    const response = queue.length > 1 ? (queue.shift() as RoleQueryResponse) : queue[0];
+    return {
+      data: (response.roles ?? []).map((role) => ({ role })),
+      error: response.error ?? null,
+    };
+  }
+
+  /** Consultas seguradas por `deferRoleQuery`, aguardando liberação do teste. */
+  const heldRoleQueries: Array<() => void> = [];
 
   // `from("user_roles").select("role").eq("user_id", id)` é "thenable":
   // o código de produção faz `Promise.resolve(query)`, então o objeto
   // devolvido pelo `.eq()` precisa se comportar como uma promise.
-  const selectResult = {
-    data: roleRows,
-    error: null as unknown,
-  };
-
   const eq = vi.fn(() => ({
-    then: (resolve: (value: typeof selectResult) => unknown) =>
-      Promise.resolve(resolve(selectResult)),
+    then: (resolve: (value: RoleQueryResult) => unknown) => {
+      const deliver = () => resolve(nextRoleResult());
+      if (deferRoleQuery) {
+        heldRoleQueries.push(deliver);
+        return undefined;
+      }
+      return Promise.resolve(deliver());
+    },
   }));
   const select = vi.fn(() => ({ eq }));
   const from = vi.fn(() => ({ select }));
@@ -79,5 +126,25 @@ export function createSupabaseMock(options: SupabaseMockOptions = {}) {
     },
   };
 
-  return { supabase, spies: { from, select, eq, rpc, getUser, getAuthenticatorAssuranceLevel } };
+  const controls = {
+    /**
+     * Libera todas as consultas de papéis seguradas por `deferRoleQuery`.
+     *
+     * É `async` de propósito: `Promise.resolve(thenable)` só chama o `then` do
+     * thenable numa microtask, então logo depois de `loadCurrentUserRoles(...)`
+     * a consulta ainda não chegou aqui. O `await` inicial deixa essa microtask
+     * rodar antes de liberar. Funciona com timers falsos — microtask não é timer.
+     */
+    async releaseRoleQueries() {
+      await Promise.resolve();
+      await Promise.resolve();
+      for (const deliver of heldRoleQueries.splice(0)) deliver();
+    },
+  };
+
+  return {
+    supabase,
+    spies: { from, select, eq, rpc, getUser, getAuthenticatorAssuranceLevel },
+    controls,
+  };
 }
