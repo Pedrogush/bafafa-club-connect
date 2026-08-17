@@ -18,7 +18,9 @@
     "backup:supabase": "powershell -ExecutionPolicy Bypass -File scripts/backup-supabase.ps1",
     "backup:verify": "powershell -ExecutionPolicy Bypass -File scripts/verify-backup.ps1",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e:build": "NITRO_PRESET=node-server vite build",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -86,6 +88,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^2.7.1",
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.4",
