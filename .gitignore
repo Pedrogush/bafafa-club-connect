@@ -40,3 +40,6 @@ dist-ssr
 .vercel/
 backups/
 *.backup
+
+# npm lockfile — o projeto usa bun.lock
+package-lock.json
